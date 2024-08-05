@@ -1,12 +1,22 @@
-.obj
-.ppm
-.png
-.gif
-.jpg
-.jpeg
-.o
-.swp
-.swo
-.exe
-.dll
+# Various files
+*.obj
+
+# Images
+*.ppm
+*.png
+*.gif
+*.jpg
+*.jpeg
+
+# Libraries
+*.o
+*.a
+*.dll
+
+# Editor
+*.swp
+*.swo
+
+# Binaries
+*.exe
 a.out

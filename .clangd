@@ -1,4 +1,5 @@
-CompileFlags: # Tweak the parse settings, example directory given to show format
+# This is useful if you're using a clang LSP or something else to verify files
+# as you're editing them (obviously clang specific)
+CompileFlags: 
   Add:
-    # - "-I=[folder]"         # old answer
-    - "-Ilib"            # e.g `-I/usr/include/SDL2`  suggested from @Palmkeep
+    - "-Ilib" 
