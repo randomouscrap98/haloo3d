@@ -1,0 +1,4 @@
+CompileFlags: # Tweak the parse settings, example directory given to show format
+  Add:
+    # - "-I=[folder]"         # old answer
+    - "-Ilib"            # e.g `-I/usr/include/SDL2`  suggested from @Palmkeep
