@@ -10,7 +10,7 @@
 # Compiler and other things
 LIBS = lib
 CC = gcc
-CFLAGS = -Wall -O2 -g -I$(LIBS)
+CFLAGS = -Wall -O2 -I$(LIBS)
 
 # Define the object files for the static library
 STATICOBJS = $(LIBS)/mathc.o
