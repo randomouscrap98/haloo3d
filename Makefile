@@ -39,7 +39,7 @@ $(FULLOUT): haloo3d.a $(FULLOBJS)
 
 # Rule to build any example file
 examples/%.exe: examples/%.o $(FULLOUT)
-	$(cc) $(CFLAGS) -o $@ $< $(FULLOUT)
+	$(CC) $(CFLAGS) -o $@ $< $(FULLOUT)
 
 # # Rule to build main.o
 # main.o: main.c math.h
