@@ -68,7 +68,7 @@ typedef struct {
   (0xF000 | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
 // "scale" a color by a given intensity. it WILL clip...
-inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
+static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
   uint16_t r = H3DC_R(col) * scale;
   uint16_t g = H3DC_G(col) * scale;
   uint16_t b = H3DC_B(col) * scale;
@@ -79,7 +79,7 @@ inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
 //   Math
 // ----------------------
 
-inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
+static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   //(v *Vec3f) ViewportSelf(width, height int) {
   v[0] = (v[0] + 1.0) / 2.0 * width;
   v[1] = (1.0 - (v[1] + 1.0)) / 2.0 * height;
@@ -102,25 +102,26 @@ typedef struct {
 } haloo3d_fb;
 
 // Get a value from the framebuffer at the given index
-inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
+static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
   return fb->buffer[x + y * fb->width];
 }
 
-inline uint16_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
+static inline uint16_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
   return fb->wbuffer[x + y * fb->width];
 }
 
 // Set a value in the framebuffer at the given index
-inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
+static inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
   fb->buffer[x + y * fb->width] = v;
 }
 
-inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
+static inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
   fb->wbuffer[x + y * fb->width] = v;
 }
 
 // Get a value based on uv coordinates. Does not perform any smoothing
-inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u, mfloat_t v) {
+static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
+                                        mfloat_t v) {
   uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
   uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
   return fb->buffer[x + y * fb->width];
@@ -128,7 +129,9 @@ inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u, mfloat_t v) {
 
 // Get the total size in elements of any buffer inside (framebuffer or
 // otherwise)
-inline int haloo3d_fb_size(haloo3d_fb *fb) { return fb->width * fb->height; }
+static inline int haloo3d_fb_size(haloo3d_fb *fb) {
+  return fb->width * fb->height;
+}
 
 // Initialize a framebuffer with a symmetric data buffer and depth buffer
 void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height);
@@ -139,7 +142,7 @@ void haloo3d_fb_free(haloo3d_fb *fb);
 void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 
 // Clear the wbuffer
-inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
+static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
   // Apparently memset isn't allowed, and the compiler will optimize this
   // for us?
   const size_t len = sizeof(float) * haloo3d_fb_size(fb);
@@ -154,40 +157,41 @@ inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
 // ----------------------
 
 // Top left corner of bounding box, but only x and y are computed
-inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
-                                          mfloat_t *v2) {
+static inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
+                                                 mfloat_t *v2) {
   return (struct vec2){.x = MIN(MIN(v0[0], v1[0]), v2[0]),
                        .y = MIN(MIN(v0[1], v1[1]), v2[1])};
 }
 
 // Bottom right corner of bounding box, but only x and y are computed
-inline struct vec2 haloo3d_boundingbox_br(mfloat_t *v0, mfloat_t *v1,
-                                          mfloat_t *v2) {
+static inline struct vec2 haloo3d_boundingbox_br(mfloat_t *v0, mfloat_t *v1,
+                                                 mfloat_t *v2) {
   return (struct vec2){.x = MAX(MAX(v0[0], v1[0]), v2[0]),
                        .y = MAX(MAX(v0[1], v1[1]), v2[1])};
 }
 
 // Edge function for a line between points v0 and v1. Positive if on the
 // "right" side (counter-clockwise winding)
-inline mfloat_t haloo3d_edgefunc(mfloat_t *v0, mfloat_t *v1, mfloat_t *p) {
+static inline mfloat_t haloo3d_edgefunc(mfloat_t *v0, mfloat_t *v1,
+                                        mfloat_t *p) {
   return (p[0] - v0[0]) * (v1[1] - v0[1]) - (p[1] - v0[1]) * (v1[0] - v0[0]);
 }
 
 // Calculate the increment amount in x and y direction for line between two
 // given points
-inline struct vec2 haloo3d_edgeinc(mfloat_t *v0, mfloat_t *v1) {
+static inline struct vec2 haloo3d_edgeinc(mfloat_t *v0, mfloat_t *v1) {
   return (struct vec2){.x = (v1[1] - v0[1]), .y = -(v1[0] - v0[0])};
 }
 
 // Edge function for a line between points v0 and v1. Positive if on the
 // "right" side (counter-clockwise winding)
-inline mint_t haloo3d_edgefunci(mint_t *v0, mint_t *v1, mint_t *p) {
+static inline mint_t haloo3d_edgefunci(mint_t *v0, mint_t *v1, mint_t *p) {
   return (p[0] - v0[0]) * (v1[1] - v0[1]) - (p[1] - v0[1]) * (v1[0] - v0[0]);
 }
 
 // Calculate the increment amount in x and y direction for line between two
 // given points
-inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
+static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
   return (struct vec2i){.x = (v1[1] - v0[1]), .y = -(v1[0] - v0[0])};
 }
 

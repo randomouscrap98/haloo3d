@@ -1,5 +1,6 @@
 #include "haloo3dex_obj.h"
 #include "haloo3d.h"
+#include "mathc.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -13,8 +14,8 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   // NOTE: to make life easier. this allocates a LOT of memory
   // to start with! It then frees it after so the obj is as small as possible.
   mallocordie(obj->faces, sizeof(haloo3d_facei) * H3D_OBJ_MAXFACES);
-  mallocordie(obj->vertices, sizeof(vec4f) * H3D_OBJ_MAXVERTICES);
-  mallocordie(obj->vtexture, sizeof(vec3f) * H3D_OBJ_MAXVERTICES);
+  mallocordie(obj->vertices, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
+  mallocordie(obj->vtexture, sizeof(struct vec3) * H3D_OBJ_MAXVERTICES);
 
   // Assumes the file pointer is at the point you want it at
   char line[H3D_OBJ_MAXLINESIZE];
@@ -34,10 +35,11 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
         continue;
       }
       // v can have 3 or 4 floats. We try to read 4 floats
-      vec4f *v = obj->vertices + obj->numvertices;
-      scanned = sscanf(next, "%f %f %f %f", (*v), (*v) + 1, (*v) + 2, (*v) + 3);
+      struct vec4 *v = obj->vertices + obj->numvertices;
+      scanned = sscanf(next, "%f %f %f %f", (*v).v, (*v).v + 1, (*v).v + 2,
+                       (*v).v + 3);
       if (scanned < 4) {
-        (*v)[3] = 1.0;
+        (*v).w = 1.0; // default value for w
       }
       obj->numvertices++;
     } else if (strcmp(tmp, "vt") == 0) {
@@ -46,13 +48,13 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
         continue;
       }
       // v can have 1 to 3 floats. Read all, and it's fine if we don't get them
-      vec3f *v = obj->vtexture + obj->numvtextures;
-      scanned = sscanf(next, "%f %f %f", (*v), (*v) + 1, (*v) + 2);
+      struct vec3 *v = obj->vtexture + obj->numvtextures;
+      scanned = sscanf(next, "%f %f %f", (*v).v, (*v).v + 1, (*v).v + 2);
       if (scanned < 3) {
-        (*v)[2] = 0.0;
+        (*v).z = 0.0; // default value for z
       }
       if (scanned < 2) {
-        (*v)[1] = 0.0;
+        (*v).y = 0.0; // default value for y (v)
       }
       obj->numvtextures++;
     } else if (strcmp(tmp, "vn") == 0) {
@@ -138,8 +140,8 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   }
 
   reallocordie(obj->faces, sizeof(haloo3d_facei) * MAX(1, obj->numfaces));
-  reallocordie(obj->vertices, sizeof(vec4f) * MAX(1, obj->numvertices));
-  reallocordie(obj->vtexture, sizeof(vec3f) * MAX(1, obj->numvtextures));
+  reallocordie(obj->vertices, sizeof(struct vec4) * MAX(1, obj->numvertices));
+  reallocordie(obj->vtexture, sizeof(struct vec3) * MAX(1, obj->numvtextures));
 }
 
 void haloo3d_obj_free(haloo3d_obj *obj) {
