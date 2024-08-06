@@ -156,13 +156,15 @@ inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
 // Top left corner of bounding box, but only x and y are computed
 inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
                                           mfloat_t *v2) {
-  return {MIN(MIN(v0[0], v1[0]), v2[0]), MIN(MIN(v0[1], v1[1]), v2[1])};
+  return (struct vec2){.x = MIN(MIN(v0[0], v1[0]), v2[0]),
+                       .y = MIN(MIN(v0[1], v1[1]), v2[1])};
 }
 
 // Bottom right corner of bounding box, but only x and y are computed
 inline struct vec2 haloo3d_boundingbox_br(mfloat_t *v0, mfloat_t *v1,
                                           mfloat_t *v2) {
-  return {MAX(MAX(v0[0], v1[0]), v2[0]), MAX(MAX(v0[1], v1[1]), v2[1])};
+  return (struct vec2){.x = MAX(MAX(v0[0], v1[0]), v2[0]),
+                       .y = MAX(MAX(v0[1], v1[1]), v2[1])};
 }
 
 // Edge function for a line between points v0 and v1. Positive if on the
@@ -174,7 +176,7 @@ inline mfloat_t haloo3d_edgefunc(mfloat_t *v0, mfloat_t *v1, mfloat_t *p) {
 // Calculate the increment amount in x and y direction for line between two
 // given points
 inline struct vec2 haloo3d_edgeinc(mfloat_t *v0, mfloat_t *v1) {
-  return {(v1[1] - v0[1]), -(v1[0] - v0[0])};
+  return (struct vec2){.x = (v1[1] - v0[1]), .y = -(v1[0] - v0[0])};
 }
 
 // Edge function for a line between points v0 and v1. Positive if on the
@@ -186,7 +188,7 @@ inline mint_t haloo3d_edgefunci(mint_t *v0, mint_t *v1, mint_t *p) {
 // Calculate the increment amount in x and y direction for line between two
 // given points
 inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
-  return {(v1[1] - v0[1]), -(v1[0] - v0[0])};
+  return (struct vec2i){.x = (v1[1] - v0[1]), .y = -(v1[0] - v0[0])};
 }
 
 // Draw a textured triangle into the given framebuffer using the given face

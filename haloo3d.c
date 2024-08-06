@@ -51,9 +51,9 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   if (parea <= 0) {
     return;
   }
-  struct vec2i boundsTL = {MAX(boundsTLf.x, 0), MAX(boundsTLf.y, 0)};
-  struct vec2i boundsBR = {MIN(boundsBRf.x, fb->width - 1),
-                           MIN(boundsBRf.y, fb->height - 1)};
+  struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y, 0)};
+  struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
+                           .y = MIN(boundsBRf.y, fb->height - 1)};
   // BTW our scanning starts at boundsTL
   mfloat_t invarea = 1.0 / parea;
   mint_t w0_y = haloo3d_edgefunci(v1.v, v2.v, boundsTL.v);
@@ -74,11 +74,11 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   mfloat_t tiv1 = face[1].tex.y * tiz1;
   mfloat_t tiv2 = face[1].tex.y * tiz2;
 
-  for (uint y = boundsTL.y; y <= boundsBR.y; y++) {
+  for (int y = boundsTL.y; y <= boundsBR.y; y++) {
     mint_t w0 = w0_y;
     mint_t w1 = w1_y;
     mint_t w2 = w2_y;
-    for (uint x = boundsTL.x; x <= boundsBR.x; x++) {
+    for (int x = boundsTL.x; x <= boundsBR.x; x++) {
       if ((w0 | w1 | w2) >= 0) {
         mfloat_t w0a = w0 * invarea;
         mfloat_t w1a = w1 * invarea;
