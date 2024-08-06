@@ -14,13 +14,22 @@ CFLAGS = -Wall -O2 -I$(LIBS)
 
 # Define the object files for the static library
 STATICOBJS = $(LIBS)/mathc.o
+FULLOBS = haloo3dex_img.o
 
 .PHONY: clean
+.PHONY: full
 
 # Build the main lib. Since this is first, this is what the makefile will
 # do by default. We create a static archive with all deps added
 haloo3d.a: haloo3d.o $(STATICOBJS)
 	ar -cvq $@ $< $(STATICOBJS)
+
+full: haloo3d_full.a ;
+
+# To make life simpler, you can also include all the various extras in one lib
+haloo3d_full.a: haloo3d.a
+	cp $< $@
+	ar -vq $@ $(FULLOBS)
 
 # Rule to build .o files
 %.o: %.c %.h
