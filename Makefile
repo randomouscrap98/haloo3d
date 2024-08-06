@@ -8,35 +8,42 @@
 # --------------------------------------------------
 
 # Compiler and other things
-LIBS = lib
+LIBD = lib
+BUILDD = build
 CC = gcc
-CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBS)
+CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBD)
 # CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS) -lm
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
 
 # Define the object files for the static library
-STATICOBJS = $(LIBS)/mathc.o
-FULLOBJS = haloo3dex_img.o haloo3dex_obj.o
-BASEOUT = haloo3d.a
-FULLOUT = haloo3d_full.a
+STATICOBJS = $(BUILDD)/$(LIBD)/mathc.o
+FULLOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o
+BASEOUT = $(BUILDD)/haloo3d.a
+FULLOUT = $(BUILDD)/haloo3d_full.a
 
 .PHONY: clean
 .PHONY: full
 
 # Build the main lib. Since this is first, this is what the makefile will
 # do by default. We create a static archive with all deps added
-$(BASEOUT): haloo3d.o $(STATICOBJS)
-	ar -cvr $@ $< $(STATICOBJS)
+$(BASEOUT): $(STATICOBJS)
+	ar -cvr $@ $(STATICOBJS)
 
 full: $(FULLOUT) ;
 
 # To make life simpler, you can also include all the various extras in one lib
-$(FULLOUT): haloo3d.a $(FULLOBJS)
+$(FULLOUT): $(BASEOUT) $(FULLOBJS)
 	cp $< $@
 	ar -vr $@ $(FULLOBJS)
 
-# Rule to build .o files
-%.o: %.c %.h
+# Rule to build lib .o files
+$(BUILDD)/$(LIBD)/%.o: $(LIBD)/%.c $(LIBD)/%.h
+	mkdir -p $(BUILDD)/$(LIBD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Rule to build .o files in main folder
+$(BUILDD)/%.o: %.c %.h
+	mkdir -p $(BUILDD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Rule to build any example file. We ALWAYS need math so... link it
@@ -45,8 +52,9 @@ examples/%.exe: examples/%.o $(FULLOUT)
 
 # Rule to clean the build files
 clean:
-	find . -name "*.o" -type f -delete
-	find . -name "*.a" -type f -delete
-	find . -name "a.out" -type f -delete
+	rm -rf $(BUILDD)
+	# find . -name "*.o" -type f -delete
+	# find . -name "*.a" -type f -delete
+	# find . -name "a.out" -type f -delete
 
 

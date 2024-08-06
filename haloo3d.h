@@ -129,7 +129,7 @@ static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
   return fb->buffer[x + y * fb->width];
 }
 
-static inline uint16_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
+static inline mfloat_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
   return fb->wbuffer[x + y * fb->width];
 }
 

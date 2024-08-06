@@ -5,8 +5,7 @@
 
 #define WIDTH 512
 #define HEIGHT 512
-#define ITERATIONS 1
-// 600
+#define ITERATIONS 600
 #define OUTFILE "orthographic.ppm"
 
 void load_texture(haloo3d_fb *tex, char *filename) {
@@ -69,20 +68,10 @@ int main(int argc, char **argv) {
       haloo3d_obj_facef(&obj, obj.faces[fi], face);
       // Oh but our zbuffer is actually our w-buffer soooo
       haloo3d_facef_fixw(face);
-      eprintf("orig: (%f,%f,%f,%f) (%f,%f,%f,%f) (%f,%f,%f,%f)\n",
-              face[0].pos.x, face[0].pos.y, face[0].pos.z, face[0].pos.w,
-              face[1].pos.x, face[1].pos.y, face[1].pos.z, face[1].pos.w,
-              face[2].pos.x, face[2].pos.y, face[2].pos.z, face[2].pos.w);
       // Orthographic projection is literally just draw each point without depth
       haloo3d_viewport_into(face[0].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[1].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[2].pos.v, WIDTH, HEIGHT);
-      // if (face[0].pos.z > 0 || face[1].pos.z > 0 || face[2].pos.z > 0) {
-      //   continue;
-      // }
-      // eprintf("screen: (%f,%f) (%f,%f) (%f,%f)\n", face[0].pos.x,
-      // face[0].pos.y,
-      //         face[1].pos.x, face[2].pos.y, face[2].pos.x, face[2].pos.y);
       haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
     }
   }

@@ -92,15 +92,17 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
         mfloat_t w0a = w0 * invarea;
         mfloat_t w1a = w1 * invarea;
         mfloat_t w2a = w2 * invarea;
+        // These are linearly interpolated values and could also be
+        // pulled out of the loop, though it may be slower
         mfloat_t pz = w0a * tiz0 + w1a * tiz1 + w2a * tiz2;
-        // if (pz > haloo3d_wb_get(fb, x, y)) {
-        haloo3d_wb_set(fb, x, y, pz);
-        pz = 1 / pz;
-        uint16_t c = haloo3d_fb_getuv(
-            texture, (w0a * tiu0 + w1a * tiu1 + w2a * tiu2) * pz,
-            (w0a * tiv0 + w1a * tiv1 + w2a * tiv2) * pz);
-        haloo3d_fb_set(fb, x, y, c); // haloo3d_col_scale(c, intensity));
-        //}
+        if (pz > haloo3d_wb_get(fb, x, y)) {
+          haloo3d_wb_set(fb, x, y, pz);
+          pz = 1 / pz;
+          uint16_t c = haloo3d_fb_getuv(
+              texture, (w0a * tiu0 + w1a * tiu1 + w2a * tiu2) * pz,
+              (w0a * tiv0 + w1a * tiv1 + w2a * tiv2) * pz);
+          haloo3d_fb_set(fb, x, y, c); // haloo3d_col_scale(c, intensity));
+        }
       }
       w0 += w0_i.x;
       w1 += w1_i.x;
