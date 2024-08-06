@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define H3D_OBJ_MAXLINESIZE 1024
+
 void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   obj->numfaces = 0;
   obj->numvertices = 0;
@@ -14,10 +16,13 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   mallocordie(obj->vtexture, sizeof(vec3f) * H3D_OBJ_MAXVERTICES);
 
   // Assumes the file pointer is at the point you want it at
-  ssize_t read;
-  char *line = NULL;
-  size_t len = 0;
+  // size_t read;
+  char line[H3D_OBJ_MAXLINESIZE];
+  // size_t len = 0;
 
+  while (fgets(line, H3D_OBJ_MAXLINESIZE, f)) {
+    printf("%s\n", line);
+  }
   // IDK I got this from the internet.
   // while ((read = getline(&line, &len, f)) != -1) {
   //   printf("Retrieved line of length %zu:\n", read);

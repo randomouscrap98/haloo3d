@@ -79,8 +79,8 @@ inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
 
 // Get a value based on uv coordinates. Does not perform any smoothing
 inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u, mfloat_t v) {
-  uint16_t x = uint16_t(fb->width * u) & (fb->width - 1);
-  uint16_t y = uint16_t(fb->height * (1 - v)) & (fb->height - 1);
+  uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
+  uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
   return fb->buffer[x + y * fb->width];
 }
 
@@ -125,14 +125,14 @@ inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
   {                                                                            \
     ass = malloc(size);                                                        \
     if (ass == NULL) {                                                         \
-      dieerr("Could not allocate mem, size %ld", size);                        \
+      dieerr("Could not allocate mem, size %ld\n", size);                      \
     }                                                                          \
   }
 #define reallocordie(ass, size)                                                \
   {                                                                            \
     ass = realloc(ass, size);                                                  \
     if (ass == NULL) {                                                         \
-      dieerr("Could not reallocate mem, size %ld", size);                      \
+      dieerr("Could not reallocate mem, size %ld\n", size);                    \
     }                                                                          \
   }
 

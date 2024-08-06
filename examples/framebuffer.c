@@ -20,7 +20,7 @@ int main() {
   // Open a simple file and output the ppm to it
   FILE *f = fopen(OUTFILE, "w");
   if (f == NULL) {
-    dieerr("Can't open %s for writing", OUTFILE);
+    dieerr("Can't open %s for writing\n", OUTFILE);
   }
 
   haloo3d_writeppm(&fb, f);

@@ -12,7 +12,8 @@ void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height) {
 
 void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height) {
   if (!IS2POW(width) || !IS2POW(height)) {
-    dieerr("Texture width and height must be power of 2: %dX%d", width, height);
+    dieerr("Texture width and height must be power of 2: %dX%d\n", width,
+           height);
   }
   fb->width = width;
   fb->height = height;
