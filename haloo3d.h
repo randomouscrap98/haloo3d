@@ -99,6 +99,25 @@ static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
 }
 
 // ----------------------
+//   Camera
+// ----------------------
+
+typedef struct {
+  struct vec3 pos;
+  struct vec3 up;
+  mfloat_t pitch;
+  mfloat_t yaw;
+} haloo3d_camera;
+
+// Initialize the camera to look in a safe direction with
+// reasonable up/etc. You spawn at the origin
+void haloo3d_camera_init(haloo3d_camera *cam);
+
+// Calculate the look vector (returned), using it to set the given matrix view
+// to the "look_at" matrix
+struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view);
+
+// ----------------------
 //   Math
 // ----------------------
 

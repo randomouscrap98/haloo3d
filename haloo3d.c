@@ -3,6 +3,10 @@
 #include "haloo3d.h"
 #include "mathc.c"
 
+// ----------------------
+//  Framebuffer
+// ----------------------
+
 void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height) {
   fb->width = width;
   fb->height = height;
@@ -27,6 +31,35 @@ void haloo3d_fb_free(haloo3d_fb *fb) {
     free(fb->wbuffer);
   }
 }
+
+// ----------------------
+//   Camera
+// ----------------------
+
+void haloo3d_camera_init(haloo3d_camera *cam) {
+  // Initialize the camera to look in a safe direction with
+  // reasonable up/etc. You spawn at the origin
+  vec3(cam->up.v, 0.0, 0.0, 0.0);
+  vec3(cam->pos.v, 0.0, 1.0, 0.0);
+  cam->yaw = 0;
+  cam->pitch = MPI_2; // This is pi / 2
+}
+
+struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view) {
+  struct vec3 lookvec;
+  struct vec3 lookat;
+  // Use sphere equation to compute lookat vector through the two
+  // player-controled angles (pitch and yaw)
+  vec3(lookvec.v, MSIN(cam->pitch) * MSIN(cam->yaw), MCOS(cam->pitch),
+       MSIN(cam->pitch) * MCOS(cam->yaw));
+  vec3_add(lookat.v, cam->pos.v, lookvec.v);
+  mat4_look_at(view, cam->pos.v, lookat.v, cam->up.v);
+  return lookvec;
+}
+
+// ----------------------
+//  Rendering
+// ----------------------
 
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face) {
