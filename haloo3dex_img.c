@@ -3,13 +3,13 @@
 #include <stdio.h>
 
 void haloo3d_writeppm(haloo3d_fb *fb, FILE *f) {
-  fprintf(f, "P6 %d %d 255\n", fb->width, fb->height);
+  fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
   for (size_t i = 0; i < haloo3d_fb_size(fb); i++) {
     uint16_t bc = fb->buffer[i];
-    color[0] = H3DC_R(bc);
-    color[1] = H3DC_G(bc);
-    color[2] = H3DC_B(bc);
+    color[0] = (bc >> 8) & 0xF; // H3DC_R(bc);
+    color[1] = (bc >> 4) & 0xf; // H3DC_G(bc);
+    color[2] = bc & 0xf;        // H3DC_B(bc);
     fwrite(color, sizeof(uint8_t), 3, f);
   }
 }
@@ -28,7 +28,8 @@ void haloo3d_loadppm(FILE *f, haloo3d_fb *fb) {
   int i = 0;
   int c = 0;
   while ((c = fgetc(f)) != EOF) {
-    fb->buffer[i] |= 0xF000 | (uint16_t)((c / (float)depth) * 15) << (b * 4);
+    fb->buffer[i] |=
+        0xF000 | ((uint16_t)((c / (float)depth) * 15 + 0.5) << ((2 - b) * 4));
     b++;
     if (b == 3) { // We've read the full rgb
       i++;

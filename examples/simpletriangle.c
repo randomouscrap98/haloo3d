@@ -29,21 +29,27 @@ int main(int argc, char **argv) {
 
   // Need to create a face representing the triangle
   haloo3d_facef face;
-  face[0].pos.x =
-      10; // Remember to use correct winding order (counter-clockwise)
+  // Remember to use correct winding order (counter-clockwise).
+  // Also, you have to set w because I'm bad
+  face[0].pos.x = 10;
   face[0].pos.y = 10;
+  face[0].pos.w = 1;
   face[1].pos.x = 50;
   face[1].pos.y = 200;
-  face[2].pos.x = 100;
+  face[1].pos.w = 1;
+  face[2].pos.x = 200;
   face[2].pos.y = 100;
+  face[2].pos.w = 1;
   face[0].tex.x = 0;
   face[0].tex.y = 0;
   face[1].tex.x = 1;
   face[1].tex.y = 0;
-  face[1].tex.x = 1;
-  face[1].tex.y = 1;
+  face[2].tex.x = 1;
+  face[2].tex.y = 1;
 
-  haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
+  for (int i = 0; i < 1000; i++) {
+    haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
+  }
 
   // And now we should be able to save the framebuffer
   FILE *fo = fopen(OUTFILE, "w");

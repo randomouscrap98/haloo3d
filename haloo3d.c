@@ -72,7 +72,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   mfloat_t tiu2 = face[2].tex.x * tiz2;
   mfloat_t tiv0 = face[0].tex.y * tiz0;
   mfloat_t tiv1 = face[1].tex.y * tiz1;
-  mfloat_t tiv2 = face[1].tex.y * tiz2;
+  mfloat_t tiv2 = face[2].tex.y * tiz2;
 
   for (int y = boundsTL.y; y <= boundsBR.y; y++) {
     mint_t w0 = w0_y;

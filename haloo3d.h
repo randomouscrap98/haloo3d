@@ -16,6 +16,8 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+#define eprintf(...) fprintf(stderr, __VA_ARGS__);
+
 // ----------------------
 //   Vecs and such
 // ----------------------
@@ -124,6 +126,7 @@ static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
                                         mfloat_t v) {
   uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
   uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
+  // eprintf("%d %d | %f %f\n", x, y, u, v);
   return fb->buffer[x + y * fb->width];
 }
 
@@ -202,8 +205,6 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 // ----------------------
 // Some helper functions
 // ----------------------
-
-#define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
 // Die with an error (most calls in library will die on fatal error)
 #define dieerr(...)                                                            \
