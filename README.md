@@ -1,4 +1,4 @@
-# Haloop3d
+# Haloo3d
 
 A simple software renderer written in C which is made specifically for games
 I might want to make. It is not made to be highly configurable or to follow any

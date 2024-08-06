@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
   uint16_t posi;
   uint16_t texi;
+  uint16_t normi;
 } haloo3d_vertexi;
 
 // A face which is made up of indexes into the obj
@@ -41,8 +42,10 @@ typedef struct {
   uint16_t numvertices;
   uint16_t numvtextures;
   uint16_t numfaces;
+  uint16_t numvnormals;
   vec4f *vertices;
   vec3f *vtexture;
+  // vec3f *vnormal;
   haloo3d_facei *faces;
 } haloo3d_obj;
 
@@ -114,6 +117,8 @@ inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
 // Die with an error (most calls in library will die on fatal error)
 #define dieerr(...)                                                            \

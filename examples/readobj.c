@@ -19,9 +19,12 @@ int main(int argc, char **argv) {
   haloo3d_obj obj;
   haloo3d_obj_load(&obj, f);
 
+  printf("Read from %s\n", argv[1]);
+
   fclose(f);
 
-  printf("Read from %s\n", argv[1]);
+  printf("Found %d vertices, %d vtextures, %d faces\n", obj.numvertices,
+         obj.numvtextures, obj.numfaces);
 
   haloo3d_obj_free(&obj);
 }
