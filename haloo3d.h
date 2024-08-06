@@ -71,9 +71,9 @@ typedef struct {
 
 // "scale" a color by a given intensity. it WILL clip...
 static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
-  uint16_t r = H3DC_R(col) * scale;
-  uint16_t g = H3DC_G(col) * scale;
-  uint16_t b = H3DC_B(col) * scale;
+  uint16_t r = ((col >> 8) & 0xf) * scale;
+  uint16_t g = ((col >> 4) & 0xf) * scale;
+  uint16_t b = (col & 0xf) * scale;
   return H3DC_RGB(r, g, b);
 }
 

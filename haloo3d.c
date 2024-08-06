@@ -35,8 +35,10 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
       haloo3d_boundingbox_tl(face[0].pos.v, face[1].pos.v, face[2].pos.v);
   struct vec2 boundsBRf =
       haloo3d_boundingbox_br(face[0].pos.v, face[1].pos.v, face[2].pos.v);
-  // The triangle is fully out of bounds; we don't have a proper clipper, so
-  // this check still needs to be performed
+  // eprintf("Balls: %f,%f %f,%f\n", boundsTLf.x, boundsTLf.y, boundsBRf.x,
+  // boundsBRf.y);
+  //  The triangle is fully out of bounds; we don't have a proper clipper, so
+  //  this check still needs to be performed
   if (boundsBRf.y < 0 || boundsBRf.x < 0 || boundsTLf.x >= fb->width ||
       boundsTLf.y >= fb->height) {
     return;

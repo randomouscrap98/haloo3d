@@ -2,6 +2,8 @@
 #include "../haloo3dex_img.h"
 #include <stdio.h>
 
+#define WIDTH 640
+#define HEIGHT 480
 #define OUTFILE "simpletriangle.ppm"
 
 int main(int argc, char **argv) {
@@ -25,7 +27,8 @@ int main(int argc, char **argv) {
 
   // Now we create a framebuffer to draw the triangle into
   haloo3d_fb fb;
-  haloo3d_fb_init(&fb, 256, 256); // This also calls init so you have to free
+  haloo3d_fb_init(&fb, WIDTH, HEIGHT);
+  // This also calls init so you have to free
 
   // Need to create a face representing the triangle
   haloo3d_facef face;
@@ -47,7 +50,7 @@ int main(int argc, char **argv) {
   face[2].tex.x = 1;
   face[2].tex.y = 1;
 
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 10000; i++) {
     haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
   }
 
