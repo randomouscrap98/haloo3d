@@ -4,6 +4,7 @@
 
 #define WIDTH 640
 #define HEIGHT 480
+#define ITERATIONS 10000
 #define OUTFILE "simpletriangle.ppm"
 
 int main(int argc, char **argv) {
@@ -50,7 +51,7 @@ int main(int argc, char **argv) {
   face[2].tex.x = 1;
   face[2].tex.y = 1;
 
-  for (int i = 0; i < 10000; i++) {
+  for (int i = 0; i < ITERATIONS; i++) {
     haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
   }
 

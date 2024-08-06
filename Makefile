@@ -9,8 +9,9 @@
 
 # Compiler and other things
 LIBS = lib
-CC = gcc
-CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS) -lm
+CC = clang
+CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBS)
+# CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS) -lm
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
 
 # Define the object files for the static library
@@ -38,9 +39,9 @@ $(FULLOUT): haloo3d.a $(FULLOBJS)
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Rule to build any example file
+# Rule to build any example file. We ALWAYS need math so... link it
 examples/%.exe: examples/%.o $(FULLOUT)
-	$(CC) $(CFLAGS) -o $@ $< $(FULLOUT)
+	$(CC) $(CFLAGS) -o $@ $< $(FULLOUT) -lm
 
 # Rule to clean the build files
 clean:
