@@ -10,7 +10,7 @@
 # Compiler and other things
 LIBS = lib
 CC = gcc
-CFLAGS = -Wall -O2 -flto -I$(LIBS)
+CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS)
 
 # Define the object files for the static library
 STATICOBJS = $(LIBS)/mathc.o
@@ -40,11 +40,6 @@ $(FULLOUT): haloo3d.a $(FULLOBJS)
 # Rule to build any example file
 examples/%.exe: examples/%.o $(FULLOUT)
 	$(CC) $(CFLAGS) -o $@ $< $(FULLOUT)
-
-# # Rule to build main.o
-# main.o: main.c math.h
-# 	$(CC) $(CFLAGS) -c main.c
-
 
 # Rule to clean the build files
 clean:

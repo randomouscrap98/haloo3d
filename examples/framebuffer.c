@@ -27,5 +27,7 @@ int main() {
 
   fclose(f);
 
+  printf("Wrote to %s\n", OUTFILE);
+
   haloo3d_fb_free(&fb);
 }
