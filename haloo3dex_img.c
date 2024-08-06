@@ -1,6 +1,7 @@
 
 #include "haloo3dex_img.h"
 #include <stdio.h>
+#include <string.h>
 
 void haloo3d_writeppm(haloo3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
@@ -15,14 +16,36 @@ void haloo3d_writeppm(haloo3d_fb *fb, FILE *f) {
 }
 
 void haloo3d_loadppm(FILE *f, haloo3d_fb *fb) {
-  int depth;
-  int scanned = fscanf(f, "P6 %hu %hu %d", &fb->width, &fb->height, &depth);
-  if (scanned != 3) {
-    dieerr("Image file not in P6 format");
+  char tmp[4096];
+  // Must ALWAYS start with "P6"
+  int scanned = fscanf(f, "%4095s", tmp);
+  if (scanned != 1 || strcmp(tmp, "P6") != 0) {
+    dieerr("Image file not in P6 format (no P6 identifier)");
   }
-  haloo3d_fb_init_tex(fb, fb->width, fb->height);
+  // Now just pull three digits
+  int vals[3];
+  int numvals = 0;
+  while (numvals != 3) {
+    scanned = fscanf(f, "%d", vals + numvals);
+    if (scanned != 1) {
+      // This might just be a comment. Consume the rest of the line if so
+      scanned = fscanf(f, "%4095s", tmp);
+      if (scanned != 1 || tmp[0] != '#' || !fgets(tmp, 4095, f)) {
+        dieerr("Image file not in P6 format (unexpected header value: %s)",
+               tmp);
+      }
+    } else {
+      numvals++;
+    }
+  }
   // Consume one character, it's the whitespace after depth
   fgetc(f);
+  fb->width = vals[0];
+  fb->height = vals[1];
+  int depth = vals[2];
+  haloo3d_fb_init_tex(fb, fb->width, fb->height);
+  // Must set everything to 0
+  memset(fb->buffer, 0, haloo3d_fb_size(fb));
   // Now let's just read until the end!
   int b = 0;
   int i = 0;

@@ -1,6 +1,7 @@
 # Various files
 *.obj
 callgrind.*
+ignore/
 
 # Images
 *.ppm

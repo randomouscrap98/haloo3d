@@ -5,7 +5,8 @@
 
 #define WIDTH 512
 #define HEIGHT 512
-#define ITERATIONS 100
+#define ITERATIONS 1
+// 600
 #define OUTFILE "orthographic.ppm"
 
 void load_texture(haloo3d_fb *tex, char *filename) {
@@ -32,13 +33,13 @@ void load_object(haloo3d_obj *obj, char *filename) {
 
 void write_framebuffer(haloo3d_fb *fb, char *filename) {
   // And now we should be able to save the framebuffer
-  FILE *f = fopen(OUTFILE, "w");
+  FILE *f = fopen(filename, "w");
   if (f == NULL) {
-    dieerr("Can't open %s for writing\n", OUTFILE);
+    dieerr("Can't open %s for writing\n", filename);
   }
   haloo3d_writeppm(fb, f);
   fclose(f);
-  printf("Wrote to %s\n", OUTFILE);
+  printf("Wrote to %s\n", filename);
 }
 
 int main(int argc, char **argv) {
@@ -68,19 +69,17 @@ int main(int argc, char **argv) {
       haloo3d_obj_facef(&obj, obj.faces[fi], face);
       // Oh but our zbuffer is actually our w-buffer soooo
       haloo3d_facef_fixw(face);
-      // face[0].pos.w = -face[0].pos.z + 1;
-      // face[1].pos.w = -face[1].pos.z + 1;
-      // face[2].pos.w = -face[2].pos.z + 1;
-      // eprintf("orig: (%f,%f) (%f,%f) (%f,%f)\n", face[0].pos.x,
-      // face[0].pos.y,
-      //         face[1].pos.x, face[2].pos.y, face[2].pos.x, face[2].pos.y);
+      eprintf("orig: (%f,%f,%f,%f) (%f,%f,%f,%f) (%f,%f,%f,%f)\n",
+              face[0].pos.x, face[0].pos.y, face[0].pos.z, face[0].pos.w,
+              face[1].pos.x, face[1].pos.y, face[1].pos.z, face[1].pos.w,
+              face[2].pos.x, face[2].pos.y, face[2].pos.z, face[2].pos.w);
       // Orthographic projection is literally just draw each point without depth
       haloo3d_viewport_into(face[0].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[1].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[2].pos.v, WIDTH, HEIGHT);
-      if (face[0].pos.z > 0 || face[1].pos.z > 0 || face[2].pos.z > 0) {
-        continue;
-      }
+      // if (face[0].pos.z > 0 || face[1].pos.z > 0 || face[2].pos.z > 0) {
+      //   continue;
+      // }
       // eprintf("screen: (%f,%f) (%f,%f) (%f,%f)\n", face[0].pos.x,
       // face[0].pos.y,
       //         face[1].pos.x, face[2].pos.y, face[2].pos.x, face[2].pos.y);

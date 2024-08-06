@@ -75,9 +75,9 @@ static inline void haloo3d_obj_facef(haloo3d_obj *obj, haloo3d_facei face,
 // in the triangle renderer, which expects w to be some value relating to
 // perspective. TODO: eventually just fix z so it works!
 static inline void haloo3d_facef_fixw(haloo3d_facef face) {
-  face[0].pos.w = face[0].pos.z + 1;
-  face[1].pos.w = face[1].pos.z + 1;
-  face[2].pos.w = face[2].pos.z + 1;
+  face[0].pos.w = -face[0].pos.z + 1;
+  face[1].pos.w = -face[1].pos.z + 1;
+  face[2].pos.w = -face[2].pos.z + 1;
 }
 
 // ----------------------
@@ -169,10 +169,12 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
   // Apparently memset isn't allowed, and the compiler will optimize this
   // for us?
-  const size_t len = haloo3d_fb_size(fb);
-  float *const db = fb->wbuffer;
-  for (size_t i = 0; i < len; i++) {
-    db[i] = 65536; // Actual value doesn't matter, so long as it's large
+  const int len = haloo3d_fb_size(fb);
+  mfloat_t *const db = fb->wbuffer;
+  for (int i = 0; i < len; i++) {
+    // We use an inverse depth buffer, so larger values (1/z) are actually
+    // closer
+    db[i] = 0;
   }
 }
 
