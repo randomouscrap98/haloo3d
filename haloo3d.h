@@ -3,11 +3,18 @@
 #ifndef HALOO3D_H
 #define HALOO3D_H
 
+// We want to use the unions for simplicity
+#define MATHC_USE_UNIONS
+
 #include "mathc.h"
 #include <float.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define IS2POW(x) (!(x & (x - 1)) && x)
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 // ----------------------
 //   Vecs and such
@@ -17,13 +24,13 @@
 #define H3D_OBJ_MAXVERTICES 8192
 #define H3D_OBJ_MAXFACES 8192
 
-typedef mfloat_t vec4f[4];
-typedef mfloat_t vec3f[3];
+typedef mfloat_t hvec4f[4];
+typedef mfloat_t hvec3f[3];
 
 // A full vertex with all information inside
 typedef struct {
-  vec4f pos;
-  vec3f tex;
+  struct vec4 pos;
+  struct vec3 tex;
 } haloo3d_vertexf;
 
 // A vertex which is made up of indexes into the obj
@@ -35,6 +42,7 @@ typedef struct {
 
 // A face which is made up of indexes into the obj
 typedef haloo3d_vertexi haloo3d_facei[3];
+typedef haloo3d_vertexf haloo3d_facef[3];
 
 // An object definition, where every face is a simple
 // index into the internal structures
@@ -43,8 +51,8 @@ typedef struct {
   uint16_t numvtextures;
   uint16_t numfaces;
   uint16_t numvnormals;
-  vec4f *vertices;
-  vec3f *vtexture;
+  struct vec4 *vertices;
+  struct vec3 *vtexture;
   // vec3f *vnormal;
   haloo3d_facei *faces;
 } haloo3d_obj;
@@ -56,6 +64,29 @@ typedef struct {
 #define H3DC_R(c) ((((c) >> 4) & 0xF0) | 0x07)
 #define H3DC_G(c) (((c) & 0xF0) | 0x07)
 #define H3DC_B(c) ((((c) << 4) & 0xF0) | 0x07)
+#define H3DC_RGB(r, g, b)                                                      \
+  (0xF000 | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
+
+// "scale" a color by a given intensity. it WILL clip...
+inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
+  uint16_t r = H3DC_R(col) * scale;
+  uint16_t g = H3DC_G(col) * scale;
+  uint16_t b = H3DC_B(col) * scale;
+  return H3DC_RGB(r, g, b);
+}
+
+// ----------------------
+//   Math
+// ----------------------
+
+inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
+  //(v *Vec3f) ViewportSelf(width, height int) {
+  v[0] = (v[0] + 1.0) / 2.0 * width;
+  v[1] = (1.0 - (v[1] + 1.0)) / 2.0 * height;
+  // v.X = (v.X + 1) / 2 * float32(width)
+  // v.Y = (1 - (v.Y+1)/2) * float32(height)
+  //  Don't touch Z or whatever
+}
 
 // ----------------------
 //  Framebuffer
@@ -75,9 +106,17 @@ inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
   return fb->buffer[x + y * fb->width];
 }
 
+inline uint16_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
+  return fb->wbuffer[x + y * fb->width];
+}
+
 // Set a value in the framebuffer at the given index
 inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
   fb->buffer[x + y * fb->width] = v;
+}
+
+inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
+  fb->wbuffer[x + y * fb->width] = v;
 }
 
 // Get a value based on uv coordinates. Does not perform any smoothing
@@ -111,12 +150,52 @@ inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
 }
 
 // ----------------------
-// Some helper functions
+//  Rendering
 // ----------------------
 
-#define IS2POW(x) (!(x & (x - 1)) && x)
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+// Top left corner of bounding box, but only x and y are computed
+inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
+                                          mfloat_t *v2) {
+  return {MIN(MIN(v0[0], v1[0]), v2[0]), MIN(MIN(v0[1], v1[1]), v2[1])};
+}
+
+// Bottom right corner of bounding box, but only x and y are computed
+inline struct vec2 haloo3d_boundingbox_br(mfloat_t *v0, mfloat_t *v1,
+                                          mfloat_t *v2) {
+  return {MAX(MAX(v0[0], v1[0]), v2[0]), MAX(MAX(v0[1], v1[1]), v2[1])};
+}
+
+// Edge function for a line between points v0 and v1. Positive if on the
+// "right" side (counter-clockwise winding)
+inline mfloat_t haloo3d_edgefunc(mfloat_t *v0, mfloat_t *v1, mfloat_t *p) {
+  return (p[0] - v0[0]) * (v1[1] - v0[1]) - (p[1] - v0[1]) * (v1[0] - v0[0]);
+}
+
+// Calculate the increment amount in x and y direction for line between two
+// given points
+inline struct vec2 haloo3d_edgeinc(mfloat_t *v0, mfloat_t *v1) {
+  return {(v1[1] - v0[1]), -(v1[0] - v0[0])};
+}
+
+// Edge function for a line between points v0 and v1. Positive if on the
+// "right" side (counter-clockwise winding)
+inline mint_t haloo3d_edgefunci(mint_t *v0, mint_t *v1, mint_t *p) {
+  return (p[0] - v0[0]) * (v1[1] - v0[1]) - (p[1] - v0[1]) * (v1[0] - v0[0]);
+}
+
+// Calculate the increment amount in x and y direction for line between two
+// given points
+inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
+  return {(v1[1] - v0[1]), -(v1[0] - v0[0])};
+}
+
+// Draw a textured triangle into the given framebuffer using the given face
+void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
+                              mfloat_t intensity, haloo3d_facef face);
+
+// ----------------------
+// Some helper functions
+// ----------------------
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
