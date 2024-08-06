@@ -59,6 +59,27 @@ typedef struct {
   haloo3d_facei *faces;
 } haloo3d_obj;
 
+// Generate a "static" face independent of the obj, useful for functions which
+// work on faces rather than triangles
+static inline void haloo3d_obj_facef(haloo3d_obj *obj, haloo3d_facei face,
+                                     haloo3d_facef out) {
+  out[0].pos = obj->vertices[face[0].posi];
+  out[1].pos = obj->vertices[face[1].posi];
+  out[2].pos = obj->vertices[face[2].posi];
+  out[0].tex = obj->vtexture[face[0].texi];
+  out[1].tex = obj->vtexture[face[1].texi];
+  out[2].tex = obj->vtexture[face[2].texi];
+}
+
+// If you're not using homogenous coordinates, this will fix depth issues
+// in the triangle renderer, which expects w to be some value relating to
+// perspective. TODO: eventually just fix z so it works!
+static inline void haloo3d_facef_fixw(haloo3d_facef face) {
+  face[0].pos.w = face[0].pos.z + 1;
+  face[1].pos.w = face[1].pos.z + 1;
+  face[2].pos.w = face[2].pos.z + 1;
+}
+
 // ----------------------
 //   Colors
 // ----------------------
@@ -84,7 +105,7 @@ static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   //(v *Vec3f) ViewportSelf(width, height int) {
   v[0] = (v[0] + 1.0) / 2.0 * width;
-  v[1] = (1.0 - (v[1] + 1.0)) / 2.0 * height;
+  v[1] = (1.0 - ((v[1] + 1.0) / 2.0)) * height;
   // v.X = (v.X + 1) / 2 * float32(width)
   // v.Y = (1 - (v.Y+1)/2) * float32(height)
   //  Don't touch Z or whatever
@@ -148,10 +169,10 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
   // Apparently memset isn't allowed, and the compiler will optimize this
   // for us?
-  const size_t len = sizeof(float) * haloo3d_fb_size(fb);
+  const size_t len = haloo3d_fb_size(fb);
   float *const db = fb->wbuffer;
   for (size_t i = 0; i < len; i++) {
-    db[i] = FLT_MAX; // Actual value doesn't matter, so long as it's large
+    db[i] = 65536; // Actual value doesn't matter, so long as it's large
   }
 }
 

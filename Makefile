@@ -9,7 +9,7 @@
 
 # Compiler and other things
 LIBS = lib
-CC = clang
+CC = gcc
 CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBS)
 # CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS) -lm
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
