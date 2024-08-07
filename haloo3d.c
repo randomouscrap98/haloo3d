@@ -1,7 +1,18 @@
 // haloopdy 2024
 
 #include "haloo3d.h"
-#include "mathc.c"
+
+// ----------------------
+//   Vecs and such
+// ----------------------
+
+int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix,
+                          struct vec4 *out) {
+  for (int i = 0; i < obj->numvertices; i++) {
+    haloo3d_vec4_multmat_into(obj->vertices + i, matrix, out + i);
+  }
+  return obj->numvertices;
+}
 
 // ----------------------
 //  Framebuffer
@@ -39,8 +50,8 @@ void haloo3d_fb_free(haloo3d_fb *fb) {
 void haloo3d_camera_init(haloo3d_camera *cam) {
   // Initialize the camera to look in a safe direction with
   // reasonable up/etc. You spawn at the origin
-  vec3(cam->up.v, 0.0, 0.0, 0.0);
-  vec3(cam->pos.v, 0.0, 1.0, 0.0);
+  vec3(cam->up.v, 0.0, 1.0, 0.0);
+  vec3(cam->pos.v, 0.0, 0.0, 0.0);
   cam->yaw = 0;
   cam->pitch = MPI_2; // This is pi / 2
 }
@@ -51,8 +62,12 @@ struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view) {
   // Use sphere equation to compute lookat vector through the two
   // player-controled angles (pitch and yaw)
   vec3(lookvec.v, MSIN(cam->pitch) * MSIN(cam->yaw), MCOS(cam->pitch),
-       MSIN(cam->pitch) * MCOS(cam->yaw));
+       -MSIN(cam->pitch) * MCOS(cam->yaw));
   vec3_add(lookat.v, cam->pos.v, lookvec.v);
+  eprintf("CAMERAPOS: %f,%f,%f\n", cam->pos.x, cam->pos.y, cam->pos.z);
+  eprintf("CAMERADIR: %f,%f,%f\n", lookvec.x, lookvec.y, lookvec.z);
+  eprintf("LOOKAT: %f,%f,%f\n", lookat.x, lookat.y, lookat.z);
+  eprintf("UP: %f,%f,%f\n", cam->up.x, cam->up.y, cam->up.z);
   mat4_look_at(view, cam->pos.v, lookat.v, cam->up.v);
   return lookvec;
 }
@@ -145,4 +160,27 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
     w1_y += w1_i.y;
     w2_y += w2_i.y;
   }
+}
+
+int haloo3d_facef_finalize(haloo3d_facef face) {
+  // void haloo3d_conditional_face(struct vec4 * positions, struct vec3 *
+  // vtcoords, haloo3d_facef * out) { sc []HVec3f, tx []Vec3f, out []Facef)
+  // []Facef { var f Facef
+  // We HAVE to divide points first BEFORE checking the edge function
+  haloo3d_vec4_conventional(&face[0].pos); // face[0].pos
+  haloo3d_vec4_conventional(&face[1].pos); // face[0].pos
+  haloo3d_vec4_conventional(&face[2].pos); // face[0].pos
+  return haloo3d_edgefunc(face[0].pos.v, face[1].pos.v, face[2].pos.v) <= 0;
+
+  // for (int i = 0; i < 3; := range 3 {
+  // 	f[i].Pos = sc[i].MakeConventional()
+  // 	f[i].Tex = tx[i]
+  // 	f[i].W = sc[i].W
+  // }
+  // Backface culling: no need to do anything with triangles facing the wrong
+  // way if EdgeFunction(f[0].Pos, f[1].Pos, f[2].Pos) <= 0 { 	out =
+  // append(out, f)
+  // }
+
+  // return out
 }

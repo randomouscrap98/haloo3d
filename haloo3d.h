@@ -12,6 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// The maximum amount of faces produced by clipping,
+// though realistically this is never reached (also I don't
+// even know if that's correct)
+#define H3D_FACEF_MAXCLIP 18
+
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -71,6 +76,19 @@ static inline void haloo3d_obj_facef(haloo3d_obj *obj, haloo3d_facei face,
   out[2].tex = obj->vtexture[face[2].texi];
 }
 
+// Generate a "static" face from precalced vertices and vtexture info,
+// useful for functions which work on faces rather than triangles
+static inline void haloo3d_make_facef(haloo3d_facei face, struct vec4 *verts,
+                                      struct vec3 *vtextures,
+                                      haloo3d_facef out) {
+  out[0].pos = verts[face[0].posi];
+  out[1].pos = verts[face[1].posi];
+  out[2].pos = verts[face[2].posi];
+  out[0].tex = vtextures[face[0].texi];
+  out[1].tex = vtextures[face[1].texi];
+  out[2].tex = vtextures[face[2].texi];
+}
+
 // If you're not using homogenous coordinates, this will fix depth issues
 // in the triangle renderer, which expects w to be some value relating to
 // perspective. TODO: eventually just fix z so it works!
@@ -79,6 +97,11 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
   face[1].pos.w = -face[1].pos.z + 1;
   face[2].pos.w = -face[2].pos.z + 1;
 }
+
+// Given an object, precalc all the vertices by multiplying with the given
+// perspective (or otherwise) matrix. It's up to you to make sure the
+// out array has enough space to store all the vertices
+int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix, struct vec4 *out);
 
 // ----------------------
 //   Colors
@@ -121,6 +144,7 @@ struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view);
 //   Math
 // ----------------------
 
+// Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   //(v *Vec3f) ViewportSelf(width, height int) {
   v[0] = (v[0] + 1.0) / 2.0 * width;
@@ -129,6 +153,59 @@ static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   // v.Y = (1 - (v.Y+1)/2) * float32(height)
   //  Don't touch Z or whatever
 }
+
+// Convert all points in the given face to be rendered inside the given
+// viewport.
+static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
+                                               int height) {
+  haloo3d_viewport_into(face[0].pos.v, width, height);
+  haloo3d_viewport_into(face[1].pos.v, width, height);
+  haloo3d_viewport_into(face[2].pos.v, width, height);
+}
+
+// Divide x, y, and z by the w value. Preserves the original w value!!
+// This is often the last step of perspective (perspective divide)
+static inline void haloo3d_vec4_conventional(struct vec4 *v) {
+  if (v->w != 1) {
+    v->x /= v->w;
+    v->y /= v->w;
+    v->z /= v->w;
+  }
+}
+
+// Multiply the given point by the given matrix, returning a new point
+static inline struct vec4 haloo3d_vec4_multmat(struct vec4 *v, mfloat_t *m) {
+  struct vec4 result;
+  result.x = v->x * m[0] + v->y * m[4] + v->z * m[8] + m[12];
+  result.y = v->x * m[1] + v->y * m[5] + v->z * m[9] + m[13];
+  result.z = v->x * m[2] + v->y * m[6] + v->z * m[10] + m[14];
+  result.w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
+  return result;
+}
+
+// Multiply the given point by the given matrix, storing the result in another
+// vec
+static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
+                                             struct vec4 *out) {
+  out->x = v->x * m[0] + v->y * m[4] + v->z * m[8] + m[12];
+  out->y = v->x * m[1] + v->y * m[5] + v->z * m[9] + m[13];
+  out->z = v->x * m[2] + v->y * m[6] + v->z * m[10] + m[14];
+  out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
+}
+
+// // Multiply the given point by our vector. Remember this is row-major order.
+
+// // Point is NOT scaled back
+// func (m *Mat44f) MultiplyPoint3(p Vec3f) HVec3f {
+// 	var out HVec3f
+// 	// We hope very much that Go will optimize the function calls for us,
+// 	// along with computing the constants.
+// 	out.Pos.X = p.X*m.Get(0, 0) + p.Y*m.Get(0, 1) + p.Z*m.Get(0, 2) +
+// m.Get(0, 3) 	out.Pos.Y = p.X*m.Get(1, 0) + p.Y*m.Get(1, 1) + p.Z*m.Get(1, 2)
+// + m.Get(1, 3) 	out.Pos.Z = p.X*m.Get(2, 0) + p.Y*m.Get(2, 1) +
+// p.Z*m.Get(2, 2) + m.Get(2, 3) 	out.W = p.X*m.Get(3, 0) + p.Y*m.Get(3,
+// 1) + p.Z*m.Get(3, 2) + m.Get(3, 3) 	return out
+// }
 
 // ----------------------
 //  Framebuffer
@@ -243,6 +320,10 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 // Draw a textured triangle into the given framebuffer using the given face
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face);
+
+// Finalize a face, fixing xyz/w for all vertices and returning
+// whether or not the triangle will be drawn.
+int haloo3d_facef_finalize(haloo3d_facef face);
 
 // ----------------------
 // Some helper functions

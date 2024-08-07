@@ -1,15 +1,16 @@
 #include "../haloo3d.h"
 #include "../haloo3dex_img.h"
 #include "../haloo3dex_obj.h"
+#include "mathc.h"
 #include <stdio.h>
 
 #define WIDTH 640
 #define HEIGHT 480
-#define FOV 90.0
+#define FOV 60.0
 #define ASPECT ((float)WIDTH / HEIGHT)
 #define NEARCLIP 0.01
 #define FARCLIP 100.0
-#define ITERATIONS 600
+#define ITERATIONS 1
 #define OUTFILE "perspective.ppm"
 
 void load_texture(haloo3d_fb *tex, char *filename) {
@@ -62,28 +63,60 @@ int main(int argc, char **argv) {
   haloo3d_fb fb;
   haloo3d_fb_init(&fb, WIDTH, HEIGHT);
 
-  haloo3d_facef face;
-
   // Create the perspective matrix, which doesn't change
   mfloat_t perspective[MAT4_SIZE];
   mat4_perspective(perspective, to_radians(FOV), ASPECT, NEARCLIP, FARCLIP);
+
+  // Create the camera matrix, which DOES change (or it would if we had user
+  // input)
+  mfloat_t matrixcam[MAT4_SIZE];
+  haloo3d_camera camera;
+  haloo3d_camera_init(&camera);
+  // Move the camera back
+  camera.pos.z += 5.4;
+
+  // Where the final matrix for 3d goes
+  mfloat_t matrix3d[MAT4_SIZE];
+
+  // Face storage
+  haloo3d_facef face;
+
+  // Where our precalculated vertices go
+  struct vec4 *vert_precalc;
+  mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
+
+  int skipped = 0;
 
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
     haloo3d_fb_cleardepth(&fb);
+    // To simulate what would actually happen per frame, let's calc the
+    // camera each time
+    haloo3d_camera_calclook(&camera, matrixcam);
+    // Calculate the actual translation matrix
+    mat4_inverse(matrix3d, matrixcam);
+    mat4_multiply(matrix3d, matrix3d, perspective);
+    // Precalc the vertices from our matrix
+    haloo3d_precalc_verts(&obj, matrix3d, vert_precalc);
     for (int fi = 0; fi < obj.numfaces; fi++) {
-      haloo3d_obj_facef(&obj, obj.faces[fi], face);
-      // Oh but our zbuffer is actually our w-buffer soooo
-      haloo3d_facef_fixw(face);
-      // Orthographic projection is literally just draw each point without depth
-      haloo3d_viewport_into(face[0].pos.v, WIDTH, HEIGHT);
-      haloo3d_viewport_into(face[1].pos.v, WIDTH, HEIGHT);
-      haloo3d_viewport_into(face[2].pos.v, WIDTH, HEIGHT);
+      // In this program, we're not going to do anything fancy like clipping,
+      // we're just going to perspective divide right out the gate
+      haloo3d_make_facef(obj.faces[fi], vert_precalc, obj.vtexture, face);
+      if (!haloo3d_facef_finalize(face)) {
+        // eprintf("SKIPPING TRI: %d\n", fi);
+        skipped++;
+        continue;
+      }
+      // haloo3d_facef_fixw(face);
+      //  We still have to convert the points into the view
+      haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
       haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
     }
   }
 
+  eprintf("SKIPPED TOTAL: %d FACES: %d VERTS: %d\n", skipped, obj.numfaces,
+          obj.numvertices);
   write_framebuffer(&fb, OUTFILE);
 
   haloo3d_obj_free(&obj);

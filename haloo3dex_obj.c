@@ -11,6 +11,7 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   obj->numfaces = 0;
   obj->numvertices = 0;
   obj->numvtextures = 0;
+  obj->numvnormals = 0;
   // NOTE: to make life easier. this allocates a LOT of memory
   // to start with! It then frees it after so the obj is as small as possible.
   mallocordie(obj->faces, sizeof(haloo3d_facei) * H3D_OBJ_MAXFACES);
@@ -31,7 +32,7 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
     next += strlen(tmp);
     if (strcmp(tmp, "v") == 0) {
       if (obj->numvertices >= H3D_OBJ_MAXVERTICES) {
-        eprintf("Too many object vertices!\n");
+        eprintf("Too many object vertices (%d)!\n", obj->numvertices);
         continue;
       }
       // v can have 3 or 4 floats. We try to read 4 floats
@@ -44,7 +45,7 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
       obj->numvertices++;
     } else if (strcmp(tmp, "vt") == 0) {
       if (obj->numvtextures >= H3D_OBJ_MAXVERTICES) {
-        eprintf("Too many object vtexture points!\n");
+        eprintf("Too many object vtexture points (%d)!\n", obj->numvtextures);
         continue;
       }
       // v can have 1 to 3 floats. Read all, and it's fine if we don't get them
@@ -59,7 +60,7 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
       obj->numvtextures++;
     } else if (strcmp(tmp, "vn") == 0) {
       if (obj->numvnormals >= H3D_OBJ_MAXVERTICES) {
-        eprintf("Too many object vnormal points!\n");
+        eprintf("Too many object vnormal points (%d)!\n", obj->numvnormals);
         continue;
       }
       // vn must have 3 floats
@@ -72,8 +73,8 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
       // For now, only track them. I don't want to waste memory
       obj->numvnormals++;
     } else if (strcmp(tmp, "f") == 0) {
-      if (obj->numvnormals >= H3D_OBJ_MAXFACES) {
-        eprintf("Too many object faces!\n");
+      if (obj->numfaces >= H3D_OBJ_MAXFACES) {
+        eprintf("Too many object faces! (%d)\n", obj->numfaces);
         continue;
       }
       haloo3d_facei *f = obj->faces + obj->numfaces;

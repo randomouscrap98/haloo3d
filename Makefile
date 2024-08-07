@@ -48,7 +48,7 @@ $(BUILDD)/%.o: %.c %.h
 
 # Rule to build any example file. We ALWAYS need math so... link it
 examples/%.exe: examples/%.o $(FULLOUT)
-	$(CC) $(CFLAGS) -o $@ $< $(FULLOUT) -lm
+	$(CC) $(CFLAGS) $< $(FULLOUT) -o $@ -lm
 
 # Rule to clean the build files
 clean:
