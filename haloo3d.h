@@ -121,6 +121,14 @@ static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
   return H3DC_RGB(r, g, b);
 }
 
+// "scale" a color by a discrete intensity from 0 to 256. 256 is 1.0
+static inline uint16_t haloo3d_col_scalei(uint16_t col, uint16_t scale) {
+  uint16_t r = (((col >> 8) & 0xf) * scale) >> 8;
+  uint16_t g = (((col >> 4) & 0xf) * scale) >> 8;
+  uint16_t b = ((col & 0xf) * scale) >> 8;
+  return H3DC_RGB(r, g, b);
+}
+
 // ----------------------
 //   Camera
 // ----------------------
@@ -202,6 +210,21 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
   out->z = v->x * m[2] + v->y * m[6] + v->z * m[10] + m[14];
   out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
 }
+
+// calculate the normal for the given face
+static inline void haloo3d_facef_normal(haloo3d_facef face, mfloat_t *normal) {
+  mfloat_t lt[VEC3_SIZE * 2];
+  // struct vec3 l1, l2;
+  vec3_subtract(lt, face[2].pos.v, face[0].pos.v);
+  vec3_subtract(lt + VEC3_SIZE, face[1].pos.v, face[0].pos.v);
+  vec3_cross(normal, lt, lt + VEC3_SIZE);
+  vec3_normalize(normal, normal);
+}
+
+// Calculate simple light intensity for the given face when the light is facing
+// the given way.
+mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
+                            haloo3d_facef face);
 
 // ----------------------
 //  Framebuffer

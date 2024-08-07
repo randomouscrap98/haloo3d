@@ -4,6 +4,8 @@
 #include "mathc.h"
 #include <stdio.h>
 
+#define DOLIGHTING
+
 #define WIDTH 640
 #define HEIGHT 480
 #define FOV 60.0
@@ -11,6 +13,8 @@
 #define NEARCLIP 0.01
 #define FARCLIP 100.0
 #define ITERATIONS 600
+#define LIGHTANG -MPI / 4.0
+#define MINLIGHT 0.5
 #define OUTFILE "perspective.ppm"
 
 void load_texture(haloo3d_fb *tex, char *filename) {
@@ -79,11 +83,15 @@ int main(int argc, char **argv) {
   mfloat_t matrix3d[MAT4_SIZE];
 
   // Face storage
-  haloo3d_facef face;
+  haloo3d_facef face, baseface;
 
   // Where our precalculated vertices go
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
+
+  // We want to test simple lighting too
+  struct vec3 light;
+  vec3(light.v, 0, -MCOS(LIGHTANG), MSIN(LIGHTANG));
 
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
@@ -106,9 +114,15 @@ int main(int argc, char **argv) {
       if (!haloo3d_facef_finalize(face)) {
         continue;
       }
+#ifdef DOLIGHTING
+      haloo3d_obj_facef(&obj, obj.faces[fi], baseface);
+      mfloat_t intensity = haloo3d_calc_light(light.v, MINLIGHT, baseface);
+#else
+      mfloat_t intensity = 1.0;
+#endif
       //   We still have to convert the points into the view
       haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
-      haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
+      haloo3d_texturedtriangle(&fb, &tex, intensity, face);
     }
   }
 

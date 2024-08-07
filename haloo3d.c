@@ -15,6 +15,20 @@ int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix,
   return obj->numvertices;
 }
 
+// TODO: optimize whole light calc (including normals) to use mostly integers
+mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
+                            haloo3d_facef face) {
+  mfloat_t lnorm[VEC3_SIZE];
+  haloo3d_facef_normal(face, lnorm);
+  mfloat_t intensity =
+      light[0] * lnorm[0] + light[1] * lnorm[1] + light[2] * lnorm[2];
+  if (intensity < 0) {
+    return minlight; // Don't just not draw the triangle: it should be black
+  } else {
+    return (intensity + minlight) / (1 + minlight);
+  }
+}
+
 // ----------------------
 //  Framebuffer
 // ----------------------
@@ -169,6 +183,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   const int xend = boundsBR.x;
   const int ystart = boundsTL.y;
   const int xstart = boundsTL.x;
+  const uint16_t scale = intensity * 256;
 
   for (int y = ystart; y <= yend; y++) {
     mint_t w0 = w0_y;
@@ -188,7 +203,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
           uint16_t c = haloo3d_fb_getuv(
               texture, (w0a * tiu0 + w1a * tiu1 + w2a * tiu2) * pz,
               (w0a * tiv0 + w1a * tiv1 + w2a * tiv2) * pz);
-          haloo3d_fb_set(fb, x, y, c); // haloo3d_col_scale(c, intensity));
+          haloo3d_fb_set(fb, x, y, haloo3d_col_scalei(c, scale));
         }
       }
       w0 += w0_i.x;
