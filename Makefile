@@ -53,6 +53,8 @@ examples/%.exe: examples/%.o $(FULLOUT)
 # Rule to clean the build files
 clean:
 	rm -rf $(BUILDD)
+	find examples/ -name "*.exe" -type f -delete
+
 	# find . -name "*.o" -type f -delete
 	# find . -name "*.a" -type f -delete
 	# find . -name "a.out" -type f -delete

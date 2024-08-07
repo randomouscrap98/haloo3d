@@ -203,22 +203,6 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
   out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
 }
 
-// // Multiply the given point by our vector. Remember this is row-major
-// order.
-
-// // Point is NOT scaled back
-// func (m *Mat44f) MultiplyPoint3(p Vec3f) HVec3f {
-// 	var out HVec3f
-// 	// We hope very much that Go will optimize the function calls for us,
-// 	// along with computing the constants.
-// 	out.Pos.X = p.X*m.Get(0, 0) + p.Y*m.Get(0, 1) + p.Z*m.Get(0, 2) +
-// m.Get(0, 3) 	out.Pos.Y = p.X*m.Get(1, 0) + p.Y*m.Get(1, 1) +
-// p.Z*m.Get(1, 2)
-// + m.Get(1, 3) 	out.Pos.Z = p.X*m.Get(2, 0) + p.Y*m.Get(2, 1) +
-// p.Z*m.Get(2, 2) + m.Get(2, 3) 	out.W = p.X*m.Get(3, 0) + p.Y*m.Get(3,
-// 1) + p.Z*m.Get(3, 2) + m.Get(3, 3) 	return out
-// }
-
 // ----------------------
 //  Framebuffer
 // ----------------------

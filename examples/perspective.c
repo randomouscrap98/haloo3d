@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
   // Create the perspective matrix, which doesn't change
   mfloat_t perspective[MAT4_SIZE];
   haloo3d_perspective(perspective, FOV, ASPECT, NEARCLIP, FARCLIP);
-  // mat4_perspective(perspective, to_radians(FOV), ASPECT, NEARCLIP, FARCLIP);
 
   // Create the camera matrix, which DOES change (or it would if we had user
   // input)
@@ -86,8 +85,6 @@ int main(int argc, char **argv) {
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
 
-  int skipped = 0;
-
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
@@ -95,19 +92,11 @@ int main(int argc, char **argv) {
     // To simulate what would actually happen per frame, let's calc the
     // camera each time
     haloo3d_camera_calclook(&camera, matrixcam);
-    // eprintf("MATRIXCAM:\n");
-    // printmatrix(matrixcam);
     //  Calculate the actual translation matrix
     mat4_inverse(matrix3d, matrixcam);
-    // eprintf("INVERSE MCAM:\n");
-    // printmatrix(matrix3d);
     //  NOTE: WE HAVE TO FLIP IT BECAUSE THE LIBRARY ASSUMES A DIFFERENT STORAGE
     //  ORDER THAN THE ONE I'M USING
     mat4_multiply(matrix3d, perspective, matrix3d); // matrix3d, perspective);
-    // eprintf("PERSPECTIVE:\n");
-    // printmatrix(perspective);
-    // eprintf("FINAL:\n");
-    // printmatrix(matrix3d);
     //  Precalc the vertices from our matrix
     haloo3d_precalc_verts(&obj, matrix3d, vert_precalc);
     for (int fi = 0; fi < obj.numfaces; fi++) {
@@ -115,19 +104,14 @@ int main(int argc, char **argv) {
       // we're just going to perspective divide right out the gate
       haloo3d_make_facef(obj.faces[fi], vert_precalc, obj.vtexture, face);
       if (!haloo3d_facef_finalize(face)) {
-        // eprintf("SKIPPING TRI: %d\n", fi);
-        // skipped++;
         continue;
       }
-      // haloo3d_facef_fixw(face);
       //   We still have to convert the points into the view
       haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
       haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
     }
   }
 
-  // eprintf("SKIPPED TOTAL: %d FACES: %d VERTS: %d\n", skipped, obj.numfaces,
-  // obj.numvertices);
   write_framebuffer(&fb, OUTFILE);
 
   haloo3d_obj_free(&obj);
