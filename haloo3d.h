@@ -140,6 +140,16 @@ void haloo3d_camera_init(haloo3d_camera *cam);
 // to the "look_at" matrix
 struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view);
 
+// My personal lookat function, which does not perform the inverse or anything.
+// Because of this, you can use it to orient models too
+void haloo3d_my_lookat(mfloat_t *view, mfloat_t *from, mfloat_t *to,
+                       mfloat_t *up);
+
+// My personal perspective projection function. For some reason, it produces
+// different results than the mathc libary's
+void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
+                         mfloat_t near, mfloat_t far);
+
 // ----------------------
 //   Math
 // ----------------------
@@ -193,7 +203,8 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
   out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
 }
 
-// // Multiply the given point by our vector. Remember this is row-major order.
+// // Multiply the given point by our vector. Remember this is row-major
+// order.
 
 // // Point is NOT scaled back
 // func (m *Mat44f) MultiplyPoint3(p Vec3f) HVec3f {
@@ -201,7 +212,8 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
 // 	// We hope very much that Go will optimize the function calls for us,
 // 	// along with computing the constants.
 // 	out.Pos.X = p.X*m.Get(0, 0) + p.Y*m.Get(0, 1) + p.Z*m.Get(0, 2) +
-// m.Get(0, 3) 	out.Pos.Y = p.X*m.Get(1, 0) + p.Y*m.Get(1, 1) + p.Z*m.Get(1, 2)
+// m.Get(0, 3) 	out.Pos.Y = p.X*m.Get(1, 0) + p.Y*m.Get(1, 1) +
+// p.Z*m.Get(1, 2)
 // + m.Get(1, 3) 	out.Pos.Z = p.X*m.Get(2, 0) + p.Y*m.Get(2, 1) +
 // p.Z*m.Get(2, 2) + m.Get(2, 3) 	out.W = p.X*m.Get(3, 0) + p.Y*m.Get(3,
 // 1) + p.Z*m.Get(3, 2) + m.Get(3, 3) 	return out
@@ -348,6 +360,14 @@ int haloo3d_facef_finalize(haloo3d_facef face);
     if (ass == NULL) {                                                         \
       dieerr("Could not reallocate mem, size %ld\n", size);                    \
     }                                                                          \
+  }
+
+#define printmatrix(m)                                                         \
+  {                                                                            \
+    eprintf("%f %f %f %f\n", m[0], m[1], m[2], m[3]);                          \
+    eprintf("%f %f %f %f\n", m[4], m[5], m[6], m[7]);                          \
+    eprintf("%f %f %f %f\n", m[8], m[9], m[10], m[11]);                        \
+    eprintf("%f %f %f %f\n", m[12], m[13], m[14], m[15]);                      \
   }
 
 #endif

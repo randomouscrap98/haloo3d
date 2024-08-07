@@ -10,7 +10,7 @@
 #define ASPECT ((float)WIDTH / HEIGHT)
 #define NEARCLIP 0.01
 #define FARCLIP 100.0
-#define ITERATIONS 1
+#define ITERATIONS 600
 #define OUTFILE "perspective.ppm"
 
 void load_texture(haloo3d_fb *tex, char *filename) {
@@ -65,7 +65,8 @@ int main(int argc, char **argv) {
 
   // Create the perspective matrix, which doesn't change
   mfloat_t perspective[MAT4_SIZE];
-  mat4_perspective(perspective, to_radians(FOV), ASPECT, NEARCLIP, FARCLIP);
+  haloo3d_perspective(perspective, FOV, ASPECT, NEARCLIP, FARCLIP);
+  // mat4_perspective(perspective, to_radians(FOV), ASPECT, NEARCLIP, FARCLIP);
 
   // Create the camera matrix, which DOES change (or it would if we had user
   // input)
@@ -73,7 +74,7 @@ int main(int argc, char **argv) {
   haloo3d_camera camera;
   haloo3d_camera_init(&camera);
   // Move the camera back
-  camera.pos.z += 5.4;
+  camera.pos.z += 1.4;
 
   // Where the final matrix for 3d goes
   mfloat_t matrix3d[MAT4_SIZE];
@@ -94,10 +95,20 @@ int main(int argc, char **argv) {
     // To simulate what would actually happen per frame, let's calc the
     // camera each time
     haloo3d_camera_calclook(&camera, matrixcam);
-    // Calculate the actual translation matrix
+    // eprintf("MATRIXCAM:\n");
+    // printmatrix(matrixcam);
+    //  Calculate the actual translation matrix
     mat4_inverse(matrix3d, matrixcam);
-    mat4_multiply(matrix3d, matrix3d, perspective);
-    // Precalc the vertices from our matrix
+    // eprintf("INVERSE MCAM:\n");
+    // printmatrix(matrix3d);
+    //  NOTE: WE HAVE TO FLIP IT BECAUSE THE LIBRARY ASSUMES A DIFFERENT STORAGE
+    //  ORDER THAN THE ONE I'M USING
+    mat4_multiply(matrix3d, perspective, matrix3d); // matrix3d, perspective);
+    // eprintf("PERSPECTIVE:\n");
+    // printmatrix(perspective);
+    // eprintf("FINAL:\n");
+    // printmatrix(matrix3d);
+    //  Precalc the vertices from our matrix
     haloo3d_precalc_verts(&obj, matrix3d, vert_precalc);
     for (int fi = 0; fi < obj.numfaces; fi++) {
       // In this program, we're not going to do anything fancy like clipping,
@@ -105,18 +116,18 @@ int main(int argc, char **argv) {
       haloo3d_make_facef(obj.faces[fi], vert_precalc, obj.vtexture, face);
       if (!haloo3d_facef_finalize(face)) {
         // eprintf("SKIPPING TRI: %d\n", fi);
-        skipped++;
+        // skipped++;
         continue;
       }
       // haloo3d_facef_fixw(face);
-      //  We still have to convert the points into the view
+      //   We still have to convert the points into the view
       haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
       haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
     }
   }
 
-  eprintf("SKIPPED TOTAL: %d FACES: %d VERTS: %d\n", skipped, obj.numfaces,
-          obj.numvertices);
+  // eprintf("SKIPPED TOTAL: %d FACES: %d VERTS: %d\n", skipped, obj.numfaces,
+  // obj.numvertices);
   write_framebuffer(&fb, OUTFILE);
 
   haloo3d_obj_free(&obj);

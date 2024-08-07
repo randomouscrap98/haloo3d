@@ -1,6 +1,7 @@
 // haloopdy 2024
 
 #include "haloo3d.h"
+#include "mathc.h"
 
 // ----------------------
 //   Vecs and such
@@ -9,7 +10,10 @@
 int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix,
                           struct vec4 *out) {
   for (int i = 0; i < obj->numvertices; i++) {
+    // eprintf("P: %f %f %f %f\n", obj->vertices[i].x, obj->vertices[i].y,
+    // obj->vertices[i].z, obj->vertices[i].w);
     haloo3d_vec4_multmat_into(obj->vertices + i, matrix, out + i);
+    // eprintf("P: %f %f %f %f\n", out[i].x, out[i].y, out[i].z, out[i].w);
   }
   return obj->numvertices;
 }
@@ -64,12 +68,79 @@ struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view) {
   vec3(lookvec.v, MSIN(cam->pitch) * MSIN(cam->yaw), MCOS(cam->pitch),
        -MSIN(cam->pitch) * MCOS(cam->yaw));
   vec3_add(lookat.v, cam->pos.v, lookvec.v);
-  eprintf("CAMERAPOS: %f,%f,%f\n", cam->pos.x, cam->pos.y, cam->pos.z);
-  eprintf("CAMERADIR: %f,%f,%f\n", lookvec.x, lookvec.y, lookvec.z);
-  eprintf("LOOKAT: %f,%f,%f\n", lookat.x, lookat.y, lookat.z);
-  eprintf("UP: %f,%f,%f\n", cam->up.x, cam->up.y, cam->up.z);
-  mat4_look_at(view, cam->pos.v, lookat.v, cam->up.v);
+  // eprintf("CAMERAPOS: %f,%f,%f\n", cam->pos.x, cam->pos.y, cam->pos.z);
+  // eprintf("CAMERADIR: %f,%f,%f\n", lookvec.x, lookvec.y, lookvec.z);
+  // eprintf("LOOKAT: %f,%f,%f\n", lookat.x, lookat.y, lookat.z);
+  // eprintf("UP: %f,%f,%f\n", cam->up.x, cam->up.y, cam->up.z);
+  // mat4_look_at(view, cam->pos.v, lookat.v, cam->up.v);
+  // mat4_look_at(view, cam->pos.v, lookat.v, cam->up.v);
+  haloo3d_my_lookat(view, cam->pos.v, lookat.v, cam->up.v);
   return lookvec;
+}
+
+void haloo3d_my_lookat(mfloat_t *view, mfloat_t *from, mfloat_t *to,
+                       mfloat_t *up) {
+  struct vec3 forward;
+  struct vec3 right;
+  struct vec3 realup;
+  vec3_subtract(forward.v, from, to);
+  vec3_normalize(forward.v, forward.v);
+  vec3_cross(right.v, up, forward.v);
+  vec3_normalize(right.v, right.v); // IDK if you have to normalize but whatever
+  vec3_cross(realup.v, forward.v, right.v);
+
+  mat4_identity(view);
+  view[0] = right.x;
+  view[1] = right.y;
+  view[2] = right.z;
+  view[4] = realup.x;
+  view[5] = realup.y;
+  view[6] = realup.z;
+  view[8] = forward.x;
+  view[9] = forward.y;
+  view[10] = forward.z;
+  view[12] = from[0];
+  view[13] = from[1];
+  view[14] = from[2];
+  // forward := from.Sub(to).Normalize()
+  // right := up.CrossProduct(forward).Normalize()
+  // realup := forward.CrossProduct(right)
+  // m.SetIdentity()
+  //  m.Set(0, 0, right.X)
+  //  m.Set(1, 0, right.Y)
+  //  m.Set(2, 0, right.Z)
+  //  m.Set(0, 1, realup.X)
+  //  m.Set(1, 1, realup.Y)
+  //  m.Set(2, 1, realup.Z)
+  //  m.Set(0, 2, forward.X)
+  //  m.Set(1, 2, forward.Y)
+  //  m.Set(2, 2, forward.Z)
+  //  m.Set(0, 3, from.X)
+  //  m.Set(1, 3, from.Y)
+  //  m.Set(2, 3, from.Z)
+}
+
+void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
+                         mfloat_t near, mfloat_t far) {
+  mat4_zero(m);
+  // func (m *Mat44f) SetProjection(fov float32, aspect float32, near float32,
+  // far float32) { m.ZeroFill()
+
+  fov = fov / 180 * MPI; // math.Pi // Convert to radians
+  mfloat_t e = 1.0 / MTAN(fov * 0.5);
+
+  m[0] = e / aspect;
+  m[5] = e;
+  m[10] = (far + near) / (near - far);
+  m[11] = -1; // the z divide
+  m[14] = 2 * far * near / (near - far);
+  // e := float32(1 / math.Tan(float64(fov/2)))
+
+  // m.Set(0, 0, e/aspect)
+  // m.Set(1, 1, e)
+  // m.Set(2, 2, (far+near)/(near-far))
+  // m.Set(2, 3, 2*far*near/(near-far))
+  // m.Set(3, 2, -1) // Might need to be swapped
 }
 
 // ----------------------
@@ -116,6 +187,8 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   struct vec2i w2_i = haloo3d_edgeinci(v0.v, v1.v);
   // I don't know what happened to my z but it's nearly unusable.
   // I simply use w instead... don't know if that's ok
+  // TODO: I don't know if z is actually broken; take a look at z fighting
+  // and see
   mfloat_t tiz0 = 1.0 / face[0].pos.w;
   mfloat_t tiz1 = 1.0 / face[1].pos.w;
   mfloat_t tiz2 = 1.0 / face[2].pos.w;
@@ -163,6 +236,9 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 }
 
 int haloo3d_facef_finalize(haloo3d_facef face) {
+  // if (face[0].pos.w <= 0 || face[1].pos.w <= 0 || face[2].pos.w <= 0) {
+  //   return 0;
+  // }
   // void haloo3d_conditional_face(struct vec4 * positions, struct vec3 *
   // vtcoords, haloo3d_facef * out) { sc []HVec3f, tx []Vec3f, out []Facef)
   // []Facef { var f Facef
