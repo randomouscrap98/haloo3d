@@ -7,8 +7,10 @@
 
 #define DOLIGHTING
 
-#define WIDTH 640
-#define HEIGHT 480
+// This is expected to run for multiple frames so
+// make the default smaller. I don't feel like allowing inputs
+#define WIDTH 320
+#define HEIGHT 240
 #define FOV 60.0
 #define ASPECT ((float)WIDTH / HEIGHT)
 #define NEARCLIP 0.01
