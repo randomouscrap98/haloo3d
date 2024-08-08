@@ -29,6 +29,18 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
   }
 }
 
+void haloo3d_objin_init(haloo3d_obj_instance *obj, haloo3d_obj *model,
+                        haloo3d_fb *tex) {
+  obj->model = model;
+  obj->texture = tex;
+  obj->scale = 1.0;
+  obj->color = 0xFFFF;
+  obj->lighting = NULL; // Default no lighting
+  vec3(obj->pos.v, 0, 0, 0);
+  // Assume user is going to use lookvec as a facing offset and not a raw lookat
+  vec3(obj->lookvec.v, 0, 0, -1);
+}
+
 // ----------------------
 //  Framebuffer
 // ----------------------

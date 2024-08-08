@@ -24,15 +24,79 @@
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
 // ----------------------
-//   Vecs and such
+//  Framebuffer
+// ----------------------
+
+// The framebuffer object, which stores stuff like the 16 bit
+// framebuffer, the depth buffer, etc
+typedef struct {
+  uint16_t *buffer;  // actual buffer (managed manually)
+  uint16_t width;    // width of the framebuffer
+  uint16_t height;   // height of the framebuffer
+  mfloat_t *wbuffer; // Depth buffer, using w value instead of z
+} haloo3d_fb;
+
+// Get a value from the framebuffer at the given index
+static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
+  return fb->buffer[x + y * fb->width];
+}
+
+static inline mfloat_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
+  return fb->wbuffer[x + y * fb->width];
+}
+
+// Set a value in the framebuffer at the given index
+static inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
+  fb->buffer[x + y * fb->width] = v;
+}
+
+static inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
+  fb->wbuffer[x + y * fb->width] = v;
+}
+
+// Get a value based on uv coordinates. Does not perform any smoothing
+static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
+                                        mfloat_t v) {
+  uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
+  uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
+  // eprintf("%d %d | %f %f\n", x, y, u, v);
+  return fb->buffer[x + y * fb->width];
+}
+
+// Get the total size in elements of any buffer inside (framebuffer or
+// otherwise)
+static inline int haloo3d_fb_size(haloo3d_fb *fb) {
+  return fb->width * fb->height;
+}
+
+// Initialize a framebuffer with a symmetric data buffer and depth buffer
+void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height);
+// Free all the buffers created etc
+void haloo3d_fb_free(haloo3d_fb *fb);
+// Initialize a framebuffer for use as a texture. This makes the zbuffer null,
+// but you can otherwise use it as normal
+void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
+
+// Clear the wbuffer
+static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
+  // Apparently memset isn't allowed, and the compiler will optimize this
+  // for us?
+  const int len = haloo3d_fb_size(fb);
+  mfloat_t *const db = fb->wbuffer;
+  for (int i = 0; i < len; i++) {
+    // We use an inverse depth buffer, so larger values (1/z) are actually
+    // closer
+    db[i] = 0;
+  }
+}
+
+// ----------------------
+//   Faces and objects
 // ----------------------
 
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
 #define H3D_OBJ_MAXFACES 8192
-
-typedef mfloat_t hvec4f[4];
-typedef mfloat_t hvec3f[3];
 
 // A full vertex with all information inside
 typedef struct {
@@ -76,6 +140,37 @@ static inline void haloo3d_obj_facef(haloo3d_obj *obj, haloo3d_facei face,
   out[2].tex = obj->vtexture[face[2].texi];
 }
 
+// Given an object, precalc all the vertices by multiplying with the given
+// perspective (or otherwise) matrix. It's up to you to make sure the
+// out array has enough space to store all the vertices
+int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix, struct vec4 *out);
+
+// A single object in a scene, linking back to a specific model. A traditional
+// model-view matrix is not used; instead, a look vector is used and you call
+// the lookvec function to calc the model view matrix. You can either use the
+// lookvec as the raw value send to the lookat function, or you can use it
+// as an offset from the model pos with a simple vector addition.
+typedef struct {
+  haloo3d_obj *model;
+  haloo3d_fb *texture;
+  struct vec3 pos;
+  struct vec3 lookvec;
+  uint16_t color;        // baseline color if textures aren't used
+  mfloat_t scale;        // how big the thing should be in world
+  struct vec3 *lighting; // a pointer to lighting, null for none
+} haloo3d_obj_instance;
+
+// Set initial state for object, given a model and texture. Models are set
+// to look in the default direction
+void haloo3d_objin_init(haloo3d_obj_instance *obj, haloo3d_obj *model,
+                        haloo3d_fb *tex);
+
+// A function to simplify the retrieval of vertices for an instance
+static inline struct vec4 *haloo3d_objin_fv(haloo3d_obj_instance *obj,
+                                            haloo3d_facei face, int vert) {
+  return obj->model->vertices + face[vert].posi;
+}
+
 // Generate a "static" face from precalced vertices and vtexture info,
 // useful for functions which work on faces rather than triangles
 static inline void haloo3d_make_facef(haloo3d_facei face, struct vec4 *verts,
@@ -97,11 +192,6 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
   face[1].pos.w = -face[1].pos.z + 1;
   face[2].pos.w = -face[2].pos.z + 1;
 }
-
-// Given an object, precalc all the vertices by multiplying with the given
-// perspective (or otherwise) matrix. It's up to you to make sure the
-// out array has enough space to store all the vertices
-int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix, struct vec4 *out);
 
 // ----------------------
 //   Colors
@@ -225,73 +315,6 @@ static inline void haloo3d_facef_normal(haloo3d_facef face, mfloat_t *normal) {
 // the given way.
 mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
                             haloo3d_facef face);
-
-// ----------------------
-//  Framebuffer
-// ----------------------
-
-// The framebuffer object, which stores stuff like the 16 bit
-// framebuffer, the depth buffer, etc
-typedef struct {
-  uint16_t *buffer;  // actual buffer (managed manually)
-  uint16_t width;    // width of the framebuffer
-  uint16_t height;   // height of the framebuffer
-  mfloat_t *wbuffer; // Depth buffer, using w value instead of z
-} haloo3d_fb;
-
-// Get a value from the framebuffer at the given index
-static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
-  return fb->buffer[x + y * fb->width];
-}
-
-static inline mfloat_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
-  return fb->wbuffer[x + y * fb->width];
-}
-
-// Set a value in the framebuffer at the given index
-static inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
-  fb->buffer[x + y * fb->width] = v;
-}
-
-static inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
-  fb->wbuffer[x + y * fb->width] = v;
-}
-
-// Get a value based on uv coordinates. Does not perform any smoothing
-static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
-                                        mfloat_t v) {
-  uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
-  uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
-  // eprintf("%d %d | %f %f\n", x, y, u, v);
-  return fb->buffer[x + y * fb->width];
-}
-
-// Get the total size in elements of any buffer inside (framebuffer or
-// otherwise)
-static inline int haloo3d_fb_size(haloo3d_fb *fb) {
-  return fb->width * fb->height;
-}
-
-// Initialize a framebuffer with a symmetric data buffer and depth buffer
-void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height);
-// Free all the buffers created etc
-void haloo3d_fb_free(haloo3d_fb *fb);
-// Initialize a framebuffer for use as a texture. This makes the zbuffer null,
-// but you can otherwise use it as normal
-void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
-
-// Clear the wbuffer
-static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
-  // Apparently memset isn't allowed, and the compiler will optimize this
-  // for us?
-  const int len = haloo3d_fb_size(fb);
-  mfloat_t *const db = fb->wbuffer;
-  for (int i = 0; i < len; i++) {
-    // We use an inverse depth buffer, so larger values (1/z) are actually
-    // closer
-    db[i] = 0;
-  }
-}
 
 // ----------------------
 //  Rendering
