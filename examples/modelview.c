@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 
   if (argc != 7) {
     dieerr("You must pass in the following:\n- obj file .obj\n- texture file "
-           ".ppm\n-xofs\n-yofs\n-zofs\n-rotation deg");
+           ".ppm\n- obj xofs\n- obj yofs\n- obj zofs\n- obj rotation deg");
   }
 
   // Load the junk
@@ -67,10 +67,6 @@ int main(int argc, char **argv) {
   // Create the camera matrix, which DOES change
   haloo3d_camera camera;
   haloo3d_camera_init(&camera);
-  // Move the camera based on user input
-  camera.pos.x = atof(argv[3]);
-  camera.pos.y = atof(argv[4]);
-  camera.pos.z = atof(argv[5]);
 
   // Create the perspective matrix, which doesn't change
   mfloat_t perspective[MAT4_SIZE];
@@ -90,6 +86,12 @@ int main(int argc, char **argv) {
 #ifdef DOLIGHTING
   objects[0].lighting = &light;
 #endif
+  // Move the model based on user input
+  objects[0].pos.x = atof(argv[3]);
+  objects[0].pos.y = atof(argv[4]);
+  objects[0].pos.z = atof(argv[5]);
+  mfloat_t yaw = atof(argv[6]);
+  vec3(objects[0].lookvec.v, MSIN(yaw), 0, -MCOS(yaw));
   int numobjects = 1;
 
   // Now we create a framebuffer to draw the triangle into
