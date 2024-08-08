@@ -2,6 +2,7 @@
 
 #include "haloo3d.h"
 #include "mathc.h"
+#include <string.h>
 
 // ----------------------
 //   Vecs and such
@@ -236,3 +237,101 @@ int haloo3d_facef_finalize(haloo3d_facef face) {
   haloo3d_vec4_conventional(&face[2].pos); // face[0].pos
   return haloo3d_edgefunc(face[0].pos.v, face[1].pos.v, face[2].pos.v) <= 0;
 }
+
+int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
+  int numout = 0;
+  int outers[3];
+  int inners[3];
+  int numinners = 0;
+  int numouters = 0;
+  mfloat_t dist[3];
+
+  for (int i = 0; i < 3; i++) {
+    dist[i] = face[i].pos.z + face[i].pos.w;
+    if (dist[i] < H3D_FACEF_CLIPLOW) {
+      outers[numouters++] = i;
+    } else {
+      inners[numinners++] = i;
+    }
+  }
+
+  if (numouters == 2) { // The one triangle thing
+    // We CAN use the face (sort of), so copy it out
+    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+
+    int ai = inners[0];
+    int bi = outers[0];
+    int ci = outers[1];
+
+    // Calc how far along we are on each of these lines. These are the new
+    // points
+    mfloat_t tba = dist[bi] / (dist[bi] - dist[ai]);
+    mfloat_t tca = dist[ci] / (dist[ci] - dist[ai]);
+
+    // The two points that aren't 'a' need to be the interpolated values
+    haloo3d_vertexf_lerp_self(out[numout] + bi, out[numout] + ai, tba);
+    haloo3d_vertexf_lerp_self(out[numout] + ci, out[numout] + ai, tca);
+
+    if (haloo3d_facef_finalize(out[numout])) {
+      numout++;
+    }
+  } else if (numouters == 1) {
+
+  } else if (numouters != 3) { // Output the face itself, no modification
+    // We CAN use the face (sort of), so copy it out
+    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+    if (haloo3d_facef_finalize(out[numout])) {
+      numout++;
+    }
+  }
+
+  return numout;
+}
+
+// func ClipFace(face Facei, vecs[] HVec3f, texs[] Vec3f)[] Facef {}
+// else if len (outers) == 1 { // The two triangle thing, two new corners
+// ai:
+//   = outers[0] bi : = inners[0] ci : = inners[1]
+//
+//                                     tab
+//       : = d[ai] / (d[ai] - d[bi]) tac : = d[ai] / (d[ai] - d[ci])
+//
+//                                                       hfa : = hf[ai] txa
+//       : = tx[ai]
+//
+//           // This time, we're generating two new points. But,
+//           // Only ONE point needs to be modified: the one outer. Remember
+//           that
+//           // tab and tac are the distance to that point itself, so a still
+//           needs
+//           // to be the first value here
+//           hf[ai]
+//               .LerpSelf(&hf[bi], tab) tx[ai] = LerpVec3f(tx[ai], tx[bi], tab)
+//             outfaces = conditionalAddTriangle(hf[:], tx[:], outfaces)
+//
+//         // Now that we've replaced the far point, we also need to replace
+//         // the original B point that we used, since that's part of the other
+//         // triangle. But simply replacing it will make the triangle
+//         invisible,
+//         // since it inverts the winding order (I think)
+//         hf[bi] = hfa hf[bi].LerpSelf(&hf[ci], tac) tx[bi] =
+//             LerpVec3f(txa, tx[ci], tac)
+//
+//         // Now swap the a and b (or we could swap c and b)
+//         hf[ai],
+//                  hf[bi] = hf[bi], hf[ai] tx[ai], tx[bi] = tx[bi],
+//                  tx[ai] outfaces =
+//                      conditionalAddTriangle(hf[:], tx[:], outfaces)
+// }
+// else if len (outers) != 3 { // Output the face itself, no modification
+//   outfaces = conditionalAddTriangle(hf[:], tx[:], outfaces)
+// }
+//
+// return outfaces
+//
+// TODO: Now that we're here doing it like this, might as well remove faces
+// that are fully outside the other clipping zones. No need to do actual
+// clipping... just full rejections. This saves a BIT of processing... though
+// not much NOTE: Uh no... this is too much effort. Two points could be outside
+// individual planes and thus still intersect the screen.
+//}

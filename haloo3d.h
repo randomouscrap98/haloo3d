@@ -16,6 +16,15 @@
 // though realistically this is never reached (also I don't
 // even know if that's correct)
 #define H3D_FACEF_MAXCLIP 18
+// Usually you clip against 0, but to be more safe, this is
+// the minimum clip. Since we (currently) only clip against the
+// near plane, this is usually fine. It may even be fine for
+// the future, if we clip against other planes.
+#define H3D_FACEF_CLIPLOW 0.001
+
+// These aren't necessarily hard limits; that's 65536
+#define H3D_OBJ_MAXVERTICES 8192
+#define H3D_OBJ_MAXFACES 8192
 
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -94,10 +103,6 @@ static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
 //   Faces and objects
 // ----------------------
 
-// These aren't necessarily hard limits; that's 65536
-#define H3D_OBJ_MAXVERTICES 8192
-#define H3D_OBJ_MAXFACES 8192
-
 // A full vertex with all information inside
 typedef struct {
   struct vec4 pos;
@@ -114,6 +119,8 @@ typedef struct {
 // A face which is made up of indexes into the obj
 typedef haloo3d_vertexi haloo3d_facei[3];
 typedef haloo3d_vertexf haloo3d_facef[3];
+
+#define H3D_SIZEOF_FACEF (sizeof(haloo3d_vertexf) * 3)
 
 // An object definition, where every face is a simple
 // index into the internal structures
@@ -254,11 +261,8 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
 
 // Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
-  //(v *Vec3f) ViewportSelf(width, height int) {
   v[0] = (v[0] + 1.0) / 2.0 * width;
   v[1] = (1.0 - ((v[1] + 1.0) / 2.0)) * height;
-  // v.X = (v.X + 1) / 2 * float32(width)
-  // v.Y = (1 - (v.Y+1)/2) * float32(height)
   //  Don't touch Z or whatever
 }
 
@@ -299,6 +303,29 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
   out->y = v->x * m[1] + v->y * m[5] + v->z * m[9] + m[13];
   out->z = v->x * m[2] + v->y * m[6] + v->z * m[10] + m[14];
   out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
+}
+
+// // Linear interpolate v to v2, storing the result back into v
+// static inline void haloo3d_lerp_self4(struct vec4 *v, struct vec4 *v2,
+//                                       mfloat_t t) {
+//   v->x = (1 - t) * v->x + t * v2->z;
+//   v->y = (1 - t) * v->y + t * v2->y;
+//   v->z = (1 - t) * v->z + t * v2->z;
+//   v->w = (1 - t) * v->w + t * v2->w;
+// }
+//
+// static inline void haloo3d_lerp_self3(struct vec3 *v, struct vec3 *v2,
+//                                       mfloat_t t) {
+//   v->x = (1 - t) * v->x + t * v2->z;
+//   v->y = (1 - t) * v->y + t * v2->y;
+//   v->z = (1 - t) * v->z + t * v2->z;
+// }
+
+// linear interpolate the two whole vectors, storing result back into first
+static inline void haloo3d_vertexf_lerp_self(haloo3d_vertexf *v,
+                                             haloo3d_vertexf *v2, mfloat_t t) {
+  vec4_lerp(v->pos.v, v->pos.v, v2->pos.v, t);
+  vec3_lerp(v->tex.v, v->tex.v, v2->tex.v, t);
 }
 
 // calculate the normal for the given face
@@ -366,6 +393,12 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.
 int haloo3d_facef_finalize(haloo3d_facef face);
+
+// Clip a given face, outputting the results into the out buffer. The out
+// buffer should have enough space to store all clipfaces (use
+// H3D_FACEF_MAXCLIP as length). Returns the number of clipped faces.
+// If 0, you can skip additional processing for this face completely
+int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
 
 // ----------------------
 // Some helper functions

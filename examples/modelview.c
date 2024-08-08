@@ -61,10 +61,10 @@ int main(int argc, char **argv) {
   }
 
   // Load the junk
-  haloo3d_obj obj;
-  load_object(&obj, argv[1]);
-  haloo3d_fb tex;
-  load_texture(&tex, argv[2]);
+  haloo3d_obj _obj;
+  load_object(&_obj, argv[1]);
+  haloo3d_fb _tex;
+  load_texture(&_tex, argv[2]);
 
   // Create the camera matrix, which DOES change
   haloo3d_camera camera;
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 
   // We don't have multiple objects but we create an array anyway just in case
   haloo3d_obj_instance objects[MAXOBJECTS];
-  haloo3d_objin_init(objects, &obj, &tex);
+  haloo3d_objin_init(objects, &_obj, &_tex);
 #ifdef DOLIGHTING
   objects[0].lighting = &light;
 #endif
@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
   // Storage stuff
   mfloat_t matrix3d[MAT4_SIZE], matrixcam[MAT4_SIZE], matrixscreen[MAT4_SIZE],
       matrixmodel[MAT4_SIZE];
+  haloo3d_facef outfaces[H3D_FACEF_MAXCLIP];
   struct vec3 tmp1;
   haloo3d_facef face, baseface;
   struct vec4 *vert_precalc;
@@ -127,28 +128,32 @@ int main(int argc, char **argv) {
     haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
     mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
     mat4_multiply(matrix3d, matrixscreen, matrixmodel);
-    haloo3d_precalc_verts(&obj, matrix3d, vert_precalc);
-    for (int fi = 0; fi < obj.numfaces; fi++) {
-      // In this program, we're not going to do anything fancy like clipping,
-      // we're just going to perspective divide right out the gate
-      haloo3d_make_facef(obj.faces[fi], vert_precalc, obj.vtexture, face);
-      if (!haloo3d_facef_finalize(face)) {
-        continue;
+    haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
+    // Iterate over object faces
+    for (int fi = 0; fi < objects[i].model->numfaces; fi++) {
+      // Copy face values out of precalc array and clip them
+      haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
+                         objects[i].model->vtexture, face);
+      int tris = haloo3d_facef_clip(face, outfaces);
+      for (int ti = 0; ti < tris; ti++) {
+        mfloat_t intensity = 1.0;
+        if (objects[i].lighting) {
+          haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],
+                            baseface);
+          intensity =
+              haloo3d_calc_light(objects[i].lighting->v, MINLIGHT, baseface);
+        }
+        //   We still have to convert the points into the view
+        haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
+        haloo3d_texturedtriangle(&fb, objects[i].texture, intensity,
+                                 outfaces[ti]);
       }
-      mfloat_t intensity = 1.0;
-      if (objects[i].lighting) {
-        haloo3d_obj_facef(&obj, obj.faces[fi], baseface);
-        intensity = haloo3d_calc_light(light.v, MINLIGHT, baseface);
-      }
-      //   We still have to convert the points into the view
-      haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
-      haloo3d_texturedtriangle(&fb, &tex, intensity, face);
     }
   }
 
   write_framebuffer(&fb, OUTFILE);
 
-  haloo3d_obj_free(&obj);
-  haloo3d_fb_free(&tex);
+  haloo3d_obj_free(&_obj);
+  haloo3d_fb_free(&_tex);
   haloo3d_fb_free(&fb);
 }
