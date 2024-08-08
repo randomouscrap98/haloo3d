@@ -26,7 +26,7 @@ void load_texture(haloo3d_fb *tex, char *filename) {
   if (f == NULL) {
     dieerr("Can't open %s for reading\n", filename);
   }
-  haloo3d_loadppm(f, tex); // This also calls init so you have to free
+  haloo3d_img_loadppm(f, tex); // This also calls init so you have to free
   fclose(f);
   printf("Read from %s\n", filename);
 }
@@ -48,7 +48,7 @@ void write_framebuffer(haloo3d_fb *fb, char *filename) {
   if (f == NULL) {
     dieerr("Can't open %s for writing\n", filename);
   }
-  haloo3d_writeppm(fb, f);
+  haloo3d_img_writeppm(fb, f);
   fclose(f);
   printf("Wrote to %s\n", filename);
 }

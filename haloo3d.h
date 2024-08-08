@@ -120,7 +120,8 @@ typedef struct {
 typedef haloo3d_vertexi haloo3d_facei[3];
 typedef haloo3d_vertexf haloo3d_facef[3];
 
-#define H3D_SIZEOF_FACEF (sizeof(haloo3d_vertexf) * 3)
+// #define H3D_SIZEOF_FACEF (sizeof(haloo3d_vertexf) * 3)
+// #define H3D_SIZEOF_FACEI (sizeof(haloo3d_vertexi) *
 
 // An object definition, where every face is a simple
 // index into the internal structures
@@ -204,26 +205,44 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
 //   Colors
 // ----------------------
 
-#define H3DC_R(c) ((((c) >> 4) & 0xF0) | 0x07)
-#define H3DC_G(c) (((c) & 0xF0) | 0x07)
-#define H3DC_B(c) ((((c) << 4) & 0xF0) | 0x07)
+#define H3DC_R4(c) (((c) >> 8) & 0xF)
+#define H3DC_G4(c) (((c) >> 4) & 0xF)
+#define H3DC_B4(c) ((c) & 0xF0)
+#define H3DC_R8(c) ((((c) >> 4) & 0xF0) | 0x07)
+#define H3DC_G8(c) (((c) & 0xF0) | 0x07)
+#define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
 #define H3DC_RGB(r, g, b)                                                      \
   (0xF000 | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
 // "scale" a color by a given intensity. it WILL clip...
 static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
-  uint16_t r = ((col >> 8) & 0xf) * scale;
-  uint16_t g = ((col >> 4) & 0xf) * scale;
-  uint16_t b = (col & 0xf) * scale;
+  uint16_t r = H3DC_R4(col) * scale;
+  uint16_t g = H3DC_G4(col) * scale;
+  uint16_t b = H3DC_B4(col) * scale;
   return H3DC_RGB(r, g, b);
 }
 
 // "scale" a color by a discrete intensity from 0 to 256. 256 is 1.0
 static inline uint16_t haloo3d_col_scalei(uint16_t col, uint16_t scale) {
-  uint16_t r = (((col >> 8) & 0xf) * scale) >> 8;
-  uint16_t g = (((col >> 4) & 0xf) * scale) >> 8;
-  uint16_t b = ((col & 0xf) * scale) >> 8;
+  uint16_t r = (H3DC_R4(col) * scale) >> 8;
+  uint16_t g = (H3DC_G4(col) * scale) >> 8;
+  uint16_t b = (H3DC_B4(col) * scale) >> 8;
   return H3DC_RGB(r, g, b);
+}
+
+// linear interpolate between two colors
+static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
+                                        mfloat_t t) {
+  uint16_t r1 = H3DC_R4(col1);
+  uint16_t g1 = H3DC_G4(col1);
+  uint16_t b1 = H3DC_B4(col1);
+  uint16_t r2 = H3DC_R4(col2);
+  uint16_t g2 = H3DC_G4(col2);
+  uint16_t b2 = H3DC_B4(col2);
+
+  return H3DC_RGB(uint8_t((t - 1) * r1 + t * r2),
+                  uint8_t((t - 1) * g1 + t * g2),
+                  uint8_t((t - 1) * b1 + t * b2));
 }
 
 // ----------------------
@@ -304,22 +323,6 @@ static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
   out->z = v->x * m[2] + v->y * m[6] + v->z * m[10] + m[14];
   out->w = v->x * m[3] + v->y * m[7] + v->z * m[11] + m[15];
 }
-
-// // Linear interpolate v to v2, storing the result back into v
-// static inline void haloo3d_lerp_self4(struct vec4 *v, struct vec4 *v2,
-//                                       mfloat_t t) {
-//   v->x = (1 - t) * v->x + t * v2->z;
-//   v->y = (1 - t) * v->y + t * v2->y;
-//   v->z = (1 - t) * v->z + t * v2->z;
-//   v->w = (1 - t) * v->w + t * v2->w;
-// }
-//
-// static inline void haloo3d_lerp_self3(struct vec3 *v, struct vec3 *v2,
-//                                       mfloat_t t) {
-//   v->x = (1 - t) * v->x + t * v2->z;
-//   v->y = (1 - t) * v->y + t * v2->y;
-//   v->z = (1 - t) * v->z + t * v2->z;
-// }
 
 // linear interpolate the two whole vectors, storing result back into first
 static inline void haloo3d_vertexf_lerp_self(haloo3d_vertexf *v,

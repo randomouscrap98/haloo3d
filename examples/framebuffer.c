@@ -23,7 +23,7 @@ int main() {
     dieerr("Can't open %s for writing\n", OUTFILE);
   }
 
-  haloo3d_writeppm(&fb, f);
+  haloo3d_img_writeppm(&fb, f);
 
   fclose(f);
 

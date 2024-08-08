@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void haloo3d_writeppm(haloo3d_fb *fb, FILE *f) {
+void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
   for (size_t i = 0; i < haloo3d_fb_size(fb); i++) {
@@ -15,7 +15,7 @@ void haloo3d_writeppm(haloo3d_fb *fb, FILE *f) {
   }
 }
 
-void haloo3d_loadppm(FILE *f, haloo3d_fb *fb) {
+void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
   char tmp[4096];
   // Must ALWAYS start with "P6"
   int scanned = fscanf(f, "%4095s", tmp);

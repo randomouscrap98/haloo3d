@@ -258,7 +258,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
   if (numouters == 2) { // The one triangle thing
     // We CAN use the face (sort of), so copy it out
-    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+    memcpy(out[numout], face, sizeof(haloo3d_facef));
 
     int ai = inners[0];
     int bi = outers[0];
@@ -287,7 +287,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
     // Generate the first new triangle by replacing the bad outer point a
     // with an interpolated one to b
-    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+    memcpy(out[numout], face, sizeof(haloo3d_facef));
     haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + bi, tab);
 
     haloo3d_vertexf olda = out[numout][ai];
@@ -298,7 +298,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
     // We RESET the next point to simplify the process, and once again replace
     // the a point but interpolating with c
-    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+    memcpy(out[numout], face, sizeof(haloo3d_facef));
     haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + ci, tac);
 
     // But the B point needs to actually be the interpolated A point
@@ -309,7 +309,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
     }
 
   } else if (numouters != 3) { // Output the face itself, no modification
-    memcpy(out[numout], face, H3D_SIZEOF_FACEF);
+    memcpy(out[numout], face, sizeof(haloo3d_facef));
     if (haloo3d_facef_finalize(out[numout])) {
       numout++;
     }

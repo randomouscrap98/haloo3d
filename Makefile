@@ -12,12 +12,12 @@ LIBD = lib
 BUILDD = build
 CC = gcc
 CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBD)
-# CFLAGS = -std=c99 -Wall -O2 -flto -I$(LIBS) -lm
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
 
 # Define the object files for the static library
 STATICOBJS = $(BUILDD)/$(LIBD)/mathc.o
-FULLOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o
+FULLOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o \
+					 $(BUILDD)/haloo3dex_gen.o
 BASEOUT = $(BUILDD)/haloo3d.a
 FULLOUT = $(BUILDD)/haloo3d_full.a
 
@@ -54,7 +54,6 @@ examples/%.exe: examples/%.o $(FULLOUT)
 clean:
 	rm -rf $(BUILDD)
 	find examples/ -name "*.exe" -type f -delete
-
 	# find . -name "*.o" -type f -delete
 	# find . -name "*.a" -type f -delete
 	# find . -name "a.out" -type f -delete

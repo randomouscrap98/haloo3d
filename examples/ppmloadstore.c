@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   }
 
   haloo3d_fb tex;
-  haloo3d_loadppm(f, &tex); // This also calls init so you have to free
+  haloo3d_img_loadppm(f, &tex); // This also calls init so you have to free
 
   printf("Read from %s\n", argv[1]);
   fclose(f);
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     dieerr("Can't open %s for writing\n", OUTFILE);
   }
 
-  haloo3d_writeppm(&tex, fo);
+  haloo3d_img_writeppm(&tex, fo);
 
   printf("Wrote to %s\n", OUTFILE);
   fclose(fo);
