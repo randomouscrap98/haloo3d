@@ -17,9 +17,9 @@
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
-#define SKYSCALE 5;
+#define SKYSCALE 30;
 
-#define NUMOBJECTS 2
+#define NUMOBJECTS 3
 #define MAXCAM 1200
 
 typedef struct {
@@ -67,6 +67,9 @@ int main(int argc, char **argv) {
   haloo3d_img_loadppmfile(textures, argv[2]);
   haloo3d_gen_1pxgradient(textures + 1, 0xF44F, 0xF001, 32);
   haloo3d_gen_skybox(models + 1);
+  uint16_t checkcols[2] = {0xF0C0, 0xF2A0};
+  haloo3d_gen_checkerboard(textures + 2, checkcols, 2, 32);
+  haloo3d_gen_plane(models + 2, 61);
 
   camset cams[MAXCAM];
   int numcams = readcam(cams, MAXCAM, argv[3]);
@@ -97,6 +100,7 @@ int main(int argc, char **argv) {
 #endif
   // objects[0].pos.z = 0;
   objects[1].scale = SKYSCALE;
+  objects[2].pos.y = -1;
 
   // Now we create a framebuffer to draw the triangle into
   haloo3d_fb fb;

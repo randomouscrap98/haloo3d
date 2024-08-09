@@ -15,5 +15,7 @@ void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
                              uint16_t height);
 // Generate a cube where all faces face inwards
 void haloo3d_gen_skybox(haloo3d_obj *obj);
+// Generate a flat plane made up of individual squares
+void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size);
 
 #endif

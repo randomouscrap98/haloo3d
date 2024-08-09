@@ -21,6 +21,13 @@ void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
   }
 }
 
+void haloo3d_gen_boxvtexture(struct vec3 *textures) {
+  vec3(textures[0].v, 0.001, 0.001, 0); // Oops, it sometimes overflows
+  vec3(textures[1].v, 0.001, 0.999, 0);
+  vec3(textures[2].v, 0.999, 0.001, 0); // Oops, it sometimes overflows
+  vec3(textures[3].v, 0.999, 0.999, 0);
+}
+
 // This technically inits the obj, so you will need to free it
 void haloo3d_gen_skybox(haloo3d_obj *obj) {
   mallocordie(obj->vertices, 8 * sizeof(struct vec4));
@@ -30,10 +37,7 @@ void haloo3d_gen_skybox(haloo3d_obj *obj) {
   obj->numvtextures = 4;
   obj->numfaces = 12;
   // There are only four corners of a texture and we're making a box... yeah
-  vec3(obj->vtexture[0].v, 0.001, 0.001, 0); // Oops, it sometimes overflows
-  vec3(obj->vtexture[1].v, 0.001, 0.999, 0);
-  vec3(obj->vtexture[2].v, 0.999, 0.001, 0); // Oops, it sometimes overflows
-  vec3(obj->vtexture[3].v, 0.999, 0.999, 0);
+  haloo3d_gen_boxvtexture(obj->vtexture);
   // Cube faces are weird, I guess just manually do them? ugh
   // First 4 are the bottom vertices. We can make two faces out of these
   vec3(obj->vertices[0].v, -1, -1, -1);
@@ -81,6 +85,60 @@ void haloo3d_gen_skybox(haloo3d_obj *obj) {
     for (int v = 0; v < 3; v++) {
       obj->faces[fi][v].posi = fv[fi][v];
       obj->faces[fi][v].texi = vt[fi][v];
+    }
+  }
+}
+
+void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
+  obj->numvertices = (size + 1) * (size + 1);
+  obj->numvtextures = 4;
+  obj->numfaces = 2 * size * size;
+  mallocordie(obj->vertices, obj->numvertices * sizeof(struct vec4));
+  mallocordie(obj->vtexture, obj->numvtextures * sizeof(struct vec3));
+  mallocordie(obj->faces, obj->numfaces * sizeof(haloo3d_facei));
+  // Vtexture is just the four corners again
+  haloo3d_gen_boxvtexture(obj->vtexture);
+  // Generate all the simple vertices along the plane at y=0
+  int i = 0;
+  for (mfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (mfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+      vec3(obj->vertices[i].v, x, 0, z);
+      i++;
+    }
+  }
+  i = 0;
+  // Faces are slightly different; we generate two for every "cell" inside the
+  // vertices
+  for (int z = 0; z < size; z++) {
+    for (int x = 0; x < size; x++) {
+      int topleft = x + z * (size + 1);
+      int topright = x + 1 + z * (size + 1);
+      int bottomleft = x + (z + 1) * (size + 1);
+      int bottomright = x + 1 + (z + 1) * (size + 1);
+      // remember to wind counter-clockwise
+      obj->faces[i][0].posi = topleft;
+      obj->faces[i][0].texi = 1;
+      obj->faces[i][1].posi = bottomleft;
+      obj->faces[i][1].texi = 0;
+      obj->faces[i][2].posi = topright;
+      obj->faces[i][2].texi = 3;
+      i++;
+      obj->faces[i][0].posi = topright;
+      obj->faces[i][0].texi = 3;
+      obj->faces[i][1].posi = bottomleft;
+      obj->faces[i][1].texi = 0;
+      obj->faces[i][2].posi = bottomright;
+      obj->faces[i][2].texi = 2;
+      i++;
+      // obj.Faces = append(obj.Faces, hrend.Facei{
+      // 	{Posi: topleft, Texi: 0},
+      // 	{Posi: bottomleft, Texi: 2},
+      // 	{Posi: topright, Texi: 1},
+      // }, hrend.Facei{
+      // 	{Posi: topright, Texi: 1},
+      // 	{Posi: bottomleft, Texi: 2},
+      // 	{Posi: bottomright, Texi: 3},
+      // })
     }
   }
 }
