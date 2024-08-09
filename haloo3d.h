@@ -20,7 +20,7 @@
 // the minimum clip. Since we (currently) only clip against the
 // near plane, this is usually fine. It may even be fine for
 // the future, if we clip against other planes.
-#define H3D_FACEF_CLIPLOW 0.001
+// #define H3D_FACEF_CLIPLOW 0.001
 
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
@@ -255,9 +255,11 @@ static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
   uint16_t g2 = H3DC_G4(col2);
   uint16_t b2 = H3DC_B4(col2);
 
-  return H3DC_RGB((uint8_t)((t - 1) * r1 + t * r2),
-                  (uint8_t)((t - 1) * g1 + t * g2),
-                  (uint8_t)((t - 1) * b1 + t * b2));
+  // clang-format off
+  return H3DC_RGB((uint8_t)(t * (r2 - r1) + r1), 
+                  (uint8_t)(t * (g2 - g1) + g1),
+                  (uint8_t)(t * (b2 - b1) + b1));
+  // clang-format on
 }
 
 // ----------------------
@@ -323,6 +325,12 @@ static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
   haloo3d_viewport_into(face[0].pos.v, width, height);
   haloo3d_viewport_into(face[1].pos.v, width, height);
   haloo3d_viewport_into(face[2].pos.v, width, height);
+}
+
+static inline void haloo3d_mat4_scale(mfloat_t *m, mfloat_t scale) {
+  m[0] *= scale;
+  m[5] *= scale;
+  m[10] *= scale;
 }
 
 // Divide x, y, and z by the w value. Preserves the original w value!!

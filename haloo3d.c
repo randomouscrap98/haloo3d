@@ -138,6 +138,7 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
   m[5] = e;
   m[10] = (far + near) / (near - far);
   m[11] = -1; // the z divide
+  // m[14] = (far * near - near) / (near - far);
   m[14] = 2 * far * near / (near - far);
 }
 
@@ -180,10 +181,8 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   struct vec2i w0_i = haloo3d_edgeinci(v1.v, v2.v);
   struct vec2i w1_i = haloo3d_edgeinci(v2.v, v0.v);
   struct vec2i w2_i = haloo3d_edgeinci(v0.v, v1.v);
-  // I don't know what happened to my z but it's nearly unusable.
-  // I simply use w instead... don't know if that's ok
-  // TODO: I don't know if z is actually broken; take a look at z fighting
-  // and see
+  // Cant use z because it's -1 to 1. w is nicer to work with since it's near to
+  // far and can never be 0.
   mfloat_t tiz0 = 1.0 / face[0].pos.w;
   mfloat_t tiz1 = 1.0 / face[1].pos.w;
   mfloat_t tiz2 = 1.0 / face[2].pos.w;
@@ -193,15 +192,19 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   mfloat_t tiv0 = face[0].tex.y * tiz0;
   mfloat_t tiv1 = face[1].tex.y * tiz1;
   mfloat_t tiv2 = face[2].tex.y * tiz2;
-  // int32_t tiz0 = (1.0 / face[0].pos.w) * (1 << _H3D_RS);
-  // int32_t tiz1 = (1.0 / face[1].pos.w) * (1 << _H3D_RS);
-  // int32_t tiz2 = (1.0 / face[2].pos.w) * (1 << _H3D_RS);
-  // int32_t tiu0 = (face[0].tex.x * tiz0) * (1 << _H3D_RS);
-  // int32_t tiu1 = (face[1].tex.x * tiz1) * (1 << _H3D_RS);
-  // int32_t tiu2 = (face[2].tex.x * tiz2) * (1 << _H3D_RS);
-  // int32_t tiv0 = (face[0].tex.y * tiz0) * (1 << _H3D_RS);
-  // int32_t tiv1 = (face[1].tex.y * tiz1) * (1 << _H3D_RS);
-  // int32_t tiv2 = (face[2].tex.y * tiz2) * (1 << _H3D_RS);
+
+  eprintf("Z: %f %f %f\n", face[0].pos.z, face[1].pos.z, face[2].pos.z);
+  eprintf("W: %f %f %f\n", face[0].pos.w, face[1].pos.w, face[2].pos.w);
+  // eprintf("TIZ: %f %f %f\n", tiz0, tiz1, tiz2);
+  //  int32_t tiz0 = (1.0 / face[0].pos.w) * (1 << _H3D_RS);
+  //  int32_t tiz1 = (1.0 / face[1].pos.w) * (1 << _H3D_RS);
+  //  int32_t tiz2 = (1.0 / face[2].pos.w) * (1 << _H3D_RS);
+  //  int32_t tiu0 = (face[0].tex.x * tiz0) * (1 << _H3D_RS);
+  //  int32_t tiu1 = (face[1].tex.x * tiz1) * (1 << _H3D_RS);
+  //  int32_t tiu2 = (face[2].tex.x * tiz2) * (1 << _H3D_RS);
+  //  int32_t tiv0 = (face[0].tex.y * tiz0) * (1 << _H3D_RS);
+  //  int32_t tiv1 = (face[1].tex.y * tiz1) * (1 << _H3D_RS);
+  //  int32_t tiv2 = (face[2].tex.y * tiz2) * (1 << _H3D_RS);
 
   const int yend = boundsBR.y;
   const int xend = boundsBR.x;
@@ -215,26 +218,18 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
     mint_t w2 = w2_y;
     for (int x = xstart; x <= xend; x++) {
       if ((w0 | w1 | w2) >= 0) {
-        // int32_t w0a = w0 * invarea;
-        // int32_t w1a = w1 * invarea;
-        // int32_t w2a = w2 * invarea;
-        mfloat_t w0a = w0 * invarea;
-        mfloat_t w1a = w1 * invarea;
-        mfloat_t w2a = w2 * invarea;
         // These are linearly interpolated values and could also be
         // pulled out of the loop, though it may be slower
-        mfloat_t pz = w0a * tiz0 + w1a * tiz1 + w2a * tiz2;
-        // int32_t pz = w0a * tiz0 + w1a * tiz1 + w2a * tiz2;
+        mfloat_t pz = (w0 * tiz0 + w1 * tiz1 + w2 * tiz2) * invarea;
         if (pz > haloo3d_wb_get(fb, x, y)) {
-          haloo3d_wb_set(fb, x, y, pz);
-          pz = 1 / pz;
+          mfloat_t pcz = invarea / pz;
           uint16_t c = haloo3d_fb_getuv(
-              texture, (w0a * tiu0 + w1a * tiu1 + w2a * tiu2) * pz,
-              (w0a * tiv0 + w1a * tiv1 + w2a * tiv2) * pz);
-          // uint16_t c = haloo3d_fb_getuvi(
-          //     texture, (w0a * tiu0 + w1a * tiu1 + w2a * tiu2) / pz,
-          //     (w0a * tiv0 + w1a * tiv1 + w2a * tiv2) / pz);
-          haloo3d_fb_set(fb, x, y, haloo3d_col_scalei(c, scale));
+              texture, (w0 * tiu0 + w1 * tiu1 + w2 * tiu2) * pcz,
+              (w0 * tiv0 + w1 * tiv1 + w2 * tiv2) * pcz);
+          if (c & 0xF000) {
+            haloo3d_wb_set(fb, x, y, pz);
+            haloo3d_fb_set(fb, x, y, haloo3d_col_scalei(c, scale));
+          }
         }
       }
       w0 += w0_i.x;
@@ -266,7 +261,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
   for (int i = 0; i < 3; i++) {
     dist[i] = face[i].pos.z + face[i].pos.w;
-    if (dist[i] < H3D_FACEF_CLIPLOW) {
+    if (dist[i] < 0) { //< H3D_FACEF_CLIPLOW) {
       outers[numouters++] = i;
     } else {
       inners[numinners++] = i;
@@ -274,6 +269,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   }
 
   if (numouters == 2) { // The one triangle thing
+    return 0;
     // We CAN use the face (sort of), so copy it out
     memcpy(out[numout], face, sizeof(haloo3d_facef));
 
@@ -294,6 +290,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
       numout++;
     }
   } else if (numouters == 1) { // The two triangle thing
+    return 0;
 
     int ai = outers[0]; // A is the odd one out
     int bi = inners[0];
@@ -302,30 +299,37 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
     mfloat_t tab = dist[ai] / (dist[ai] - dist[bi]);
     mfloat_t tac = dist[ai] / (dist[ai] - dist[ci]);
 
+    eprintf("TAB: %f, TAC: %f\n", tab, tac);
+
     // Generate the first new triangle by replacing the bad outer point a
     // with an interpolated one to b
     memcpy(out[numout], face, sizeof(haloo3d_facef));
     haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + bi, tab);
 
+    // haloo3d_vertexf olda;
+    // memcpy(&olda, out[numout] + ai, sizeof(haloo3d_vertexf));
     haloo3d_vertexf olda = out[numout][ai];
 
     if (haloo3d_facef_finalize(out[numout])) {
       numout++;
     }
 
+    /*
     // We RESET the next point to simplify the process, and once again replace
     // the a point but interpolating with c
     memcpy(out[numout], face, sizeof(haloo3d_facef));
     haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + ci, tac);
 
     // But the B point needs to actually be the interpolated A point
+    // memcpy(out[numout] + bi, &olda, sizeof(haloo3d_vertexf));
     out[numout][bi] = olda;
 
     if (haloo3d_facef_finalize(out[numout])) {
       numout++;
     }
+    */
 
-  } else if (numouters != 3) { // Output the face itself, no modification
+  } else if (numouters == 0) { // Output the face itself, no modification
     memcpy(out[numout], face, sizeof(haloo3d_facef));
     if (haloo3d_facef_finalize(out[numout])) {
       numout++;

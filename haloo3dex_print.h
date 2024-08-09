@@ -13,6 +13,7 @@ typedef struct {
   int x;
   int y;
   int scale;
+  int logprints;
   haloo3d_fb *fb;
   char *buffer;
   int buflen;

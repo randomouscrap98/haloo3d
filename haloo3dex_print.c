@@ -272,6 +272,7 @@ void haloo3d_print_initdefault(haloo3d_print_tracker *t, char *buf,
   t->glyphs = haloo3d_print_basic_glyphs;
   t->buffer = buf;
   t->buflen = buflen;
+  t->logprints = 0;
   haloo3d_print_refresh(t);
   // NOTE: don't forget to set fb
 }
@@ -286,6 +287,9 @@ void haloo3d_print(haloo3d_print_tracker *t, const char *fmt, ...) {
   va_start(args, fmt);
   vsnprintf(t->buffer, t->buflen, fmt, args);
   va_end(args);
+  if (t->logprints) {
+    eprintf("%s", t->buffer);
+  }
   haloo3d_fb tex;
   uint16_t buffer[H3D_PRINT_CHW * H3D_PRINT_CHH];
   tex.buffer = buffer;

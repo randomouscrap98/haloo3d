@@ -17,6 +17,7 @@
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
+#define SKYSCALE 5;
 
 #define NUMOBJECTS 2
 #define MAXCAM 1200
@@ -64,7 +65,7 @@ int main(int argc, char **argv) {
   haloo3d_fb textures[NUMOBJECTS];
   haloo3d_obj_loadfile(models, argv[1]);
   haloo3d_img_loadppmfile(textures, argv[2]);
-  haloo3d_gen_1pxgradient(textures + 1, 0xF44F, 0xF004, 32);
+  haloo3d_gen_1pxgradient(textures + 1, 0xF44F, 0xF001, 32);
   haloo3d_gen_skybox(models + 1);
 
   camset cams[MAXCAM];
@@ -94,8 +95,8 @@ int main(int argc, char **argv) {
 #ifdef DOLIGHTING
   objects[0].lighting = &light;
 #endif
-  objects[0].pos.z = -1.5;
-  objects[1].scale = 50;
+  // objects[0].pos.z = 0;
+  objects[1].scale = SKYSCALE;
 
   // Now we create a framebuffer to draw the triangle into
   haloo3d_fb fb;
@@ -106,6 +107,7 @@ int main(int argc, char **argv) {
   char printbuf[8192];
   haloo3d_print_initdefault(&t, printbuf, sizeof(printbuf));
   t.fb = &fb;
+  t.logprints = 1;
 
   // Storage stuff
   mfloat_t matrix3d[MAT4_SIZE], matrixcam[MAT4_SIZE], matrixscreen[MAT4_SIZE],
@@ -116,6 +118,7 @@ int main(int argc, char **argv) {
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
   char fname[1024];
+  float sum = 0;
 
   // -----------------------------------
   //     Actual rendering
@@ -144,7 +147,8 @@ int main(int argc, char **argv) {
       // Setup final model matrix and the precalced vertices
       vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
       haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
-      mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
+      haloo3d_mat4_scale(matrixmodel, objects[i].scale);
+      // mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
       mat4_multiply(matrix3d, matrixscreen, matrixmodel);
       haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
       // Iterate over object faces
@@ -170,8 +174,10 @@ int main(int argc, char **argv) {
     }
 
     clock_t end = clock();
-    haloo3d_print(&t, "Frame time: %.2f",
-                  1000.0 * (float)(end - begin) / CLOCKS_PER_SEC);
+    float thistime = 1000.0 * (float)(end - begin) / CLOCKS_PER_SEC;
+    sum += thistime;
+    haloo3d_print(&t, "Frame time: %.2f\nAVG: %.2f\n", thistime,
+                  sum / (cami + 1));
 
     sprintf(fname, "scene_%04d.ppm", cami);
     haloo3d_img_writeppmfile(&fb, fname);
