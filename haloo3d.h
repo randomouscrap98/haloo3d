@@ -226,6 +226,9 @@ static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
 
 // "scale" a color by a discrete intensity from 0 to 256. 256 is 1.0
 static inline uint16_t haloo3d_col_scalei(uint16_t col, uint16_t scale) {
+  if (scale == 256) {
+    return col;
+  }
   uint16_t r = (H3DC_R4(col) * scale) >> 8;
   uint16_t g = (H3DC_G4(col) * scale) >> 8;
   uint16_t b = (H3DC_B4(col) * scale) >> 8;
