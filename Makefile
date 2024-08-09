@@ -17,7 +17,7 @@ CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBD)
 # Define the object files for the static library
 STATICOBJS = $(BUILDD)/$(LIBD)/mathc.o
 FULLOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o \
-					 $(BUILDD)/haloo3dex_gen.o
+					 $(BUILDD)/haloo3dex_gen.o $(BUILDD)/haloo3dex_print.o
 BASEOUT = $(BUILDD)/haloo3d.a
 FULLOUT = $(BUILDD)/haloo3d_full.a
 
