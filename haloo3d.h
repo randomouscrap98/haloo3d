@@ -74,6 +74,16 @@ static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
   return fb->buffer[x + y * fb->width];
 }
 
+// #define _H3D_RS 12
+// static inline uint16_t haloo3d_fb_getuvi(haloo3d_fb *fb, int32_t u, int32_t
+// v) {
+//   uint16_t x = (uint16_t)((fb->width * u) >> _H3D_RS) & (fb->width - 1);
+//   uint16_t y = (uint16_t)((fb->height * (1 - v)) >> _H3D_RS) & (fb->height -
+//   1);
+//   // eprintf("%d %d | %f %f\n", x, y, u, v);
+//   return fb->buffer[x + y * fb->width];
+// }
+
 // Get the total size in elements of any buffer inside (framebuffer or
 // otherwise)
 static inline int haloo3d_fb_size(haloo3d_fb *fb) {

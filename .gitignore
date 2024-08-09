@@ -1,5 +1,6 @@
 # Various files
 *.obj
+*.cam
 callgrind.*
 ignore/
 
