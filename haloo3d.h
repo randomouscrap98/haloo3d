@@ -20,7 +20,7 @@
 // the minimum clip. Since we (currently) only clip against the
 // near plane, this is usually fine. It may even be fine for
 // the future, if we clip against other planes.
-// #define H3D_FACEF_CLIPLOW 0.001
+#define H3D_FACEF_CLIPLOW 0.01
 
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
