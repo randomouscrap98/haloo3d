@@ -272,6 +272,7 @@ void haloo3d_print_initdefault(haloo3d_print_tracker *t, char *buf,
   t->glyphs = haloo3d_print_basic_glyphs;
   t->buffer = buf;
   t->buflen = buflen;
+  haloo3d_print_refresh(t);
   // NOTE: don't forget to set fb
 }
 

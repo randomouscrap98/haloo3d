@@ -150,3 +150,14 @@ void haloo3d_obj_free(haloo3d_obj *obj) {
   free(obj->vertices);
   free(obj->vtexture);
 }
+
+void haloo3d_obj_loadfile(haloo3d_obj *obj, char *filename) {
+  // Open a simple file and read the ppm from it
+  FILE *f = fopen(filename, "r");
+  if (f == NULL) {
+    dieerr("Can't open %s for reading object\n", filename);
+  }
+  haloo3d_obj_load(obj, f);
+  fclose(f);
+  printf("Read from object file %s\n", filename);
+}

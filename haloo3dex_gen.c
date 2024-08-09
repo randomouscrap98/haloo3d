@@ -1,8 +1,9 @@
 #include "haloo3dex_gen.h"
 #include "haloo3d.h"
 
-void haloo3d_gen_checkerboard(haloo3d_fb *fb, uint16_t *cols,
-                              uint16_t numcols) {
+void haloo3d_gen_checkerboard(haloo3d_fb *fb, uint16_t *cols, uint16_t numcols,
+                              uint16_t size) {
+  haloo3d_fb_init_tex(fb, size, size);
   for (int y = 0; y < fb->height; y++) {
     for (int x = 0; x < fb->width; x++) {
       haloo3d_fb_set(fb, x, y, cols[(x + y) % numcols]);
@@ -10,7 +11,9 @@ void haloo3d_gen_checkerboard(haloo3d_fb *fb, uint16_t *cols,
   }
 }
 
-void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top) {
+void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
+                             uint16_t height) {
+  haloo3d_fb_init_tex(fb, 1, height);
   for (int y = 0; y < fb->height; y++) {
     haloo3d_fb_set(
         fb, 0, y,

@@ -23,7 +23,7 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
   haloo3d_facef_normal(face, lnorm);
   mfloat_t intensity =
       light[0] * lnorm[0] + light[1] * lnorm[1] + light[2] * lnorm[2];
-  if (intensity < 0) {
+  if (intensity < minlight) {
     return minlight; // Don't just not draw the triangle: it should be black
   } else {
     return (intensity + minlight) / (1 + minlight);

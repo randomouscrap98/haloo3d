@@ -209,7 +209,7 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
 
 #define H3DC_R4(c) (((c) >> 8) & 0xF)
 #define H3DC_G4(c) (((c) >> 4) & 0xF)
-#define H3DC_B4(c) ((c) & 0xF0)
+#define H3DC_B4(c) ((c) & 0xF)
 #define H3DC_R8(c) ((((c) >> 4) & 0xF0) | 0x07)
 #define H3DC_G8(c) (((c) & 0xF0) | 0x07)
 #define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)

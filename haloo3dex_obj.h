@@ -11,5 +11,7 @@
 void haloo3d_obj_load(haloo3d_obj *obj, FILE *f);
 // Free the data created by haloo3d_obj_load
 void haloo3d_obj_free(haloo3d_obj *obj);
+// Load an object from a file. If it fails, it kills the whole program
+void haloo3d_obj_loadfile(haloo3d_obj *obj, char *filename);
 
 #endif
