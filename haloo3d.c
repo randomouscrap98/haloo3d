@@ -320,11 +320,6 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
                     haloo3d_recti outrect) {
-  // if (texrect.x2 <= 0 || texrect.y2 <= 0 || texrect.x1 >= sprite->width ||
-  //     texrect.y1 >= sprite->height || outrect.x2 <= 0 || outrect.y2 <= 0 ||
-  //     outrect.x1 >= fb->width || outrect.y1 >= fb->height) {
-  //   return;
-  // }
   // Precalc the step, as it's always the same even if we clip the rect
   const int FIXEDPOINTDEPTH = H3D_SPRITE_FPDEPTH;
   struct vec2i texdim = haloo3d_recti_dims(&texrect);

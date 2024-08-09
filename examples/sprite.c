@@ -9,12 +9,12 @@
 int main(int argc, char **argv) {
 
   if (argc != 2) {
-    dieerr("You must pass the image ppm to draw!");
+    dieerr("You must pass the image ppm to draw!\n");
   }
 
   // Load the junk
   haloo3d_fb tex;
-  haloo3d_img_loadppmfile(&tex, argv[2]);
+  haloo3d_img_loadppmfile(&tex, argv[1]);
 
   // Now we create a framebuffer to draw the sprite into
   haloo3d_fb fb;

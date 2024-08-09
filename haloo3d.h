@@ -242,9 +242,9 @@ static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
   uint16_t g2 = H3DC_G4(col2);
   uint16_t b2 = H3DC_B4(col2);
 
-  return H3DC_RGB(uint8_t((t - 1) * r1 + t * r2),
-                  uint8_t((t - 1) * g1 + t * g2),
-                  uint8_t((t - 1) * b1 + t * b2));
+  return H3DC_RGB((uint8_t)((t - 1) * r1 + t * r2),
+                  (uint8_t)((t - 1) * g1 + t * g2),
+                  (uint8_t)((t - 1) * b1 + t * b2));
 }
 
 // ----------------------
