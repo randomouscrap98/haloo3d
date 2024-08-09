@@ -29,6 +29,8 @@ int main(int argc, char **argv) {
   haloo3d_print_initdefault(&t, printbuf, sizeof(printbuf));
   t.scale = atoi(argv[2]);
   t.fb = &fb;
+  // t.bcolor = 0;
+  // t.fcolor = 0xFFF0;
 
   for (int i = 0; i < ITERATIONS; i++) {
     haloo3d_print_refresh(&t);

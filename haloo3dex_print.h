@@ -33,12 +33,8 @@ void haloo3d_print(haloo3d_print_tracker *t, const char *fmt, ...);
 // reset the cursor and any other "temporary" tracking.
 void haloo3d_print_refresh(haloo3d_print_tracker *t);
 
-//{ snprintf((t)->buffer, (t)->buflen, fmt, __VA_ARGS__); }
-
 // Convert a single glyph from compact uint64_t into the given framebuffer
 void haloo3d_print_convertglyph(uint64_t glpyh, uint16_t bcolor,
                                 uint16_t fcolor, haloo3d_fb *out);
-
-// void haloo3d_print_charat(int x, int y, haloo3d_fb * fb,
 
 #endif

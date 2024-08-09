@@ -347,9 +347,11 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
   for (int y = outrect.y1; y < outrect.y2; y++) {
     texx = texrect.x1;
     for (int x = outrect.x1; x < outrect.x2; x++) {
-      haloo3d_fb_set(fb, x, y,
-                     haloo3d_fb_get(sprite, texx >> FIXEDPOINTDEPTH,
-                                    texy >> FIXEDPOINTDEPTH));
+      uint16_t pix = haloo3d_fb_get(sprite, texx >> FIXEDPOINTDEPTH,
+                                    texy >> FIXEDPOINTDEPTH);
+      if (pix >> 12) {
+        haloo3d_fb_set(fb, x, y, pix);
+      }
       texx += stepx;
     }
     texy += stepy;
