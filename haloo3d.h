@@ -26,6 +26,8 @@
 #define H3D_OBJ_MAXVERTICES 8192
 #define H3D_OBJ_MAXFACES 8192
 
+#define H3D_SPRITE_FPDEPTH 12
+
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -278,6 +280,22 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
 //   Math
 // ----------------------
 
+// Define a rectangle with INCLUSIVE start EXCLUSIVE endpoint
+typedef struct {
+  int x1;
+  int y1;
+  int x2;
+  int y2;
+} haloo3d_recti;
+
+// Calculate the dimensions of the given rectangle
+static inline struct vec2i haloo3d_recti_dims(haloo3d_recti *bounds) {
+  return (struct vec2i){
+      .x = abs(bounds->x2 - bounds->x1),
+      .y = abs(bounds->y2 - bounds->y1),
+  };
+}
+
 // Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   v[0] = (v[0] + 1.0) / 2.0 * width;
@@ -402,6 +420,10 @@ int haloo3d_facef_finalize(haloo3d_facef face);
 // H3D_FACEF_MAXCLIP as length). Returns the number of clipped faces.
 // If 0, you can skip additional processing for this face completely
 int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
+
+// Draw a sprite with no depth value directly into the buffer. Very fast.
+void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
+                    haloo3d_recti outrect);
 
 // ----------------------
 // Some helper functions

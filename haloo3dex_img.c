@@ -60,3 +60,25 @@ void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
     }
   }
 }
+
+void haloo3d_img_writeppmfile(haloo3d_fb *fb, char *filename) {
+  // And now we should be able to save the framebuffer
+  FILE *f = fopen(filename, "w");
+  if (f == NULL) {
+    dieerr("Can't open %s for writing ppm image\n", filename);
+  }
+  haloo3d_img_writeppm(fb, f);
+  fclose(f);
+  eprintf("Wrote ppm image to %s\n", filename);
+}
+
+void haloo3d_img_loadppmfile(haloo3d_fb *tex, char *filename) {
+  // Open a simple file and read the ppm from it
+  FILE *f = fopen(filename, "r");
+  if (f == NULL) {
+    dieerr("Can't open %s for ppm image reading\n", filename);
+  }
+  haloo3d_img_loadppm(f, tex); // This also calls init so you have to free
+  fclose(f);
+  eprintf("Read ppm image from %s\n", filename);
+}

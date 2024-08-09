@@ -317,3 +317,46 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
   return numout;
 }
+
+void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
+                    haloo3d_recti outrect) {
+  // if (texrect.x2 <= 0 || texrect.y2 <= 0 || texrect.x1 >= sprite->width ||
+  //     texrect.y1 >= sprite->height || outrect.x2 <= 0 || outrect.y2 <= 0 ||
+  //     outrect.x1 >= fb->width || outrect.y1 >= fb->height) {
+  //   return;
+  // }
+  // Precalc the step, as it's always the same even if we clip the rect
+  const int FIXEDPOINTDEPTH = H3D_SPRITE_FPDEPTH;
+  struct vec2i texdim = haloo3d_recti_dims(&texrect);
+  struct vec2i outdim = haloo3d_recti_dims(&outrect);
+  int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)texdim.x / outdim.x;
+  int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)texdim.y / outdim.y;
+  int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
+  int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
+  // Clip the rect
+  if (outrect.x1 < 0) {
+    texx += stepx * -outrect.x1;
+    outrect.x1 = 0;
+  }
+  if (outrect.y1 < 0) {
+    texy += stepy * -outrect.y1;
+    outrect.y1 = 0;
+  }
+  if (outrect.x2 >= fb->width) {
+    outrect.x2 = fb->width - 1;
+  }
+  if (outrect.y2 >= fb->height) {
+    outrect.y2 = fb->height - 1;
+  }
+
+  for (int y = outrect.y1; y < outrect.y2; y++) {
+    texx = texrect.x1;
+    for (int x = outrect.x1; x < outrect.x2; x++) {
+      haloo3d_fb_set(fb, x, y,
+                     haloo3d_fb_get(sprite, texx >> FIXEDPOINTDEPTH,
+                                    texy >> FIXEDPOINTDEPTH));
+      texx += stepx;
+    }
+    texy += stepy;
+  }
+}
