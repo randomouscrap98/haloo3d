@@ -9,6 +9,9 @@ kind of guidelines or APIs. It will most likely not be very pretty or performant
 It renders into a 16 bit buffer of A4R4G4B4, which you can do whatever you want 
 with. 
 
+This library is being developed on an old core 2 duo, so that's the 
+performance target.
+
 ## Structure
 
 The main library handles all the 3D tasks and is provided by just
@@ -30,6 +33,12 @@ You will need to link libmath, of course (ugh). You can of course just
 compile only the portions you need instead. In the process of building
 `haloo3d_full.a`, it also builds all the requisite `.o` files for each
 portion of the extended library, so you can include only what you need.
+
+For more information on building, you can inspect the [Makefile](Makefile).
+Building the examples is basically the exact command you'll want to use
+when building your own program. I would recommend using the link time
+optimization flag `-flto`, though my library is so slow it's probably
+not going to make much of a difference.
 
 ## Testing
 
