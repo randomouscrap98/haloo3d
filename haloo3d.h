@@ -464,7 +464,7 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
   {                                                                            \
     ass = malloc(size);                                                        \
     if (ass == NULL) {                                                         \
-      dieerr("Could not allocate mem, size %ld\n", size);                      \
+      dieerr("Could not allocate mem, size %d\n", (int)(size));                \
     }                                                                          \
   }
 #define reallocordie(ass, size)                                                \
