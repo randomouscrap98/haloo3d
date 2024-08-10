@@ -3,6 +3,7 @@
 #include "../haloo3dex_img.h"
 #include "../haloo3dex_obj.h"
 #include "../haloo3dex_print.h"
+#include "flower.h"
 #include "mathc.h"
 #include <stdlib.h>
 #include <time.h>
@@ -20,7 +21,9 @@
 #define SKYSCALE 30
 #define AVGWEIGHT 0.85
 
-#define NUMOBJECTS 3
+// this is the number of DYNAMIC objects..
+#define NUMOBJECTS 4
+#define NUMINSTANCES NUMOBJECTS - 1
 #define MAXCAM 1200
 
 typedef struct {
@@ -30,6 +33,8 @@ typedef struct {
   mfloat_t yaw;
   mfloat_t pitch;
 } camset;
+
+uint16_t redflower[64] = H3D_FLOWER(0xFE55, 0xF6C4, 0xFFE0, 0xFD44, 0xF492);
 
 int readcam(camset *set, int max, char *filename) {
   FILE *f = fopen(filename, "r");
@@ -71,6 +76,9 @@ int main(int argc, char **argv) {
   uint16_t checkcols[2] = {0xF0A0, 0xF270};
   haloo3d_gen_checkerboard(textures + 2, checkcols, 2, 32);
   haloo3d_gen_sloped(models + 2, 61, 1.0, 1.25);
+  haloo3d_fb_init_tex(textures + 3, 8, 8);
+  memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
+  haloo3d_gen_crossquad(models + 3, textures + 3);
 
   camset cams[MAXCAM];
   int numcams = readcam(cams, MAXCAM, argv[3]);
@@ -94,8 +102,8 @@ int main(int argc, char **argv) {
 
   int totalfaces = 0;
   int totalverts = 0;
-  haloo3d_obj_instance objects[NUMOBJECTS];
-  for (int i = 0; i < NUMOBJECTS; i++) {
+  haloo3d_obj_instance objects[NUMINSTANCES];
+  for (int i = 0; i < NUMINSTANCES; i++) {
     haloo3d_objin_init(objects + i, models + i, textures + i);
     totalfaces += objects[i].model->numfaces;
     totalverts += objects[i].model->numvertices;
@@ -153,7 +161,7 @@ int main(int argc, char **argv) {
     mat4_multiply(matrixscreen, perspective, matrixcam);
 
     // Iterate over objects
-    for (int i = 0; i < NUMOBJECTS; i++) {
+    for (int i = 0; i < NUMINSTANCES; i++) {
       // Setup final model matrix and the precalced vertices
       vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
       haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);

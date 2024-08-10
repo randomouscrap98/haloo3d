@@ -185,19 +185,29 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
 // haloo3d_fb *fb) {
 
 void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
-  // struct vec2 dims;
-  // uint16_t width = fb->width;
-  // uint16_t height = fb->height;
-  // if (width > height) {
-  //   dims.x = 1.0;
-  //   dims.y = (mfloat_t)height / width;
-  // } else {
-  //   dims.x = (mfloat_t)width / height;
-  //   dims.y = 1.0;
-  // }
+  struct vec2 dims;
+  uint16_t width = fb->width;
+  uint16_t height = fb->height;
+  if (width > height) {
+    dims.x = 1.0;
+    dims.y = (mfloat_t)height / width;
+  } else {
+    dims.x = (mfloat_t)width / height;
+    dims.y = 1.0;
+  }
   haloo3d_gen_obj_prealloc(obj, 8, 4, 4);
   // There's only 4 vtextures, as usual
   haloo3d_gen_boxvtexture(obj->vtexture);
-  // We create two quads each, first on the x axis = 0 then on z = 0
-  // vec4(obj->vertices
+  // We create two quads each, first on the x axis = 0 then on z = 0.
+  // Order is topleft, topright, bottomleft, bottomright
+  vec4(obj->vertices[0].v, -dims.x, dims.y, 0, 1);
+  vec4(obj->vertices[0].v, dims.x, dims.y, 0, 1);
+  vec4(obj->vertices[0].v, -dims.x, -dims.y, 0, 1);
+  vec4(obj->vertices[0].v, dims.x, -dims.y, 0, 1);
+  // then the x aligned one, same order
+  vec4(obj->vertices[0].v, 0, dims.y, -dims.x, 1);
+  vec4(obj->vertices[0].v, 0, dims.y, dims.x, 1);
+  vec4(obj->vertices[0].v, 0, -dims.y, -dims.x, 1);
+  vec4(obj->vertices[0].v, 0, -dims.y, dims.x, 1);
+  // Only four faces
 }
