@@ -201,13 +201,21 @@ void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
   // We create two quads each, first on the x axis = 0 then on z = 0.
   // Order is topleft, topright, bottomleft, bottomright
   vec4(obj->vertices[0].v, -dims.x, dims.y, 0, 1);
-  vec4(obj->vertices[0].v, dims.x, dims.y, 0, 1);
-  vec4(obj->vertices[0].v, -dims.x, -dims.y, 0, 1);
-  vec4(obj->vertices[0].v, dims.x, -dims.y, 0, 1);
+  vec4(obj->vertices[1].v, dims.x, dims.y, 0, 1);
+  vec4(obj->vertices[2].v, -dims.x, -dims.y, 0, 1);
+  vec4(obj->vertices[3].v, dims.x, -dims.y, 0, 1);
   // then the x aligned one, same order
-  vec4(obj->vertices[0].v, 0, dims.y, -dims.x, 1);
-  vec4(obj->vertices[0].v, 0, dims.y, dims.x, 1);
-  vec4(obj->vertices[0].v, 0, -dims.y, -dims.x, 1);
-  vec4(obj->vertices[0].v, 0, -dims.y, dims.x, 1);
-  // Only four faces
+  vec4(obj->vertices[4].v, 0, dims.y, -dims.x, 1);
+  vec4(obj->vertices[5].v, 0, dims.y, dims.x, 1);
+  vec4(obj->vertices[6].v, 0, -dims.y, -dims.x, 1);
+  vec4(obj->vertices[7].v, 0, -dims.y, dims.x, 1);
+  // Only four faces. Do two per quad (iterate over quads)
+  for (int i = 0; i < 2; i++) {
+    obj->faces[i * 2][0] = (haloo3d_vertexi){.posi = 0 + i * 4, .texi = 1};
+    obj->faces[i * 2][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};
+    obj->faces[i * 2][2] = (haloo3d_vertexi){.posi = 1 + i * 4, .texi = 3};
+    obj->faces[i * 2 + 1][0] = (haloo3d_vertexi){.posi = 1 + i * 4, .texi = 3};
+    obj->faces[i * 2 + 1][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};
+    obj->faces[i * 2 + 1][2] = (haloo3d_vertexi){.posi = 3 + i * 4, .texi = 2};
+  }
 }

@@ -3,9 +3,9 @@ import math
 
 # This one rotates around the center point
 FILENAME = "pycam2.cam"
-PITCH = 0.65
+PITCH = 0.70
 FRAMES = 60 # will make a full revolution in this time
-YSTART = 3
+YSTART = 2
 RADIUS = 10
 
 with open(FILENAME, "w+") as f:

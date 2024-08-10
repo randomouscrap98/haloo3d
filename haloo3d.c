@@ -149,11 +149,14 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
 
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face) {
+  haloo3d_vertexf v0v = face[0];
+  haloo3d_vertexf v1v = face[1];
+  haloo3d_vertexf v2v = face[2];
   // min,      max
   struct vec2 boundsTLf =
-      haloo3d_boundingbox_tl(face[0].pos.v, face[1].pos.v, face[2].pos.v);
+      haloo3d_boundingbox_tl(v0v.pos.v, v1v.pos.v, v2v.pos.v);
   struct vec2 boundsBRf =
-      haloo3d_boundingbox_br(face[0].pos.v, face[1].pos.v, face[2].pos.v);
+      haloo3d_boundingbox_br(v0v.pos.v, v1v.pos.v, v2v.pos.v);
   //  The triangle is fully out of bounds; we don't have a proper clipper, so
   //  this check still needs to be performed
   if (boundsBRf.y < 0 || boundsBRf.x < 0 || boundsTLf.x >= fb->width ||
@@ -161,14 +164,21 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
     return;
   }
   struct vec2i v0, v1, v2;
-  vec2i_assign_vec2(v0.v, face[0].pos.v);
-  vec2i_assign_vec2(v1.v, face[1].pos.v);
-  vec2i_assign_vec2(v2.v, face[2].pos.v);
+  vec2i_assign_vec2(v0.v, v0v.pos.v);
+  vec2i_assign_vec2(v1.v, v1v.pos.v);
+  vec2i_assign_vec2(v2.v, v2v.pos.v);
   mint_t parea = haloo3d_edgefunci(v0.v, v1.v, v2.v);
   // The user decides if they want backface culling before they call this func
   if (parea == 0) {
     return;
   } else if (parea < 0) {
+    // swap any two vertices and continue
+    struct vec2i tmp = v0;
+    v0 = v1;
+    v1 = tmp;
+    haloo3d_vertexf tmpv = v0v;
+    v0v = v1v;
+    v1v = tmpv;
     parea = -parea;
   }
   struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y, 0)};
@@ -185,15 +195,15 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   struct vec2i w2_i = haloo3d_edgeinci(v0.v, v1.v);
   // Cant use z because it's -1 to 1. w is nicer to work with since it's near to
   // far and can never be 0.
-  mfloat_t tiz0 = 1.0 / face[0].pos.w;
-  mfloat_t tiz1 = 1.0 / face[1].pos.w;
-  mfloat_t tiz2 = 1.0 / face[2].pos.w;
-  mfloat_t tiu0 = face[0].tex.x * tiz0;
-  mfloat_t tiu1 = face[1].tex.x * tiz1;
-  mfloat_t tiu2 = face[2].tex.x * tiz2;
-  mfloat_t tiv0 = face[0].tex.y * tiz0;
-  mfloat_t tiv1 = face[1].tex.y * tiz1;
-  mfloat_t tiv2 = face[2].tex.y * tiz2;
+  mfloat_t tiz0 = 1.0 / v0v.pos.w;
+  mfloat_t tiz1 = 1.0 / v1v.pos.w;
+  mfloat_t tiz2 = 1.0 / v2v.pos.w;
+  mfloat_t tiu0 = v0v.tex.x * tiz0;
+  mfloat_t tiu1 = v1v.tex.x * tiz1;
+  mfloat_t tiu2 = v2v.tex.x * tiz2;
+  mfloat_t tiv0 = v0v.tex.y * tiz0;
+  mfloat_t tiv1 = v1v.tex.y * tiz1;
+  mfloat_t tiv2 = v2v.tex.y * tiz2;
 
 #ifdef H3D_DEBUGCLIP
   eprintf("Z: %f %f %f\n", face[0].pos.z, face[1].pos.z, face[2].pos.z);

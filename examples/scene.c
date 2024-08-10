@@ -23,7 +23,9 @@
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
-#define NUMINSTANCES NUMOBJECTS - 1
+#define NUMFLOWERS 300
+#define FLOWERIND (NUMOBJECTS - 1)
+#define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
 #define MAXCAM 1200
 
 typedef struct {
@@ -78,6 +80,7 @@ int main(int argc, char **argv) {
   haloo3d_gen_sloped(models + 2, 61, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
+  // memset(textures[3].buffer, 0xFF, sizeof(uint16_t) * 64);
   haloo3d_gen_crossquad(models + 3, textures + 3);
 
   camset cams[MAXCAM];
@@ -104,7 +107,16 @@ int main(int argc, char **argv) {
   int totalverts = 0;
   haloo3d_obj_instance objects[NUMINSTANCES];
   for (int i = 0; i < NUMINSTANCES; i++) {
-    haloo3d_objin_init(objects + i, models + i, textures + i);
+    if (i < FLOWERIND) {
+      haloo3d_objin_init(objects + i, models + i, textures + i);
+    } else { // Setup the flowers
+      haloo3d_objin_init(objects + i, models + FLOWERIND, textures + FLOWERIND);
+      objects[i].cullbackface = 0;
+      objects[i].scale = 0.5;
+      int rvi = rand() % models[2].numvertices;
+      vec3_assign(objects[i].pos.v, models[2].vertices[rvi].v);
+      objects[i].pos.y += 0.5;
+    }
     totalfaces += objects[i].model->numfaces;
     totalverts += objects[i].model->numvertices;
   }
@@ -113,8 +125,10 @@ int main(int argc, char **argv) {
   objects[2].lighting = &light;
 #endif
   // objects[0].pos.z = 0;
+  // objects[0].pos.y = -10;
+  // vec3(objects[2].pos.v, 0.5, 0.8, 0.5);
+  objects[0].pos.y = 1;
   objects[1].scale = SKYSCALE;
-  objects[2].pos.y = -1;
 
   // Now we create a framebuffer to draw the triangle into
   haloo3d_fb fb;
@@ -137,6 +151,8 @@ int main(int argc, char **argv) {
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
   char fname[1024];
   float sum = 0;
+
+  eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
   // -----------------------------------
   //     Actual rendering
