@@ -18,7 +18,7 @@
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
 #define SKYSCALE 30
-#define AVGWEIGHT 0.8
+#define AVGWEIGHT 0.85
 
 #define NUMOBJECTS 3
 #define MAXCAM 1200
@@ -168,6 +168,10 @@ int main(int argc, char **argv) {
                            objects[i].model->vtexture, face);
         int tris = haloo3d_facef_clip(face, outfaces);
         for (int ti = 0; ti < tris; ti++) {
+          int backface = !haloo3d_facef_finalize(outfaces[ti]);
+          if (objects[i].cullbackface && backface) {
+            continue;
+          }
           mfloat_t intensity = 1.0;
           if (objects[i].lighting) {
             haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],

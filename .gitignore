@@ -1,6 +1,7 @@
 # Various files
 *.obj
 *.cam
+*.tar.gz
 callgrind.*
 ignore/
 

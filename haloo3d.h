@@ -171,13 +171,14 @@ int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix, struct vec4 *out);
 // lookvec as the raw value send to the lookat function, or you can use it
 // as an offset from the model pos with a simple vector addition.
 typedef struct {
-  haloo3d_obj *model;
-  haloo3d_fb *texture;
   struct vec3 pos;
   struct vec3 lookvec;
-  uint16_t color;        // baseline color if textures aren't used
-  mfloat_t scale;        // how big the thing should be in world
+  haloo3d_obj *model;
+  haloo3d_fb *texture;
   struct vec3 *lighting; // a pointer to lighting, null for none
+  mfloat_t scale;        // how big the thing should be in world
+  uint16_t color;        // baseline color if textures aren't used
+  uint8_t cullbackface;
 } haloo3d_obj_instance;
 
 // Set initial state for object, given a model and texture. Models are set
@@ -435,6 +436,9 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.
 int haloo3d_facef_finalize(haloo3d_facef face);
+
+// Return whether a face is a backface
+// int haloo3d_facef_isbackface(haloo3d_facef face);
 
 // Clip a given face, outputting the results into the out buffer. The out
 // buffer should have enough space to store all clipfaces (use

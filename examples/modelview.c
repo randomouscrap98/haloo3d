@@ -136,6 +136,11 @@ int main(int argc, char **argv) {
                          objects[i].model->vtexture, face);
       int tris = haloo3d_facef_clip(face, outfaces);
       for (int ti = 0; ti < tris; ti++) {
+        // You (perhaps unfortunately) still need to finalize the face. This
+        // lets you ignore backface culling if you want (we turn it on here)
+        if (!haloo3d_facef_finalize(outfaces[tris])) {
+          continue;
+        }
         mfloat_t intensity = 1.0;
         if (objects[i].lighting) {
           haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],

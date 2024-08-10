@@ -21,6 +21,16 @@ void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
   }
 }
 
+void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
+                              uint16_t numvtex, uint16_t numfaces) {
+  obj->numvertices = numverts;
+  obj->numvtextures = numvtex;
+  obj->numfaces = numfaces;
+  mallocordie(obj->vertices, obj->numvertices * sizeof(struct vec4));
+  mallocordie(obj->vtexture, obj->numvtextures * sizeof(struct vec3));
+  mallocordie(obj->faces, obj->numfaces * sizeof(haloo3d_facei));
+}
+
 void haloo3d_gen_boxvtexture(struct vec3 *textures) {
   vec3(textures[0].v, 0.001, 0.001, 0); // Oops, it sometimes overflows
   vec3(textures[1].v, 0.001, 0.999, 0);
@@ -30,25 +40,20 @@ void haloo3d_gen_boxvtexture(struct vec3 *textures) {
 
 // This technically inits the obj, so you will need to free it
 void haloo3d_gen_skybox(haloo3d_obj *obj) {
-  mallocordie(obj->vertices, 8 * sizeof(struct vec4));
-  mallocordie(obj->vtexture, 4 * sizeof(struct vec3));
-  mallocordie(obj->faces, 12 * sizeof(haloo3d_facei));
-  obj->numvertices = 8;
-  obj->numvtextures = 4;
-  obj->numfaces = 12;
+  haloo3d_gen_obj_prealloc(obj, 8, 4, 12);
   // There are only four corners of a texture and we're making a box... yeah
   haloo3d_gen_boxvtexture(obj->vtexture);
   // Cube faces are weird, I guess just manually do them? ugh
   // First 4 are the bottom vertices. We can make two faces out of these
-  vec3(obj->vertices[0].v, -1, -1, -1);
-  vec3(obj->vertices[1].v, 1, -1, -1);
-  vec3(obj->vertices[2].v, 1, -1, 1);
-  vec3(obj->vertices[3].v, -1, -1, 1);
+  vec4(obj->vertices[0].v, -1, -1, -1, 1);
+  vec4(obj->vertices[1].v, 1, -1, -1, 1);
+  vec4(obj->vertices[2].v, 1, -1, 1, 1);
+  vec4(obj->vertices[3].v, -1, -1, 1, 1);
   // Now the top 4 vertices, same order as bottom
-  vec3(obj->vertices[4].v, -1, 1, -1);
-  vec3(obj->vertices[5].v, 1, 1, -1);
-  vec3(obj->vertices[6].v, 1, 1, 1);
-  vec3(obj->vertices[7].v, -1, 1, 1);
+  vec4(obj->vertices[4].v, -1, 1, -1, 1);
+  vec4(obj->vertices[5].v, 1, 1, -1, 1);
+  vec4(obj->vertices[6].v, 1, 1, 1, 1);
+  vec4(obj->vertices[7].v, -1, 1, 1, 1);
   // clang-format off
   // The face vertices
   const uint8_t fv[12][3] = {
@@ -90,19 +95,14 @@ void haloo3d_gen_skybox(haloo3d_obj *obj) {
 }
 
 void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
-  obj->numvertices = (size + 1) * (size + 1);
-  obj->numvtextures = 4;
-  obj->numfaces = 2 * size * size;
-  mallocordie(obj->vertices, obj->numvertices * sizeof(struct vec4));
-  mallocordie(obj->vtexture, obj->numvtextures * sizeof(struct vec3));
-  mallocordie(obj->faces, obj->numfaces * sizeof(haloo3d_facei));
+  haloo3d_gen_obj_prealloc(obj, (size + 1) * (size + 1), 4, 2 * size * size);
   // Vtexture is just the four corners again
   haloo3d_gen_boxvtexture(obj->vtexture);
   // Generate all the simple vertices along the plane at y=0
   int i = 0;
   for (mfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
     for (mfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
-      vec3(obj->vertices[i].v, x, 0, z);
+      vec4(obj->vertices[i].v, x, 0, z, 1);
       i++;
     }
   }
@@ -130,27 +130,11 @@ void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
       obj->faces[i][2].posi = bottomright;
       obj->faces[i][2].texi = 2;
       i++;
-      // obj.Faces = append(obj.Faces, hrend.Facei{
-      // 	{Posi: topleft, Texi: 0},
-      // 	{Posi: bottomleft, Texi: 2},
-      // 	{Posi: topright, Texi: 1},
-      // }, hrend.Facei{
-      // 	{Posi: topright, Texi: 1},
-      // 	{Posi: bottomleft, Texi: 2},
-      // 	{Posi: bottomright, Texi: 3},
-      // })
     }
   }
   eprintf("Generated plane with %d vertices, %d faces\n", obj->numvertices,
           obj->numfaces);
 }
-
-// <BS>#define _H3D_GEN_SLMOD(x, y, xmod, ymod) {
-// void haloo3d_gen_sloped_modpoint(uint16_t x, uint16_t y, int xmod, int ymod,
-// mfloat_t slopiness, mfloat_t downbias) {
-//   //First, get the point to inspect
-//
-// }
 
 void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
                         mfloat_t downbias) {
@@ -195,4 +179,25 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
       }
     }
   }
+}
+
+// void haloo3d_gen_crossquad(haloo3d_obj_instance * obj) { //haloo3d_obj *obj,
+// haloo3d_fb *fb) {
+
+void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
+  // struct vec2 dims;
+  // uint16_t width = fb->width;
+  // uint16_t height = fb->height;
+  // if (width > height) {
+  //   dims.x = 1.0;
+  //   dims.y = (mfloat_t)height / width;
+  // } else {
+  //   dims.x = (mfloat_t)width / height;
+  //   dims.y = 1.0;
+  // }
+  haloo3d_gen_obj_prealloc(obj, 8, 4, 4);
+  // There's only 4 vtextures, as usual
+  haloo3d_gen_boxvtexture(obj->vtexture);
+  // We create two quads each, first on the x axis = 0 then on z = 0
+  // vec4(obj->vertices
 }

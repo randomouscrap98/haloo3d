@@ -32,6 +32,7 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
 
 void haloo3d_objin_init(haloo3d_obj_instance *obj, haloo3d_obj *model,
                         haloo3d_fb *tex) {
+  obj->cullbackface = 1;
   obj->model = model;
   obj->texture = tex;
   obj->scale = 1.0;
@@ -164,10 +165,11 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   vec2i_assign_vec2(v1.v, face[1].pos.v);
   vec2i_assign_vec2(v2.v, face[2].pos.v);
   mint_t parea = haloo3d_edgefunci(v0.v, v1.v, v2.v);
-  // Don't even bother with drawing backfaces or degenerate triangles;
-  // don't even give the user the option
-  if (parea <= 0) {
+  // The user decides if they want backface culling before they call this func
+  if (parea == 0) {
     return;
+  } else if (parea < 0) {
+    parea = -parea;
   }
   struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y, 0)};
   struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
@@ -244,6 +246,9 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 }
 
+// int haloo3d_facef_isbackface(haloo3d_facef face) {
+// }
+
 int haloo3d_facef_finalize(haloo3d_facef face) {
   // We HAVE to divide points first BEFORE checking the edge function
   haloo3d_vec4_conventional(&face[0].pos); // face[0].pos
@@ -308,9 +313,10 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
             out[numout][ci].tex.x, out[numout][ci].tex.y);
 #endif
 
-    if (haloo3d_facef_finalize(out[numout])) {
-      numout++;
-    }
+    numout++;
+    // if (haloo3d_facef_finalize(out[numout])) {
+    //   numout++;
+    // }
   } else if (numouters == 1) { // The two triangle thing
 
     int ai = outers[0]; // A is the odd one out
@@ -332,10 +338,11 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
     // haloo3d_vertexf olda;
     // memcpy(&olda, out[numout] + ai, sizeof(haloo3d_vertexf));
     haloo3d_vertexf olda = out[numout][ai];
+    numout++;
 
-    if (haloo3d_facef_finalize(out[numout])) {
-      numout++;
-    }
+    // if (haloo3d_facef_finalize(out[numout])) {
+    //   numout++;
+    // }
 
     // We RESET the next point to simplify the process, and once again replace
     // the a point but interpolating with c
@@ -345,10 +352,11 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
     // But the B point needs to actually be the interpolated A point
     // memcpy(out[numout] + bi, &olda, sizeof(haloo3d_vertexf));
     out[numout][bi] = olda;
+    numout++;
 
-    if (haloo3d_facef_finalize(out[numout])) {
-      numout++;
-    }
+    // if (haloo3d_facef_finalize(out[numout])) {
+    //   numout++;
+    // }
 
   } else if (numouters == 0) { // Output the face itself, no modification
     memcpy(out[numout], face, sizeof(haloo3d_facef));
@@ -358,9 +366,10 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
             out[numout][0].pos.y, out[numout][1].pos.z, out[numout][2].pos.x,
             out[numout][2].pos.y, out[numout][2].pos.z);
 #endif
-    if (haloo3d_facef_finalize(out[numout])) {
-      numout++;
-    }
+    numout++;
+    // if (haloo3d_facef_finalize(out[numout])) {
+    //   numout++;
+    // }
   }
 
   return numout;
