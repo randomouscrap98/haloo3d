@@ -1,11 +1,35 @@
 # Haloo3d
 
+<img src="https://qcs.shsbs.xyz/api/file/raw/ffqbz" alt="a 3d software renderer">
+
 A simple software renderer written in C which is made specifically for games
 I might want to make. It is not made to be highly configurable or to follow any
 kind of guidelines or APIs. It will most likely not be very pretty or performant.
 
 It renders into a 16 bit buffer of A4R4G4B4, which you can do whatever you want 
 with. 
+
+## Structure
+
+The main library handles all the 3D tasks and is provided by just
+[haloo3d.h](haloo3d.h) and [haloo3d.c](haloo3d.c). This "core" library is compiled
+by default when you run `make`. But when actually doing things, you will 
+want the `full` library, which includes helper functions for loading
+`.obj` files, loading `.ppm` files into textures, debug printing into
+the framebuffer, and other things. It may be wasteful but it's usually
+easier to build and include this library. 
+
+To create the full library and link against it, run:
+
+```
+make full
+gcc -o myprogram main.o haloo3d_full.a -lm
+```
+
+You will need to link libmath, of course (ugh). You can of course just
+compile only the portions you need instead. In the process of building
+`haloo3d_full.a`, it also builds all the requisite `.o` files for each
+portion of the extended library, so you can include only what you need.
 
 ## Testing
 
