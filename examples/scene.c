@@ -12,7 +12,7 @@
 #define WIDTH 640
 #define HEIGHT 480
 #define ASPECT ((float)WIDTH / HEIGHT)
-#define FOV 60.0
+#define FOV 90.0
 #define NEARCLIP 0.01
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
