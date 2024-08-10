@@ -18,4 +18,9 @@ void haloo3d_gen_skybox(haloo3d_obj *obj);
 // Generate a flat plane made up of individual squares
 void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size);
 
+// Generate a simple mountain where the center is the top.
+// This one expects your obj to already be initialized
+void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
+                        mfloat_t downbias);
+
 #endif

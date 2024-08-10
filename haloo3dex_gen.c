@@ -141,4 +141,58 @@ void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
       // })
     }
   }
+  eprintf("Generated plane with %d vertices, %d faces\n", obj->numvertices,
+          obj->numfaces);
+}
+
+// <BS>#define _H3D_GEN_SLMOD(x, y, xmod, ymod) {
+// void haloo3d_gen_sloped_modpoint(uint16_t x, uint16_t y, int xmod, int ymod,
+// mfloat_t slopiness, mfloat_t downbias) {
+//   //First, get the point to inspect
+//
+// }
+
+void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
+                        mfloat_t downbias) {
+  haloo3d_gen_plane(obj, size);
+  size++; // Actual vertex size is +1
+  uint16_t center = size >> 1;
+  // This is one less the length of one edge of the square as we expand outward
+  for (int i = 2; i <= size; i += 2) {
+    uint16_t ofs = (i >> 1);
+    // Just go in a square around the "center" point, modifying each point such
+    // that it is some movement away from the one adjacent to it towards the
+    // center
+    for (int j = 0; j < i; j++) {
+      uint16_t pi, ti;
+      for (int c = 0; c < 4; c++) {
+        uint16_t search = -(rand() % (3 - (j < 2) - (j < 1))) + 1;
+        switch (c) {
+        case 0: // Top left->right
+          pi = center - ofs + j + size * (center - ofs);
+          ti = pi + size + search;
+          break;
+        case 1: // Top right->down
+          pi = center + ofs + size * (center - ofs + j);
+          ti = pi + (search * size) - 1;
+          break;
+        case 2: // Bottom right->left
+          pi = center + ofs - j + size * (center + ofs);
+          ti = pi - size - search;
+          break;
+        case 3: // Bottom left->up
+          pi = center - ofs + size * (center + ofs - j);
+          ti = pi - (search * size) + 1;
+          break;
+        }
+        if (pi < 0 || ti < 0 || pi >= obj->numvertices ||
+            ti >= obj->numvertices) {
+          continue;
+        }
+        obj->vertices[pi].y =
+            obj->vertices[ti].y +
+            slopiness * ((mfloat_t)rand() / RAND_MAX - downbias);
+      }
+    }
+  }
 }

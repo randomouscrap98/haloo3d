@@ -17,7 +17,8 @@
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
-#define SKYSCALE 30;
+#define SKYSCALE 30
+#define AVGWEIGHT 0.8
 
 #define NUMOBJECTS 3
 #define MAXCAM 1200
@@ -67,9 +68,9 @@ int main(int argc, char **argv) {
   haloo3d_img_loadppmfile(textures, argv[2]);
   haloo3d_gen_1pxgradient(textures + 1, 0xF44F, 0xF001, 32);
   haloo3d_gen_skybox(models + 1);
-  uint16_t checkcols[2] = {0xF0C0, 0xF2A0};
+  uint16_t checkcols[2] = {0xF0A0, 0xF270};
   haloo3d_gen_checkerboard(textures + 2, checkcols, 2, 32);
-  haloo3d_gen_plane(models + 2, 61);
+  haloo3d_gen_sloped(models + 2, 61, 1.0, 1.25);
 
   camset cams[MAXCAM];
   int numcams = readcam(cams, MAXCAM, argv[3]);
@@ -91,12 +92,17 @@ int main(int argc, char **argv) {
   struct vec3 light;
   vec3(light.v, 0, -MCOS(LIGHTANG), MSIN(LIGHTANG));
 
+  int totalfaces = 0;
+  int totalverts = 0;
   haloo3d_obj_instance objects[NUMOBJECTS];
   for (int i = 0; i < NUMOBJECTS; i++) {
     haloo3d_objin_init(objects + i, models + i, textures + i);
+    totalfaces += objects[i].model->numfaces;
+    totalverts += objects[i].model->numvertices;
   }
 #ifdef DOLIGHTING
   objects[0].lighting = &light;
+  objects[2].lighting = &light;
 #endif
   // objects[0].pos.z = 0;
   objects[1].scale = SKYSCALE;
@@ -179,9 +185,15 @@ int main(int argc, char **argv) {
 
     clock_t end = clock();
     float thistime = 1000.0 * (float)(end - begin) / CLOCKS_PER_SEC;
-    sum += thistime;
-    haloo3d_print(&t, "Frame time: %.2f\nAVG: %.2f\n", thistime,
-                  sum / (cami + 1));
+    if (sum == 0) {
+      sum = thistime;
+    } else {
+      sum = AVGWEIGHT * sum + (1 - AVGWEIGHT) * thistime;
+    }
+    haloo3d_print(
+        &t,
+        "Frame time: %.2f\nWeighted avg (%.2f): %.2f\nTris: %d\nVerts: %d\n",
+        thistime, AVGWEIGHT, sum, totalfaces, totalverts);
 
     sprintf(fname, "scene_%04d.ppm", cami);
     haloo3d_img_writeppmfile(&fb, fname);
