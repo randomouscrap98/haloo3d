@@ -6,7 +6,7 @@
 void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
-  for (size_t i = 0; i < haloo3d_fb_size(fb); i++) {
+  for (int i = 0; i < haloo3d_fb_size(fb); i++) {
     uint16_t bc = fb->buffer[i];
     color[0] = (bc >> 8) & 0xF; // H3DC_R(bc);
     color[1] = (bc >> 4) & 0xf; // H3DC_G(bc);

@@ -169,8 +169,7 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
           ti = pi - (search * size) + 1;
           break;
         }
-        if (pi < 0 || ti < 0 || pi >= obj->numvertices ||
-            ti >= obj->numvertices) {
+        if (pi >= obj->numvertices || ti >= obj->numvertices) {
           continue;
         }
         obj->vertices[pi].y =
@@ -180,9 +179,6 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
     }
   }
 }
-
-// void haloo3d_gen_crossquad(haloo3d_obj_instance * obj) { //haloo3d_obj *obj,
-// haloo3d_fb *fb) {
 
 void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
   struct vec2 dims;

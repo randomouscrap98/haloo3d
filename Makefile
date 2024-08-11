@@ -11,7 +11,7 @@
 LIBD = lib
 BUILDD = build
 CC = gcc
-CFLAGS = -std=c99 -Wall -O3 -flto -I$(LIBD)
+CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -flto -I$(LIBD)
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
 
 # Define the object files for the static library
