@@ -37,6 +37,5 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
 // the middle of -1 to 1 in each direction. The exact shape will
 // depend on the given texture dimensions
 void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb);
-// void haloo3d_gen_crossquad(haloo3d_obj_instance *obj);
 
 #endif
