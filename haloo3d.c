@@ -157,12 +157,6 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
       haloo3d_boundingbox_tl(v0v.pos.v, v1v.pos.v, v2v.pos.v);
   struct vec2 boundsBRf =
       haloo3d_boundingbox_br(v0v.pos.v, v1v.pos.v, v2v.pos.v);
-  //  The triangle is fully out of bounds; we don't have a proper clipper, so
-  //  this check still needs to be performed
-  if (boundsBRf.y < 0 || boundsBRf.x < 0 || boundsTLf.x >= fb->width ||
-      boundsTLf.y >= fb->height) {
-    return;
-  }
   struct vec2i v0, v1, v2;
   vec2i_assign_vec2(v0.v, v0v.pos.v);
   vec2i_assign_vec2(v1.v, v1v.pos.v);
@@ -181,9 +175,17 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
     v1v = tmpv;
     parea = -parea;
   }
-  struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y, 0)};
-  struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
-                           .y = MIN(boundsBRf.y, fb->height - 1)};
+  // struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y,
+  // 0)}; struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
+  //                          .y = MIN(boundsBRf.y, fb->height - 1)};
+  struct vec2i boundsTL = {.x = boundsTLf.x, .y = boundsTLf.y};
+  struct vec2i boundsBR = {.x = boundsBRf.x, .y = boundsBRf.y};
+  if (boundsTL.x < 0 || boundsBR.x < 0 || boundsTL.y < 0 || boundsBR.y < 0 ||
+      boundsTL.x >= fb->width || boundsBR.x >= fb->width ||
+      boundsTL.y >= fb->height || boundsBR.y >= fb->height) {
+    dieerr("YOU SUCK: (%d,%d)->(%d,%d)", boundsTL.x, boundsTL.y, boundsBR.x,
+           boundsBR.y);
+  }
   //  BTW our scanning starts at boundsTL
   // int32_t invarea = (1.0 / parea) * (1 << _H3D_RS);
   mfloat_t invarea = 1.0 / parea;
@@ -355,8 +357,8 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   // w - z (front)
   // w + x (left)
   // w - x (right)
-  // w + y (left)
-  // w - y (right)
+  // w + y (bottom)
+  // w - y (top)
 
   int outers[3];
   int inners[3];
@@ -370,13 +372,20 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   uint64_t assign = 1;
 
   // Do for each plane
-  for (int p = 0; p < 6; p++) {
+  for (int p = 0; p < H3D_FACEF_CLIPPLANES; p++) {
+    if (!assign) {
+      break;
+    }
     // How far to move to store triangle 2, also how many tris
     int tris = (1 << p);
-    uint64_t mask = 1; // This will get left shifted
+    uint64_t tricheck = assign;
+    // uint64_t mask = 1; // This will get left shifted
     for (int t = 0; t < tris; t++) {
+      if (!tricheck) {
+        break;
+      }
       // Only do tris that are set
-      if (assign & mask) {
+      if (tricheck & 1) {
         int numinners = 0;
         int numouters = 0;
         haloo3d_vertexf *f = out[t];
@@ -386,19 +395,19 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
           case 0: // z-near
             dist[i] = f[i].pos.w + f[i].pos.z;
             break;
-          case 1: // z-far
-            dist[i] = f[i].pos.w - f[i].pos.z;
-            break;
-          case 2: // x-left
+          // case 1: // z-far
+          //   dist[i] = f[i].pos.w - f[i].pos.z;
+          //   break;
+          case 1: // x-left
             dist[i] = f[i].pos.w + f[i].pos.x;
             break;
-          case 3: // x-right
+          case 2: // x-right
             dist[i] = f[i].pos.w - f[i].pos.x;
             break;
-          case 4: // y-bottom
+          case 3: // y-bottom
             dist[i] = f[i].pos.w + f[i].pos.y;
             break;
-          case 5: // t-top
+          case 4: // t-top
             dist[i] = f[i].pos.w - f[i].pos.y;
             break;
           }
@@ -409,7 +418,9 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
           }
         }
         // Now we know how many points are inside or out against this one plane
-        if (numouters == 2) { // The one triangle thing
+        if (numouters == 3) { // This is rejected fully, clear the assign
+          assign &= ~(1L << t);
+        } else if (numouters == 2) { // The one triangle thing
           // two points are outside; the point as stored is fine, but we need to
           // fix a couple things.
           int ai = inners[0];
@@ -435,7 +446,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
           // BEFORE modification, we copy the existing triangle to the final
           // outer place
           memcpy(f2, f, sizeof(haloo3d_facef));
-          assign = assign | (mask << tris);
+          assign |= (1L << (t + tris));
           // Fix existing triangle by replacing the bad outer point a
           // with an interpolated one to b
           haloo3d_vertexf_lerp_self(f + ai, f + bi, tab);
@@ -444,36 +455,13 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
           haloo3d_vertexf_lerp_self(f2 + ai, f2 + ci, tac);
           // But the B point needs to actually be the interpolated A point
           f2[bi] = olda;
-        } else if (numouters == 3) { // Output the face itself, no modification
-          // This is rejected fully, clear the assign
-          assign = assign & ~mask;
         }
         // Don't need to check for trivial accept, it's already where it needs
         // to be
       }
       // this is the end of the triangle loop, move to the next triangle
-      mask <<= 1;
+      tricheck >>= 1;
     }
-
-    // Clipping algo should be the same for each?
-    // - We want to get rid of ANY triangle that is completely outside the
-    // screen.
-    //   Maybe we could do a simple first pass that calcs all the intersections
-    //   against each plane, uhh... mm. Wasted calcs?
-    // - Basically want to trivially throw away fully unseen triangles. Will
-    // that
-    //   solve the hole problem?
-    // - array of indexes into out buffer, then fill in holes at end?
-    //   - filling in holes could be extremely expensive, unless you don't need
-    //     the order preserved (we don't).
-    //   - Each hole would only incur one copy if so.
-    //   - maybe just scan for loc every tri add? that's a lot of scans...
-    //   - possibility of lots of holes... how high?
-    // - we know our buffer is large enough to store every tri. while clipping,
-    //   don't need to do anything, just keep moving forward.
-    // - will have super sparse array.
-
-    // Then do for each triangle in our buffer
   }
 
   // Now that we're here, we need to backfill the holes
@@ -493,6 +481,14 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
   return numout;
 }
+
+// int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
+//   return haloo3d_facef_clip_generic(face, out, H3D_FACEF_CLIPPLANES);
+// }
+//
+// int haloo3d_facef_clipmin(haloo3d_facef face, haloo3d_facef *out) {
+//   return haloo3d_facef_clip_generic(face, out, 1);
+// }
 
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
                     haloo3d_recti outrect) {

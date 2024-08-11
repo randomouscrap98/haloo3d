@@ -17,13 +17,14 @@
 // even know if that's correct). It should(?) be that for
 // each plane we clip against, we multiply by two. So
 // however many planes we clip, that's the number we shift
-#define H3D_FACEF_MAXCLIP (1 << 6)
+#define H3D_FACEF_CLIPPLANES 5
+#define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
 
 // Usually you clip against 0, but to be more safe, this is
 // the minimum clip. Since we (currently) only clip against the
 // near plane, this is usually fine. It may even be fine for
 // the future, if we clip against other planes.
-#define H3D_FACEF_CLIPLOW 0.01
+#define H3D_FACEF_CLIPLOW 0.0
 
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
@@ -317,8 +318,8 @@ static inline struct vec2i haloo3d_recti_dims(haloo3d_recti *bounds) {
 
 // Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
-  v[0] = (v[0] + 1.0) / 2.0 * width;
-  v[1] = (1.0 - ((v[1] + 1.0) / 2.0)) * height;
+  v[0] = round((v[0] + 1.0) / 2.0 * (width - 1));
+  v[1] = round((1.0 - ((v[1] + 1.0) / 2.0)) * (height - 1));
   //  Don't touch Z or whatever
 }
 
@@ -451,6 +452,9 @@ int haloo3d_facef_finalize(haloo3d_facef face);
 // H3D_FACEF_MAXCLIP as length). Returns the number of clipped faces.
 // If 0, you can skip additional processing for this face completely
 int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
+
+// Clip a face ONLY against the z-near plane
+// int haloo3d_facef_clipmin(haloo3d_facef face, haloo3d_facef *out);
 
 // Draw a sprite with no depth value directly into the buffer. Very fast.
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,

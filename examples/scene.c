@@ -24,6 +24,7 @@
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
 #define NUMFLOWERS 300
+#define PLANESIZE 61
 #define FLOWERIND (NUMOBJECTS - 1)
 #define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
 #define MAXCAM 1200
@@ -83,7 +84,7 @@ int main(int argc, char **argv) {
   haloo3d_gen_skybox(models + 1);
   uint16_t checkcols[2] = {0xF0A0, 0xF270};
   haloo3d_gen_checkerboard(textures + 2, checkcols, 2, 32);
-  haloo3d_gen_sloped(models + 2, 61, 1.0, 1.25);
+  haloo3d_gen_sloped(models + 2, PLANESIZE, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
   // memset(textures[3].buffer, 0xFF, sizeof(uint16_t) * 64);
@@ -186,6 +187,7 @@ int main(int argc, char **argv) {
 
     // REMEMBER TO CLEAR DEPTH BUFFER
     haloo3d_fb_cleardepth(&fb);
+    // memset(fb.buffer, 0xFF, sizeof(uint16_t) * fb.width * fb.height);
 
     // Screen matrix calc. We multiply the modelview matrix with this later
     haloo3d_camera_calclook(&camera, matrixcam);
