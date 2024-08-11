@@ -12,7 +12,11 @@ LIBD = lib
 BUILDD = build
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -flto -I$(LIBD)
+# Debug arguments maybe
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
+# Make sure to enable sse on non 64 bit systems/compilers
+# CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -msse -flto -I$(LIBD)
+
 
 # Define the object files for the static library
 STATICOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/$(LIBD)/mathc.o
