@@ -28,6 +28,12 @@
 #define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
 #define MAXCAM 1200
 
+#define CALCTIME(thistime, start, end, sum)                                    \
+  float thistime = 1000.0 * (float)(end - start) / CLOCKS_PER_SEC;             \
+  if (sum == 0)                                                                \
+    sum = thistime;                                                            \
+  sum = AVGWEIGHT * sum + (1 - AVGWEIGHT) * thistime;
+
 typedef struct {
   mfloat_t xofs;
   mfloat_t yofs;
@@ -150,7 +156,11 @@ int main(int argc, char **argv) {
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
   char fname[1024];
-  float sum = 0;
+  float sumverts = 0, sumdraw = 0, sumframe = 0, suminit = 0;
+  clock_t begin, end, vertend, drawend, initend, tempstart, tempend;
+  // float sumframe = 0;
+  // clock_t begin, end;
+  int totaldrawn = 0;
 
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
@@ -159,7 +169,10 @@ int main(int argc, char **argv) {
   // -----------------------------------
 
   for (int cami = 0; cami < numcams; cami++) {
-    clock_t begin = clock();
+    begin = clock();
+    vertend = begin;
+    drawend = begin;
+    totaldrawn = 0;
 
     haloo3d_print_refresh(&t);
     camera.pos.x = cams[cami].xofs;
@@ -176,15 +189,20 @@ int main(int argc, char **argv) {
     mat4_inverse(matrixcam, matrixcam);
     mat4_multiply(matrixscreen, perspective, matrixcam);
 
+    initend = clock();
+
     // Iterate over objects
     for (int i = 0; i < NUMINSTANCES; i++) {
+      tempstart = clock();
       // Setup final model matrix and the precalced vertices
       vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
       haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
       haloo3d_mat4_scale(matrixmodel, objects[i].scale);
-      // mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
       mat4_multiply(matrix3d, matrixscreen, matrixmodel);
       haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
+      tempend = clock();
+      vertend += (tempend - tempstart);
+      tempstart = clock();
       // Iterate over object faces
       for (int fi = 0; fi < objects[i].model->numfaces; fi++) {
         // Copy face values out of precalc array and clip them
@@ -196,6 +214,7 @@ int main(int argc, char **argv) {
           if (objects[i].cullbackface && backface) {
             continue;
           }
+          totaldrawn++;
           mfloat_t intensity = 1.0;
           if (objects[i].lighting) {
             haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],
@@ -209,19 +228,25 @@ int main(int argc, char **argv) {
                                    outfaces[ti]);
         }
       }
+      tempend = clock();
+      drawend += (tempend - tempstart);
     }
 
-    clock_t end = clock();
-    float thistime = 1000.0 * (float)(end - begin) / CLOCKS_PER_SEC;
-    if (sum == 0) {
-      sum = thistime;
-    } else {
-      sum = AVGWEIGHT * sum + (1 - AVGWEIGHT) * thistime;
-    }
+    end = clock();
+
+    CALCTIME(thisinittime, begin, initend, suminit);
+    CALCTIME(thisverttime, begin, vertend, sumverts);
+    CALCTIME(thisdrawtime, begin, drawend, sumdraw);
+    CALCTIME(thisframetime, begin, end, sumframe);
     haloo3d_print(
         &t,
-        "Frame time: %.2f\nWeighted avg (%.2f): %.2f\nTris: %d\nVerts: %d\n",
-        thistime, AVGWEIGHT, sum, totalfaces, totalverts);
+        "Init work: %.2f (%.2f)\nVert calc: %.2f (%.2f)\n     Draw: %.2f"
+        " (%.2f)\n    Frame: %.2f (%.2f)\nTris: %d / %d\nVerts: %d\n",
+        thisinittime, suminit, thisverttime, sumverts, thisdrawtime, sumdraw,
+        thisframetime, sumframe, totaldrawn, totalfaces, totalverts);
+    // haloo3d_print(&t, "Frame: %.2f (%.2f)\nTris: %d / %d\nVerts: %d\n",
+    //               thisframetime, sumframe, totaldrawn, totalfaces,
+    //               totalverts);
 
     sprintf(fname, "scene_%04d.ppm", cami);
     haloo3d_img_writeppmfile(&fb, fname);

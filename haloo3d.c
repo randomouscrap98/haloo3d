@@ -234,6 +234,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
     mint_t w2 = w2_y;
     for (int x = xstart; x <= xend; x++) {
       if ((w0 | w1 | w2) >= 0) {
+        // This value HAS to be normalized to be useful in the buffer!!!
         mfloat_t pz = (w0 * tiz0 + w1 * tiz1 + w2 * tiz2) * invarea;
         if (pz > haloo3d_wb_get(fb, x, y)) {
           mfloat_t pcz = invarea / pz;
@@ -256,8 +257,79 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 }
 
-// int haloo3d_facef_isbackface(haloo3d_facef face) {
-// }
+/*
+typedef struct {
+  int x;
+} _h3dtriend;
+//
+// // Just for now, for speed, we use a global array
+// _h3dtriend _h3dtribuf[2][4096];
+
+// #define _H3D_RS 16
+void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
+                               mfloat_t intensity, haloo3d_facef face) {
+  haloo3d_vertexf *v0v = face;
+  haloo3d_vertexf *v1v = face + 1;
+  haloo3d_vertexf *v2v = face + 2;
+  haloo3d_vertexf *tmp;
+
+  struct vec2 boundsTL =
+      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  struct vec2 boundsBR =
+      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  //  The triangle is fully out of bounds; we don't have a proper clipper, so
+  //  this check still needs to be performed
+  if (boundsBR.y < 0 || boundsBR.x < 0 || boundsTL.x >= fb->width ||
+      boundsTL.y >= fb->height) {
+    return;
+  }
+
+  // - figure out min and max vert
+  // - do bresenham to get left and right lists
+  // - draw lines across
+  if (v0v->pos.y > v1v->pos.y) {
+    tmp = v0v;
+    v0v = v1v;
+    v1v = tmp;
+  }
+  if (v1v->pos.y > v2v->pos.y) {
+    tmp = v0v;
+    v1v = v2v;
+    v2v = tmp;
+  }
+  if (v0v->pos.y > v1v->pos.y) {
+    tmp = v0v;
+    v0v = v1v;
+    v1v = tmp;
+  }
+
+  struct vec2i v0, v1, v2;
+  vec2i_assign_vec2(v0.v, v0v->pos.v);
+  vec2i_assign_vec2(v1.v, v1v->pos.v);
+  vec2i_assign_vec2(v2.v, v2v->pos.v);
+  int handedness = 0;
+
+  mint_t parea = haloo3d_edgefunci(v0.v, v1.v, v2.v);
+  if (parea == 0) {
+    return;
+  } else if (parea < 0) {
+    handedness = 1; // the other side
+  }
+
+  int ystart = MAX(0, boundsTL.y);
+  int yend = MIN(fb->height - 1, boundsBR.y);
+  int xstart = MAX(0, boundsTL.x);
+  int xend = MIN(fb->height - 1, boundsBR.x);
+
+  const uint16_t scale = intensity * 256;
+  _h3dtriend min, max;
+
+  // First, calculate the left and right using bresenham algo.
+  // The handedness will tell us what side we're on
+  for (int y = ystart; y <= yend; y++) {
+  }
+}
+*/
 
 int haloo3d_facef_finalize(haloo3d_facef face) {
   // We HAVE to divide points first BEFORE checking the edge function

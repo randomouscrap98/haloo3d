@@ -74,7 +74,7 @@ static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
   return fb->buffer[x + y * fb->width];
 }
 
-// #define _H3D_RS 12
+// #define _H3D_RS 16
 // static inline uint16_t haloo3d_fb_getuvi(haloo3d_fb *fb, int32_t u, int32_t
 // v) {
 //   uint16_t x = (uint16_t)((fb->width * u) >> _H3D_RS) & (fb->width - 1);
@@ -432,6 +432,9 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 // Draw a textured triangle into the given framebuffer using the given face
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face);
+
+void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
+                               mfloat_t intensity, haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.
