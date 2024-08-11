@@ -14,8 +14,11 @@
 
 // The maximum amount of faces produced by clipping,
 // though realistically this is never reached (also I don't
-// even know if that's correct)
-#define H3D_FACEF_MAXCLIP 18
+// even know if that's correct). It should(?) be that for
+// each plane we clip against, we multiply by two. So
+// however many planes we clip, that's the number we shift
+#define H3D_FACEF_MAXCLIP (1 << 6)
+
 // Usually you clip against 0, but to be more safe, this is
 // the minimum clip. Since we (currently) only clip against the
 // near plane, this is usually fine. It may even be fine for

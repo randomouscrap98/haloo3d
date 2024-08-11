@@ -265,6 +265,17 @@ typedef struct {
 // // Just for now, for speed, we use a global array
 // _h3dtriend _h3dtribuf[2][4096];
 
+// return horizontal difference per pixel
+#define H3D_TRIDIFF_H(v0, v1, v2, t) \
+  ((v0->t - v2->t) * (v1->y - v2->y) - (v1->t - v2->t) * (v0->y - v2->y)) / \
+  ((v0->x - v2->x) * (v1->y - v2->y) - (v1->x - v2->x) * (v0->y - v2->y))
+// return vertical difference per pixel
+#define H3D_TRIDIFF_v(v0, v1, v2, t) \
+  ((v0->t - v2->t) * (v1->x - v2->x) - (v1->t - v2->t) * (v0->x - v2->x)) / \
+  ((v0->x - v2->x) * (v1->y - v2->y) - (v1->x - v2->x) * (v0->y - v2->y))
+
+//mfloat_t haloo3d_tridiff(haloo3d_facef face
+
 // #define _H3D_RS 16
 void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
                                mfloat_t intensity, haloo3d_facef face) {
@@ -339,119 +350,145 @@ int haloo3d_facef_finalize(haloo3d_facef face) {
   return haloo3d_edgefunc(face[0].pos.v, face[1].pos.v, face[2].pos.v) <= 0;
 }
 
-// NOTE: this function only clips against the near plane!
 int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
-  int numout = 0;
+  // w + z (back)
+  // w - z (front)
+  // w + x (left)
+  // w - x (right)
+  // w + y (left)
+  // w - y (right)
+
   int outers[3];
   int inners[3];
-  int numinners = 0;
-  int numouters = 0;
   mfloat_t dist[3];
 
-  for (int i = 0; i < 3; i++) {
-    dist[i] = face[i].pos.z + face[i].pos.w;
-    if (dist[i] < H3D_FACEF_CLIPLOW) { //< H3D_FACEF_CLIPLOW) {
-      outers[numouters++] = i;
-    } else {
-      inners[numinners++] = i;
+  // We start with just the one face at index 0
+  memcpy(out[0], face, sizeof(haloo3d_facef));
+
+  // this is our "assignment" tracker. Bits are low to high.
+  // We start with the first slot filled
+  uint64_t assign = 1;
+
+  // Do for each plane
+  for (int p = 0; p < 6; p++) {
+    // How far to move to store triangle 2, also how many tris
+    int tris = (1 << p);
+    uint64_t mask = 1; // This will get left shifted
+    for (int t = 0; t < tris; t++) {
+      // Only do tris that are set
+      if (assign & mask) {
+        int numinners = 0;
+        int numouters = 0;
+        haloo3d_vertexf *f = out[t];
+        // Figure out how many are in or out of this plane
+        for (int i = 0; i < 3; i++) {
+          switch (p) {
+          case 0: // z-near
+            dist[i] = f[i].pos.w + f[i].pos.z;
+            break;
+          case 1: // z-far
+            dist[i] = f[i].pos.w - f[i].pos.z;
+            break;
+          case 2: // x-left
+            dist[i] = f[i].pos.w + f[i].pos.x;
+            break;
+          case 3: // x-right
+            dist[i] = f[i].pos.w - f[i].pos.x;
+            break;
+          case 4: // y-bottom
+            dist[i] = f[i].pos.w + f[i].pos.y;
+            break;
+          case 5: // t-top
+            dist[i] = f[i].pos.w - f[i].pos.y;
+            break;
+          }
+          if (dist[i] < H3D_FACEF_CLIPLOW) {
+            outers[numouters++] = i;
+          } else {
+            inners[numinners++] = i;
+          }
+        }
+        // Now we know how many points are inside or out against this one plane
+        if (numouters == 2) { // The one triangle thing
+          // two points are outside; the point as stored is fine, but we need to
+          // fix a couple things.
+          int ai = inners[0];
+          int bi = outers[0];
+          int ci = outers[1];
+          // Calc how far along we are on each of these lines. These are the new
+          // points
+          // NOTE: we nudge it a little forward to prevent weird issues
+          mfloat_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_FACEF_CLIPLOW;
+          mfloat_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_FACEF_CLIPLOW;
+          // The two points that aren't 'a' need to be the interpolated values
+          haloo3d_vertexf_lerp_self(f + bi, f + ai, tba);
+          haloo3d_vertexf_lerp_self(f + ci, f + ai, tca);
+          // Don't do anything with assign, it's already set for this tri
+        } else if (numouters == 1) { // The two triangle thing
+          // For this one, we need to mutate the original AND produce a new
+          int ai = outers[0]; // A is the odd one out
+          int bi = inners[0];
+          int ci = inners[1];
+          mfloat_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_FACEF_CLIPLOW;
+          mfloat_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_FACEF_CLIPLOW;
+          haloo3d_vertexf *f2 = out[t + tris];
+          // BEFORE modification, we copy the existing triangle to the final
+          // outer place
+          memcpy(f2, f, sizeof(haloo3d_facef));
+          assign = assign | (mask << tris);
+          // Fix existing triangle by replacing the bad outer point a
+          // with an interpolated one to b
+          haloo3d_vertexf_lerp_self(f + ai, f + bi, tab);
+          haloo3d_vertexf olda = f[ai];
+          // And once again replace the a point but interpolating with c
+          haloo3d_vertexf_lerp_self(f2 + ai, f2 + ci, tac);
+          // But the B point needs to actually be the interpolated A point
+          f2[bi] = olda;
+        } else if (numouters == 3) { // Output the face itself, no modification
+          // This is rejected fully, clear the assign
+          assign = assign & ~mask;
+        }
+        // Don't need to check for trivial accept, it's already where it needs
+        // to be
+      }
+      // this is the end of the triangle loop, move to the next triangle
+      mask <<= 1;
     }
+
+    // Clipping algo should be the same for each?
+    // - We want to get rid of ANY triangle that is completely outside the
+    // screen.
+    //   Maybe we could do a simple first pass that calcs all the intersections
+    //   against each plane, uhh... mm. Wasted calcs?
+    // - Basically want to trivially throw away fully unseen triangles. Will
+    // that
+    //   solve the hole problem?
+    // - array of indexes into out buffer, then fill in holes at end?
+    //   - filling in holes could be extremely expensive, unless you don't need
+    //     the order preserved (we don't).
+    //   - Each hole would only incur one copy if so.
+    //   - maybe just scan for loc every tri add? that's a lot of scans...
+    //   - possibility of lots of holes... how high?
+    // - we know our buffer is large enough to store every tri. while clipping,
+    //   don't need to do anything, just keep moving forward.
+    // - will have super sparse array.
+
+    // Then do for each triangle in our buffer
   }
 
-#ifdef H3D_DEBUGCLIP
-  eprintf("---------------------------------\n");
-  eprintf("0p0: %f,%f,%f(%f) 0p1: %f,%f,%f(%f) 0p2: %f,%f,%f(%f)\n",
-          face[0].pos.x, face[0].pos.y, face[0].pos.z, face[0].pos.w,
-          face[1].pos.x, face[0].pos.y, face[1].pos.z, face[1].pos.w,
-          face[2].pos.x, face[2].pos.y, face[2].pos.z, face[2].pos.w);
-#endif
+  // Now that we're here, we need to backfill the holes
+  int numout = 0;
+  int index = 0;
 
-  if (numouters == 2) { // The one triangle thing
-    // We CAN use the face (sort of), so copy it out
-    memcpy(out[numout], face, sizeof(haloo3d_facef));
-
-    int ai = inners[0];
-    int bi = outers[0];
-    int ci = outers[1];
-
-    // Calc how far along we are on each of these lines. These are the new
-    // points
-    // NOTE: we nudge it a little forward to prevent weird issues
-    mfloat_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_FACEF_CLIPLOW;
-    mfloat_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_FACEF_CLIPLOW;
-
-    // The two points that aren't 'a' need to be the interpolated values
-    haloo3d_vertexf_lerp_self(&out[numout][bi], &face[ai], tba);
-    haloo3d_vertexf_lerp_self(&out[numout][ci], &face[ai], tca);
-
-#ifdef H3D_DEBUGCLIP
-    eprintf("pA: %f,%f,%f pB: %f,%f,%f pC: %f,%f,%f\n", out[numout][ai].pos.x,
-            out[numout][ai].pos.y, out[numout][ai].pos.z, out[numout][bi].pos.x,
-            out[numout][bi].pos.y, out[numout][bi].pos.z, out[numout][ci].pos.x,
-            out[numout][ci].pos.y, out[numout][ci].pos.z);
-    eprintf("DA: %f DB: %f DC: %f\n", dist[ai], dist[bi], dist[ci]);
-    eprintf("TBA: %f TCA: %f\n", tba, tca);
-    eprintf("UVA: %f,%f UVB: %f,%f UVC: %f,%f\n", out[numout][ai].tex.x,
-            out[numout][ai].tex.y, out[numout][bi].tex.x, out[numout][bi].tex.y,
-            out[numout][ci].tex.x, out[numout][ci].tex.y);
-#endif
-
-    numout++;
-    // if (haloo3d_facef_finalize(out[numout])) {
-    //   numout++;
-    // }
-  } else if (numouters == 1) { // The two triangle thing
-
-    int ai = outers[0]; // A is the odd one out
-    int bi = inners[0];
-    int ci = inners[1];
-
-    mfloat_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_FACEF_CLIPLOW;
-    mfloat_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_FACEF_CLIPLOW;
-
-#ifdef H3D_DEBUGCLIP
-    eprintf("TAB: %f, TAC: %f\n", tab, tac);
-#endif
-
-    // Generate the first new triangle by replacing the bad outer point a
-    // with an interpolated one to b
-    memcpy(out[numout], face, sizeof(haloo3d_facef));
-    haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + bi, tab);
-
-    // haloo3d_vertexf olda;
-    // memcpy(&olda, out[numout] + ai, sizeof(haloo3d_vertexf));
-    haloo3d_vertexf olda = out[numout][ai];
-    numout++;
-
-    // if (haloo3d_facef_finalize(out[numout])) {
-    //   numout++;
-    // }
-
-    // We RESET the next point to simplify the process, and once again replace
-    // the a point but interpolating with c
-    memcpy(out[numout], face, sizeof(haloo3d_facef));
-    haloo3d_vertexf_lerp_self(out[numout] + ai, out[numout] + ci, tac);
-
-    // But the B point needs to actually be the interpolated A point
-    // memcpy(out[numout] + bi, &olda, sizeof(haloo3d_vertexf));
-    out[numout][bi] = olda;
-    numout++;
-
-    // if (haloo3d_facef_finalize(out[numout])) {
-    //   numout++;
-    // }
-
-  } else if (numouters == 0) { // Output the face itself, no modification
-    memcpy(out[numout], face, sizeof(haloo3d_facef));
-#ifdef H3D_DEBUGCLIP
-    eprintf("p0: %f,%f,%f p1: %f,%f,%f p2: %f,%f,%f\n", out[numout][0].pos.x,
-            out[numout][0].pos.y, out[numout][0].pos.z, out[numout][1].pos.x,
-            out[numout][0].pos.y, out[numout][1].pos.z, out[numout][2].pos.x,
-            out[numout][2].pos.y, out[numout][2].pos.z);
-#endif
-    numout++;
-    // if (haloo3d_facef_finalize(out[numout])) {
-    //   numout++;
-    // }
+  while (assign) {
+    if (assign & 1) {
+      if (index != numout) {
+        memcpy(out + numout, out + index, sizeof(haloo3d_facef));
+      }
+      numout++;
+    }
+    assign >>= 1;
+    index++;
   }
 
   return numout;

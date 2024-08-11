@@ -156,8 +156,10 @@ int main(int argc, char **argv) {
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
   char fname[1024];
-  float sumverts = 0, sumdraw = 0, sumframe = 0, suminit = 0;
-  clock_t begin, end, vertend, drawend, initend, tempstart, tempend;
+  // float sumverts = 0, sumdraw = 0, sumframe = 0, suminit = 0, sumclip = 0;
+  // clock_t begin, end, vertend, drawend, initend, clipend, tempstart, tempend;
+  clock_t begin, end;
+  float sumframe = 0;
   // float sumframe = 0;
   // clock_t begin, end;
   int totaldrawn = 0;
@@ -170,8 +172,9 @@ int main(int argc, char **argv) {
 
   for (int cami = 0; cami < numcams; cami++) {
     begin = clock();
-    vertend = begin;
-    drawend = begin;
+    // vertend = begin;
+    // drawend = begin;
+    // clipend = begin;
     totaldrawn = 0;
 
     haloo3d_print_refresh(&t);
@@ -189,26 +192,29 @@ int main(int argc, char **argv) {
     mat4_inverse(matrixcam, matrixcam);
     mat4_multiply(matrixscreen, perspective, matrixcam);
 
-    initend = clock();
+    // initend = clock();
 
     // Iterate over objects
     for (int i = 0; i < NUMINSTANCES; i++) {
-      tempstart = clock();
-      // Setup final model matrix and the precalced vertices
+      // tempstart = clock();
+      //  Setup final model matrix and the precalced vertices
       vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
       haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
       haloo3d_mat4_scale(matrixmodel, objects[i].scale);
       mat4_multiply(matrix3d, matrixscreen, matrixmodel);
       haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
-      tempend = clock();
-      vertend += (tempend - tempstart);
-      tempstart = clock();
-      // Iterate over object faces
+      // tempend = clock();
+      // vertend += (tempend - tempstart);
+      //  Iterate over object faces
       for (int fi = 0; fi < objects[i].model->numfaces; fi++) {
         // Copy face values out of precalc array and clip them
         haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
                            objects[i].model->vtexture, face);
+        // tempstart = clock();
         int tris = haloo3d_facef_clip(face, outfaces);
+        // tempend = clock();
+        // clipend += (tempend - tempstart);
+        // tempstart = tempend;
         for (int ti = 0; ti < tris; ti++) {
           int backface = !haloo3d_facef_finalize(outfaces[ti]);
           if (objects[i].cullbackface && backface) {
@@ -227,26 +233,29 @@ int main(int argc, char **argv) {
           haloo3d_texturedtriangle(&fb, objects[i].texture, intensity,
                                    outfaces[ti]);
         }
+        // tempend = clock();
+        // drawend += (tempend - tempstart);
       }
-      tempend = clock();
-      drawend += (tempend - tempstart);
     }
 
     end = clock();
 
-    CALCTIME(thisinittime, begin, initend, suminit);
-    CALCTIME(thisverttime, begin, vertend, sumverts);
-    CALCTIME(thisdrawtime, begin, drawend, sumdraw);
+    // CALCTIME(thisinittime, begin, initend, suminit);
+    // CALCTIME(thisverttime, begin, vertend, sumverts);
+    // CALCTIME(thiscliptime, begin, clipend, sumclip);
+    // CALCTIME(thisdrawtime, begin, drawend, sumdraw);
     CALCTIME(thisframetime, begin, end, sumframe);
-    haloo3d_print(
-        &t,
-        "Init work: %.2f (%.2f)\nVert calc: %.2f (%.2f)\n     Draw: %.2f"
-        " (%.2f)\n    Frame: %.2f (%.2f)\nTris: %d / %d\nVerts: %d\n",
-        thisinittime, suminit, thisverttime, sumverts, thisdrawtime, sumdraw,
-        thisframetime, sumframe, totaldrawn, totalfaces, totalverts);
-    // haloo3d_print(&t, "Frame: %.2f (%.2f)\nTris: %d / %d\nVerts: %d\n",
+    // haloo3d_print(&t,
+    //               "Init work: %.2f (%.2f)\nVert calc: %.2f (%.2f)\n     Clip:
+    //               "
+    //               "%.2f (%.2f)\n     Draw: %.2f"
+    //               " (%.2f)\n    Frame: %.2f (%.2f)\nTris: %d / %d\nVerts:
+    //               %d\n", thisinittime, suminit, thisverttime, sumverts,
+    //               thiscliptime, sumclip, thisdrawtime, sumdraw,
     //               thisframetime, sumframe, totaldrawn, totalfaces,
     //               totalverts);
+    haloo3d_print(&t, "Frame: %.2f (%.2f)\nTris: %d / %d\nVerts: %d\n",
+                  thisframetime, sumframe, totaldrawn, totalfaces, totalverts);
 
     sprintf(fname, "scene_%04d.ppm", cami);
     haloo3d_img_writeppmfile(&fb, fname);
