@@ -434,8 +434,8 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 
   // need to calc all the constant diffs
-  mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x);
-  mfloat_t dvx = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y);
+  mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width;
+  mfloat_t dvx = -H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height;
   mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w);
 
   const uint16_t scale = intensity * 256;
@@ -447,7 +447,7 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
   uint16_t shift = log2(texture->width);
   uint16_t txr = texture->width - 1;
   uint16_t tyr = texture->height - 1;
-  // for (int y = v0.y; y < v2.y; y++) {
+
   while (1) {
     int xl = left.x;
     int xr = right.x;
