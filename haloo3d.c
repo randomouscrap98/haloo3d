@@ -272,10 +272,10 @@ typedef struct {
   int sectionheight; // Tracking for how much is left in the current section
   int trackall;
   // These are 16.16 fixed point kinda
-  int32_t x, u, v;    // Tracking variables
-  int32_t dx, du, dv; // Delta along CURRENT edge
-  mfloat_t z;  
-  mfloat_t dz; 
+  int32_t x, u, v, z;     // Tracking variables
+  int32_t dx, du, dv, dz; // Delta along CURRENT edge
+  //mfloat_t z;  
+  //mfloat_t dz; 
 } _h3dtriside;
 
 static inline void _h3dtriside_init(_h3dtriside *s, haloo3d_fb *texture) {
@@ -313,8 +313,8 @@ static inline int _h3dtriside_start(_h3dtriside *s) {
     s->u = H3D_FP16(v1->tex.x * s->twidth);
     s->dv = H3D_FP16((v2->tex.y - v1->tex.y) * s->theight) / height;
     s->v = H3D_FP16(v1->tex.y * s->theight);
-    s->dz = (v2->pos.w - v1->pos.w) / height;
-    s->z = v1->pos.w;
+    s->dz = H3D_FP16(v2->pos.w - v1->pos.w) / height;
+    s->z = H3D_FP16(v1->pos.w);
   }
   s->sectionheight = height;
   return height;
@@ -437,7 +437,7 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
   const uint16_t tyr = (texture->height - 1) << twbits;
 
   // need to calc all the constant diffs
-  const mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w);
+  const int32_t dzx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
   const int32_t dux = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width) >> 8;
   int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height);
   dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
@@ -445,14 +445,14 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
   while (1) {
     int xl = left.x >> 16;
     int xr = right.x >> 16;
-    int width = xr - xl;
 
-    if (width > 0) {
+    if (xl != xr) {
       uint16_t *buf = buf_y + xl;
-      mfloat_t *zbuf = zbuf_y + xl;
+      uint16_t *bufend = buf_y + xr;
+      int32_t *zbuf = (int32_t *)(zbuf_y + xl);
       int32_t u = left.u >> 8;
       int32_t v = tvshleft ? (left.v << tvshift) : (left.v >> tvshift);
-      mfloat_t z = left.z;
+      int32_t z = left.z;
 
       do {
         if (z < *zbuf) {
@@ -467,7 +467,7 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
         z += dzx;
         u += dux;
         v += dvx;
-      } while (--width);
+      } while (buf < bufend);
     }
 
     buf_y += fb->width;
