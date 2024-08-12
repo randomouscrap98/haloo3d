@@ -364,11 +364,6 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   haloo3d_vertexf *v2v = face + 2;
   haloo3d_vertexf *tmp;
 
-  // for (int i = 0; i < 3; i++) {
-  //   eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
-  //           face[i].pos.w);
-  // }
-
   // struct vec2 boundsTL =
   //     haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
   // struct vec2 boundsBR =
@@ -463,8 +458,8 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   // mfloat_t x1 = v0.x; // + dv0v1x * 0.5;
   // mfloat_t z = v0v->pos.z;
 
-  uint16_t *buf_y = fb->buffer + v0.y;
-  mfloat_t *zbuf_y = fb->wbuffer + v0.y;
+  uint16_t *buf_y = fb->buffer + v0.y * fb->width;
+  mfloat_t *zbuf_y = fb->wbuffer + v0.y * fb->width;
 
   // for (int y = v0.y; y < v2.y; y++) {
   while (1) {
@@ -479,17 +474,19 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
       // mfloat_t v = left.v;
       mfloat_t z = left.z;
       do {
-        if (z > *zbuf) {
+        if (z < *zbuf) {
           //*buf =
           *buf = haloo3d_col_scalei(0xFFFF, scale);
+          *zbuf = z;
         }
         buf++;
+        zbuf++;
         z += dzx;
       } while (--width);
     }
 
-    buf_y += v0.y;
-    zbuf_y += v0.y;
+    buf_y += fb->width;
+    zbuf_y += fb->width;
 
     if (_h3dtriside_next(&left)) {
       return;
@@ -497,6 +494,12 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
     if (_h3dtriside_next(&right)) {
       return;
     }
+
+    // eprintf("One scanline: %d %d\n", xl, xr);
+    // for (int i = 0; i < 3; i++) {
+    //   eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
+    //           face[i].pos.w);
+    // }
 
     // int xl, xr;
     // if (x0 < x1) {
