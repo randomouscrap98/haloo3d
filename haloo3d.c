@@ -259,20 +259,37 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 }
 
+// return horizontal difference per pixel
+#define H3D_TRIDIFF_H(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.y - v2->pos.y) -                                 \
+   (v1->t - v2->t) * (v0->pos.y - v2->pos.y)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
+// return vertical difference per pixel
+#define H3D_TRIDIFF_V(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.x - v2->pos.x) -                                 \
+   (v1->t - v2->t) * (v0->pos.x - v2->pos.x)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
+
+#define H3D_FP16(x) ((int32_t)((x) * (1 << 16)))
+
 // Represents tracking information for one side of a triangle.
 // It may not use or calculate all fields; the left sides require
 // the interpolation and the right side only needs x. It uses a
 // stack of vectors setup by determining the "direction" of the
 // scanline; the "stack" is popped when a vector section is complete
 typedef struct {
-  // struct vec2i *vstack[3];
   haloo3d_vertexf *stack[3];
   haloo3d_fb *texture;
   int top;
   int sectionheight; // Tracking for how much is left in the current section
   int trackall;
-  mfloat_t x, u, v, z;     // Tracking variables
-  mfloat_t dx, du, dv, dz; // Delta along CURRENT edge
+  // These are 16.16 fixed point kinda
+  int32_t x, u, v;
+  int32_t dx, du, dv;
+  mfloat_t z;  // Tracking variables
+  mfloat_t dz; // Delta along CURRENT edge
 } _h3dtriside;
 
 static inline void _h3dtriside_init(_h3dtriside *s, haloo3d_fb *texture) {
@@ -285,7 +302,6 @@ static inline void _h3dtriside_init(_h3dtriside *s, haloo3d_fb *texture) {
 // so the ones you want on top should go last
 static inline int _h3dtriside_push(_h3dtriside *s, haloo3d_vertexf *v) {
   s->stack[s->top] = v;
-  // vec2i_assign_vec2(s->vstack[s->top]->v, v->pos.v);
   return ++s->top;
 }
 
@@ -296,21 +312,19 @@ static inline int _h3dtriside_pop(_h3dtriside *s) { return --s->top; }
 // Calculate all deltas (or at least all set to track) and return
 // the height of this section.
 static inline int _h3dtriside_start(_h3dtriside *s) {
-  // struct vec2i * v1 = s->vstack[s->top - 1];
-  // struct vec2i * v2 = s->vstack[s->top - 2];
   haloo3d_vertexf *v1 = s->stack[s->top - 1];
   haloo3d_vertexf *v2 = s->stack[s->top - 2];
-  // struct vec2i * v2 = s->vstack[s->top - 2];
   int height = v2->pos.y - v1->pos.y; // this might throw away info, that's ok
-  if (height == 0)
+  if (height == 0) {
     return 0;
-  s->dx = (v2->pos.x - v1->pos.x) / height;
-  s->x = v1->pos.x;
+  }
+  s->dx = H3D_FP16(v2->pos.x - v1->pos.x) / height;
+  s->x = H3D_FP16(v1->pos.x);
   if (s->trackall) {
-    s->du = (v2->tex.x - v1->tex.x) / height * s->texture->width;
-    s->u = v1->tex.x * s->texture->width;
-    s->dv = -(v2->tex.y - v1->tex.y) / height * s->texture->height;
-    s->v = (1 - v1->tex.y) * s->texture->height;
+    s->du = H3D_FP16((v2->tex.x - v1->tex.x) * s->texture->width) / height;
+    s->u = H3D_FP16(v1->tex.x * s->texture->width);
+    s->dv = H3D_FP16(-(v2->tex.y - v1->tex.y) * s->texture->height) / height;
+    s->v = H3D_FP16((1 - v1->tex.y) * s->texture->height);
     // This adds a lot of divides but idk... we'd need to be
     // able to clear the depth buffer to some other value.
     s->dz = (v2->pos.w - v1->pos.w) / height;
@@ -344,19 +358,6 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   }
   return 0;
 }
-
-// return horizontal difference per pixel
-#define H3D_TRIDIFF_H(v0, v1, v2, t)                                           \
-  ((v0->t - v2->t) * (v1->pos.y - v2->pos.y) -                                 \
-   (v1->t - v2->t) * (v0->pos.y - v2->pos.y)) /                                \
-      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
-       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
-// return vertical difference per pixel
-#define H3D_TRIDIFF_V(v0, v1, v2, t)                                           \
-  ((v0->t - v2->t) * (v1->pos.x - v2->pos.x) -                                 \
-   (v1->t - v2->t) * (v0->pos.x - v2->pos.x)) /                                \
-      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
-       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
 // #define _H3D_RS 16
 void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
@@ -434,13 +435,13 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 
   // need to calc all the constant diffs
-  mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width;
-  mfloat_t dvx = -H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height;
+  uint32_t dux = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width);
+  uint32_t dvx =
+      H3D_FP16(-H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height);
   mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w);
 
   const uint16_t scale = intensity * 256;
 
-  // uint16_t y = v0.y;
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->wbuffer + v0.y * fb->width;
 
@@ -449,20 +450,21 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
   uint16_t tyr = texture->height - 1;
 
   while (1) {
-    int xl = left.x;
-    int xr = right.x;
+    int xl = left.x >> 16;
+    int xr = right.x >> 16;
     int width = xr - xl;
 
     if (width > 0) {
       uint16_t *buf = buf_y + xl;
       mfloat_t *zbuf = zbuf_y + xl;
-      mfloat_t u = left.u;
-      mfloat_t v = left.v;
+      int32_t u = left.u; // >> 8;
+      int32_t v = left.v; // >> 8;
+
       mfloat_t z = left.z;
       do {
         if (z > *zbuf) {
-          uint16_t c = texture->buffer[((uint16_t)u & txr) +
-                                       (((uint16_t)v & tyr) << shift)];
+          uint16_t c =
+              texture->buffer[((u >> 16) & txr) + (((v >> 16) & tyr) << shift)];
           if (c & 0xF000) {
             *buf = haloo3d_col_scalei(c, scale);
             *zbuf = z;
