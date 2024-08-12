@@ -444,10 +444,12 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
 
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->wbuffer + v0.y * fb->width;
+  uint16_t *tbuf = texture->buffer;
 
-  uint16_t shift = log2(texture->width);
+  uint16_t twidth = log2(texture->width);
+  uint16_t shift = 16 - twidth;
   uint16_t txr = texture->width - 1;
-  uint16_t tyr = texture->height - 1;
+  uint16_t tyr = (texture->height - 1) << twidth;
 
   while (1) {
     int xl = left.x >> 16;
@@ -457,14 +459,13 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
     if (width > 0) {
       uint16_t *buf = buf_y + xl;
       mfloat_t *zbuf = zbuf_y + xl;
-      int32_t u = left.u; // >> 8;
-      int32_t v = left.v; // >> 8;
+      int32_t u = left.u;
+      int32_t v = left.v;
 
       mfloat_t z = left.z;
       do {
         if (z > *zbuf) {
-          uint16_t c =
-              texture->buffer[((u >> 16) & txr) + (((v >> 16) & tyr) << shift)];
+          uint16_t c = tbuf[((u >> 16) & txr) + ((v >> shift) & tyr)];
           if (c & 0xF000) {
             *buf = haloo3d_col_scalei(c, scale);
             *zbuf = z;
@@ -487,13 +488,6 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
     if (_h3dtriside_next(&right)) {
       return;
     }
-
-    // eprintf("One scanline: %d->%d, %d\n", xl, xr, y);
-    // y++;
-    //  for (int i = 0; i < 3; i++) {
-    //    eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
-    //            face[i].pos.w);
-    //  }
   }
 }
 

@@ -481,7 +481,7 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
   {                                                                            \
     ass = realloc(ass, size);                                                  \
     if (ass == NULL) {                                                         \
-      dieerr("Could not reallocate mem, size %ld\n", size);                    \
+      dieerr("Could not reallocate mem, size %d\n", (int)(size));              \
     }                                                                          \
   }
 
