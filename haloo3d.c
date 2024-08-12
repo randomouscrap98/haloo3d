@@ -309,10 +309,10 @@ static inline int _h3dtriside_start(_h3dtriside *s) {
     s->u = v1->tex.x;
     s->dv = (v2->tex.y - v1->tex.y) / height;
     s->v = v1->tex.y;
-    // Negative because our zbuffer is cleared to 0 and we're not
-    // interpolating 1/z (which we used for perspective correct textures)
-    s->dz = ((-v2->pos.w) - (-v1->pos.w)) / height;
-    s->z = -v1->pos.w;
+    // This adds a lot of divides but idk... we'd need to be
+    // able to clear the depth buffer to some other value.
+    s->dz = (1 / v2->pos.w - 1 / v1->pos.w) / height;
+    s->z = 1 / v1->pos.w;
   }
   s->sectionheight = height;
   return height;
@@ -443,21 +443,10 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   // mfloat_t dvx = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x);
   // mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y);
   mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.z);
-  // mfloat_t dvy = H3D_TRIDIFF_V(v0v, v1v, v2v, tex.x);
-  // mfloat_t duy = H3D_TRIDIFF_V(v0v, v1v, v2v, tex.y);
-  // mfloat_t dzy = H3D_TRIDIFF_V(v0v, v1v, v2v, pos.z);
-
-  // The long side, first short, and second short
-  // mfloat_t dv0v2x = (v2v->pos.x - v0v->pos.x) / (v2v->pos.y - v0v->pos.y);
-  // mfloat_t dv0v1x = (v1v->pos.x - v0v->pos.x) / (v1v->pos.y - v0v->pos.y);
-  // mfloat_t dv1v2x = (v2v->pos.x - v1v->pos.x) / (v2v->pos.y - v1v->pos.y);
 
   const uint16_t scale = intensity * 256;
 
-  //]mfloat_t x0 = v0.x; // + dv0v2x * 0.5;
-  // mfloat_t x1 = v0.x; // + dv0v1x * 0.5;
-  // mfloat_t z = v0v->pos.z;
-
+  // uint16_t y = v0.y;
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->wbuffer + v0.y * fb->width;
 
@@ -474,8 +463,7 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
       // mfloat_t v = left.v;
       mfloat_t z = left.z;
       do {
-        if (z < *zbuf) {
-          //*buf =
+        if (z > *zbuf) {
           *buf = haloo3d_col_scalei(0xFFFF, scale);
           *zbuf = z;
         }
@@ -495,41 +483,12 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
       return;
     }
 
-    // eprintf("One scanline: %d %d\n", xl, xr);
-    // for (int i = 0; i < 3; i++) {
-    //   eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
-    //           face[i].pos.w);
-    // }
-
-    // int xl, xr;
-    // if (x0 < x1) {
-    //   xl = x0;
-    //   xr = x1;
-    // } else {
-    //   xl = x1;
-    //   xr = x0;
-    // }
-    // int width = xr - xl;
-    // // eprintf("%d %d %d (%f %f)- %d\n", y, xl, xr, x0, x1, width);
-    // int ofs = xl + y * fb->width;
-    // uint16_t *buf = fb->buffer + ofs;
-    // // mfloat_t * zbuf = fb->wbuffer + ofs;
-    // while (width) {
-    //   *buf = haloo3d_col_scalei(0xFFFF, scale);
-    //   buf++;
-    //   width--;
-    //   z += dzx;
-    //   // zbuf++;
-    // }
-    // x0 += dv0v2x;
-    // if (y == v1.y) {
-    //   x1 = v1.x;
-    //   // z = v1v->pos.z;
-    // } else if (y < v1.y) {
-    //   x1 += dv0v1x;
-    // } else {
-    //   x1 += dv1v2x;
-    // }
+    // eprintf("One scanline: %d->%d, %d\n", xl, xr, y);
+    // y++;
+    //  for (int i = 0; i < 3; i++) {
+    //    eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
+    //            face[i].pos.w);
+    //  }
   }
 }
 
