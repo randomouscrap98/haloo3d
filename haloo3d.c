@@ -259,43 +259,51 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
   }
 }
 
-/*
-typedef struct {
-  int x;
-} _h3dtriend;
+// typedef struct {
+//   int x;
+// } _h3dtriend;
 //
 // // Just for now, for speed, we use a global array
 // _h3dtriend _h3dtribuf[2][4096];
 
 // return horizontal difference per pixel
-#define H3D_TRIDIFF_H(v0, v1, v2, t) \
-  ((v0->t - v2->t) * (v1->y - v2->y) - (v1->t - v2->t) * (v0->y - v2->y)) / \
-  ((v0->x - v2->x) * (v1->y - v2->y) - (v1->x - v2->x) * (v0->y - v2->y))
+#define H3D_TRIDIFF_H(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.y - v2->pos.y) -                                 \
+   (v1->t - v2->t) * (v0->pos.y - v2->pos.y)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 // return vertical difference per pixel
-#define H3D_TRIDIFF_v(v0, v1, v2, t) \
-  ((v0->t - v2->t) * (v1->x - v2->x) - (v1->t - v2->t) * (v0->x - v2->x)) / \
-  ((v0->x - v2->x) * (v1->y - v2->y) - (v1->x - v2->x) * (v0->y - v2->y))
+#define H3D_TRIDIFF_V(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.x - v2->pos.x) -                                 \
+   (v1->t - v2->t) * (v0->pos.x - v2->pos.x)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
-//mfloat_t haloo3d_tridiff(haloo3d_facef face
+// mfloat_t haloo3d_tridiff(haloo3d_facef face
 
 // #define _H3D_RS 16
-void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
+void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
                                mfloat_t intensity, haloo3d_facef face) {
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
   haloo3d_vertexf *tmp;
 
-  struct vec2 boundsTL =
-      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  struct vec2 boundsBR =
-      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  //  The triangle is fully out of bounds; we don't have a proper clipper, so
-  //  this check still needs to be performed
-  if (boundsBR.y < 0 || boundsBR.x < 0 || boundsTL.x >= fb->width ||
-      boundsTL.y >= fb->height) {
-    return;
+  for (int i = 0; i < 3; i++) {
+    eprintf("%f %f %f %f\n", face[i].pos.x, face[i].pos.y, face[i].pos.z,
+            face[i].pos.w);
   }
+
+  // struct vec2 boundsTL =
+  //     haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  // struct vec2 boundsBR =
+  //     haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  // //  The triangle is fully out of bounds; we don't have a proper clipper, so
+  // //  this check still needs to be performed
+  // if (boundsBR.y < 0 || boundsBR.x < 0 || boundsTL.x >= fb->width ||
+  //     boundsTL.y >= fb->height) {
+  //   return;
+  // }
 
   // - figure out min and max vert
   // - do bresenham to get left and right lists
@@ -306,7 +314,7 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
     v1v = tmp;
   }
   if (v1v->pos.y > v2v->pos.y) {
-    tmp = v0v;
+    tmp = v1v;
     v1v = v2v;
     v2v = tmp;
   }
@@ -320,29 +328,65 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
   vec2i_assign_vec2(v0.v, v0v->pos.v);
   vec2i_assign_vec2(v1.v, v1v->pos.v);
   vec2i_assign_vec2(v2.v, v2v->pos.v);
-  int handedness = 0;
+  // int handedness = 0;
 
   mint_t parea = haloo3d_edgefunci(v0.v, v1.v, v2.v);
   if (parea == 0) {
     return;
-  } else if (parea < 0) {
+  } /*else if (parea < 0) {
     handedness = 1; // the other side
-  }
+  }*/
 
-  int ystart = MAX(0, boundsTL.y);
-  int yend = MIN(fb->height - 1, boundsBR.y);
-  int xstart = MAX(0, boundsTL.x);
-  int xend = MIN(fb->height - 1, boundsBR.x);
+  // need to calc all the diffs
+  // mfloat_t dvx = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x);
+  // mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y);
+  // mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.z);
+  // mfloat_t dvy = H3D_TRIDIFF_V(v0v, v1v, v2v, tex.x);
+  // mfloat_t duy = H3D_TRIDIFF_V(v0v, v1v, v2v, tex.y);
+  // mfloat_t dzy = H3D_TRIDIFF_V(v0v, v1v, v2v, pos.z);
+
+  // The long side, first short, and second short
+  mfloat_t dv0v2x = (v2v->pos.x - v0v->pos.x) / (v2v->pos.y - v0v->pos.y);
+  mfloat_t dv0v1x = (v1v->pos.x - v0v->pos.x) / (v1v->pos.y - v0v->pos.y);
+  mfloat_t dv1v2x = (v2v->pos.x - v1v->pos.x) / (v2v->pos.y - v1v->pos.y);
 
   const uint16_t scale = intensity * 256;
-  _h3dtriend min, max;
 
-  // First, calculate the left and right using bresenham algo.
-  // The handedness will tell us what side we're on
-  for (int y = ystart; y <= yend; y++) {
+  mfloat_t x0 = v0.x; // + dv0v2x * 0.5;
+  mfloat_t x1 = v0.x; // + dv0v1x * 0.5;
+
+  // Do v0 to v1
+
+  for (int y = v0.y; y <= v2.y; y++) {
+    // Doing this at start, might be broken but whatever
+    x0 += dv0v2x;
+    x1 += (y > v1.y) ? dv1v2x : dv0v1x;
+
+    int xl, xr;
+    if (x0 < x1) {
+      xl = x0;
+      xr = x1;
+    } else {
+      xl = x1;
+      xr = x0;
+    }
+    if (xl < 0)
+      xl = 0;
+    if (xr >= fb->width)
+      xr = fb->width - 1;
+    int width = xr - xl;
+    eprintf("%d %d %d (%f %f)- %d\n", y, xl, xr, x0, x1, width);
+    int ofs = xl + y * fb->width;
+    uint16_t *buf = fb->buffer + ofs;
+    // mfloat_t * zbuf = fb->wbuffer + ofs;
+    while (width) {
+      *buf = haloo3d_col_scalei(0xFFFF, scale);
+      buf++;
+      width--;
+      // zbuf++;
+    }
   }
 }
-*/
 
 int haloo3d_facef_finalize(haloo3d_facef face) {
   // We HAVE to divide points first BEFORE checking the edge function
