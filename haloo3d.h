@@ -7,8 +7,9 @@
 #ifndef HALOO3D_H
 #define HALOO3D_H
 
-// We want to use the unions for simplicity
+// Configure the mathc library before importing
 #define MATHC_USE_UNIONS
+#define MATHC_NO_STRUCT_FUNCTIONS
 
 #include "mathc.h"
 #include <float.h>
