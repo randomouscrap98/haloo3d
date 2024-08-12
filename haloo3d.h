@@ -1,4 +1,8 @@
 // haloopdy 2024
+// Header for the accompanying file haloo3d.c. Both files are required
+// to make the core library. The "haloo3dex_*" files are extras and 
+// can be used to create the "full" library, but nothing in them 
+// is required for 3D rendering
 
 #ifndef HALOO3D_H
 #define HALOO3D_H
@@ -19,11 +23,6 @@
 // however many planes we clip, that's the number we shift
 #define H3D_FACEF_CLIPPLANES 5
 #define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
-
-// Usually you clip against 0, but to be more safe, this is
-// the minimum clip. Since we (currently) only clip against the
-// near plane, this is usually fine. It may even be fine for
-// the future, if we clip against other planes.
 #define H3D_FACEF_CLIPLOW 0.0
 
 // These aren't necessarily hard limits; that's 65536
@@ -32,11 +31,56 @@
 
 #define H3D_SPRITE_FPDEPTH 12
 
+// Convert floating point to a 16.16 integer.
+#define H3D_FP16(x) ((int32_t)((x) * (1 << 16)))
+
+// ----------------------
+// Some helper functions
+// ----------------------
+
+// These helpers have non-namespaced names to make them easier to use.
+// They may however collide with your own functions... IDK
+
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
+
+// Die with an error (most calls in library will die on fatal error)
+#define dieerr(...)                                                            \
+  {                                                                            \
+    fprintf(stderr, __VA_ARGS__);                                              \
+    exit(1);                                                                   \
+  }
+// Attempt to malloc the given assignment or die trying
+#define mallocordie(ass, size)                                                 \
+  {                                                                            \
+    ass = malloc(size);                                                        \
+    if (ass == NULL) {                                                         \
+      dieerr("Could not allocate mem, size %d\n", (int)(size));                \
+    }                                                                          \
+  }
+// Attempt to realloc the given assignment or die trying
+#define reallocordie(ass, size)                                                \
+  {                                                                            \
+    ass = realloc(ass, size);                                                  \
+    if (ass == NULL) {                                                         \
+      dieerr("Could not reallocate mem, size %d\n", (int)(size));              \
+    }                                                                          \
+  }
+
+// Print vector (must be array)
+#define printvec4(v) eprintf("(%f, %f, %f, %f)", v[0], v[1], v[2], v[3])
+
+// Print matrix (must be array)
+#define printmatrix(m)                                                         \
+  {                                                                            \
+    eprintf("%f %f %f %f\n", m[0], m[1], m[2], m[3]);                          \
+    eprintf("%f %f %f %f\n", m[4], m[5], m[6], m[7]);                          \
+    eprintf("%f %f %f %f\n", m[8], m[9], m[10], m[11]);                        \
+    eprintf("%f %f %f %f\n", m[12], m[13], m[14], m[15]);                      \
+  }
 
 // ----------------------
 //  Framebuffer
@@ -48,25 +92,27 @@ typedef struct {
   uint16_t *buffer;  // actual buffer (managed manually)
   uint16_t width;    // width of the framebuffer
   uint16_t height;   // height of the framebuffer
-  mfloat_t *wbuffer; // Depth buffer, using w value instead of z
+  mfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
 } haloo3d_fb;
 
-// Get a value from the framebuffer at the given index
+// Get a value from the framebuffer at the given location
 static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
   return fb->buffer[x + y * fb->width];
 }
 
-static inline mfloat_t haloo3d_wb_get(haloo3d_fb *fb, int x, int y) {
-  return fb->wbuffer[x + y * fb->width];
+// Get a value from the depth buffer at a given location
+static inline mfloat_t haloo3d_db_get(haloo3d_fb *fb, int x, int y) {
+  return fb->dbuffer[x + y * fb->width];
 }
 
-// Set a value in the framebuffer at the given index
+// Set a value in the framebuffer at the given location
 static inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
   fb->buffer[x + y * fb->width] = v;
 }
 
-static inline void haloo3d_wb_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
-  fb->wbuffer[x + y * fb->width] = v;
+// Set a value in the depth buffer at the given location
+static inline void haloo3d_db_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
+  fb->dbuffer[x + y * fb->width] = v;
 }
 
 // Get a value based on uv coordinates. Does not perform any smoothing
@@ -74,19 +120,8 @@ static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
                                         mfloat_t v) {
   uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
   uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
-  // eprintf("%d %d | %f %f\n", x, y, u, v);
   return fb->buffer[x + y * fb->width];
 }
-
-// #define _H3D_RS 16
-// static inline uint16_t haloo3d_fb_getuvi(haloo3d_fb *fb, int32_t u, int32_t
-// v) {
-//   uint16_t x = (uint16_t)((fb->width * u) >> _H3D_RS) & (fb->width - 1);
-//   uint16_t y = (uint16_t)((fb->height * (1 - v)) >> _H3D_RS) & (fb->height -
-//   1);
-//   // eprintf("%d %d | %f %f\n", x, y, u, v);
-//   return fb->buffer[x + y * fb->width];
-// }
 
 // Get the total size in elements of any buffer inside (framebuffer or
 // otherwise)
@@ -102,16 +137,16 @@ void haloo3d_fb_free(haloo3d_fb *fb);
 // but you can otherwise use it as normal
 void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 
-// Clear the wbuffer
-static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
-  // Apparently memset isn't allowed, and the compiler will optimize this
-  // for us?
+// Clear the depth buffer to the given value. For speed, the buffer may need to be set
+// to different values depending on the triangle function used.
+// - Regular triangle function requires 0. We use an inverse depth buffer, 
+//   so larger values (1/z) are actually closer
+// - Fast triangle function requires something large. An interesting option
+//   is the far clip value
+static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb, const mfloat_t value) {
   const int len = haloo3d_fb_size(fb);
-  mfloat_t *const db = fb->wbuffer;
   for (int i = 0; i < len; i++) {
-    // We use an inverse depth buffer, so larger values (1/z) are actually
-    // closer
-    db[i] = 0;
+    fb->dbuffer[i] = value;
   }
 }
 
@@ -135,9 +170,6 @@ typedef struct {
 // A face which is made up of indexes into the obj
 typedef haloo3d_vertexi haloo3d_facei[3];
 typedef haloo3d_vertexf haloo3d_facef[3];
-
-// #define H3D_SIZEOF_FACEF (sizeof(haloo3d_vertexf) * 3)
-// #define H3D_SIZEOF_FACEI (sizeof(haloo3d_vertexi) *
 
 // An object definition, where every face is a simple
 // index into the internal structures
@@ -271,6 +303,7 @@ static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
 //   Camera
 // ----------------------
 
+// Describes a camera which can rotate in two directions only (no rolling)
 typedef struct {
   struct vec3 pos;
   struct vec3 up;
@@ -332,6 +365,7 @@ static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
   haloo3d_viewport_into(face[2].pos.v, width, height);
 }
 
+// Apply a scale factor to a model (or otherwise) matrix
 static inline void haloo3d_mat4_scale(mfloat_t *m, mfloat_t scale) {
   m[0] *= scale;
   m[5] *= scale;
@@ -339,7 +373,7 @@ static inline void haloo3d_mat4_scale(mfloat_t *m, mfloat_t scale) {
 }
 
 // Divide x, y, and z by the w value. Preserves the original w value!!
-// This is often the last step of perspective (perspective divide)
+// This is often the last step of perspective projection (perspective divide)
 static inline void haloo3d_vec4_conventional(struct vec4 *v) {
   if (v->w != 1) {
     v->x /= v->w;
@@ -394,6 +428,19 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
 //  Rendering
 // ----------------------
 
+// return horizontal difference per pixel for some property
+#define H3D_TRIDIFF_H(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.y - v2->pos.y) -                                 \
+   (v1->t - v2->t) * (v0->pos.y - v2->pos.y)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
+// return vertical difference per pixel for some property
+#define H3D_TRIDIFF_V(v0, v1, v2, t)                                           \
+  ((v0->t - v2->t) * (v1->pos.x - v2->pos.x) -                                 \
+   (v1->t - v2->t) * (v0->pos.x - v2->pos.x)) /                                \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
+
 // Top left corner of bounding box, but only x and y are computed
 static inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
                                                  mfloat_t *v2) {
@@ -433,11 +480,21 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
   return (struct vec2i){.x = (v1[1] - v0[1]), .y = -(v1[0] - v0[0])};
 }
 
-// Draw a textured triangle into the given framebuffer using the given face
+// Draw a textured triangle into the given framebuffer using the given face.
+// This function uses a "modern" technique and may be parallelized based
+// on configuration or machine. It will also always be perspective correct
+// and mostly accurate. If additional effects are added to the library, they
+// may be applied here. It is also slow
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face);
 
-void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
+// Draw a textured triangle into the given framebuffer using the given face.
+// This function uses an "oldschool" method for drawing triangles and is 
+// inherently single-threaded. It is also perspective-incorrect (like psx)
+// and will not have any new features added to it. As such, it is a 
+// stable implementation that will most likely never change and always
+// be as fast as possible.
+void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
                                mfloat_t intensity, haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
@@ -459,38 +516,5 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
 // Draw a sprite with no depth value directly into the buffer. Very fast.
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
                     haloo3d_recti outrect);
-
-// ----------------------
-// Some helper functions
-// ----------------------
-
-// Die with an error (most calls in library will die on fatal error)
-#define dieerr(...)                                                            \
-  {                                                                            \
-    fprintf(stderr, __VA_ARGS__);                                              \
-    exit(1);                                                                   \
-  }
-#define mallocordie(ass, size)                                                 \
-  {                                                                            \
-    ass = malloc(size);                                                        \
-    if (ass == NULL) {                                                         \
-      dieerr("Could not allocate mem, size %d\n", (int)(size));                \
-    }                                                                          \
-  }
-#define reallocordie(ass, size)                                                \
-  {                                                                            \
-    ass = realloc(ass, size);                                                  \
-    if (ass == NULL) {                                                         \
-      dieerr("Could not reallocate mem, size %d\n", (int)(size));              \
-    }                                                                          \
-  }
-
-#define printmatrix(m)                                                         \
-  {                                                                            \
-    eprintf("%f %f %f %f\n", m[0], m[1], m[2], m[3]);                          \
-    eprintf("%f %f %f %f\n", m[4], m[5], m[6], m[7]);                          \
-    eprintf("%f %f %f %f\n", m[8], m[9], m[10], m[11]);                        \
-    eprintf("%f %f %f %f\n", m[12], m[13], m[14], m[15]);                      \
-  }
 
 #endif

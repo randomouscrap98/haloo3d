@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define DOLIGHTING
+#define FASTTRIS
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -28,6 +29,14 @@
 #define FLOWERIND (NUMOBJECTS - 1)
 #define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
 #define MAXCAM 1200
+
+#ifdef FASTTRIS
+#define WBUFCLEAR FARCLIP
+#define TRIFUNC haloo3d_texturedtriangle_fast
+#else
+#define WBUFCLEAR 0
+#define TRIFUNC haloo3d_texturedtriangle
+#endif
 
 #define CALCTIME(thistime, start, end, sum)                                    \
   float thistime = 1000.0 * (float)(end - start) / CLOCKS_PER_SEC;             \
@@ -186,7 +195,7 @@ int main(int argc, char **argv) {
     camera.pitch = cams[cami].pitch + MPI_2;
 
     // REMEMBER TO CLEAR DEPTH BUFFER
-    haloo3d_fb_cleardepth(&fb);
+    haloo3d_fb_cleardepth(&fb, WBUFCLEAR);
     // memset(fb.buffer, 0xFF, sizeof(uint16_t) * fb.width * fb.height);
 
     // Screen matrix calc. We multiply the modelview matrix with this later
@@ -232,8 +241,7 @@ int main(int argc, char **argv) {
           }
           //   We still have to convert the points into the view
           haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-          haloo3d_texturedtriangle2(&fb, objects[i].texture, intensity,
-                                    outfaces[ti]);
+          TRIFUNC(&fb, objects[i].texture, intensity, outfaces[ti]);
         }
         // tempend = clock();
         // drawend += (tempend - tempstart);
