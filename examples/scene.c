@@ -23,7 +23,7 @@
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
-#define NUMFLOWERS 0
+#define NUMFLOWERS 300
 #define PLANESIZE 61
 #define FLOWERIND (NUMOBJECTS - 1)
 #define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
           }
           //   We still have to convert the points into the view
           haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-          haloo3d_texturedtriangle2(&fb, /*objects[i].texture,*/ intensity,
+          haloo3d_texturedtriangle2(&fb, objects[i].texture, intensity,
                                     outfaces[ti]);
         }
         // tempend = clock();

@@ -437,7 +437,7 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face);
 
-void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
+void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
                                mfloat_t intensity, haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning

@@ -267,6 +267,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 typedef struct {
   // struct vec2i *vstack[3];
   haloo3d_vertexf *stack[3];
+  haloo3d_fb *texture;
   int top;
   int sectionheight; // Tracking for how much is left in the current section
   int trackall;
@@ -274,9 +275,10 @@ typedef struct {
   mfloat_t dx, du, dv, dz; // Delta along CURRENT edge
 } _h3dtriside;
 
-static inline void _h3dtriside_init(_h3dtriside *s) {
+static inline void _h3dtriside_init(_h3dtriside *s, haloo3d_fb *texture) {
   s->top = 0;
   s->trackall = 0;
+  s->texture = texture;
 }
 
 // Push a normal vector onto the vector stack. Remember it is a stack,
@@ -305,14 +307,14 @@ static inline int _h3dtriside_start(_h3dtriside *s) {
   s->dx = (v2->pos.x - v1->pos.x) / height;
   s->x = v1->pos.x;
   if (s->trackall) {
-    s->du = (v2->tex.x - v1->tex.x) / height;
-    s->u = v1->tex.x;
-    s->dv = (v2->tex.y - v1->tex.y) / height;
-    s->v = v1->tex.y;
+    s->du = (v2->tex.x - v1->tex.x) / height * s->texture->width;
+    s->u = v1->tex.x * s->texture->width;
+    s->dv = -(v2->tex.y - v1->tex.y) / height * s->texture->height;
+    s->v = (1 - v1->tex.y) * s->texture->height;
     // This adds a lot of divides but idk... we'd need to be
     // able to clear the depth buffer to some other value.
-    s->dz = (1 / v2->pos.w - 1 / v1->pos.w) / height;
-    s->z = 1 / v1->pos.w;
+    s->dz = (v2->pos.w - v1->pos.w) / height;
+    s->z = v1->pos.w;
   }
   s->sectionheight = height;
   return height;
@@ -335,7 +337,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   } else {
     s->x += s->dx;
     if (s->trackall) {
-      s->u += s->dx;
+      s->u += s->du;
       s->v += s->dv;
       s->z += s->dz;
     }
@@ -357,27 +359,19 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
 // #define _H3D_RS 16
-void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
+void haloo3d_texturedtriangle2(haloo3d_fb *fb, haloo3d_fb *texture,
                                mfloat_t intensity, haloo3d_facef face) {
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
   haloo3d_vertexf *tmp;
 
-  // struct vec2 boundsTL =
-  //     haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  // struct vec2 boundsBR =
-  //     haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  // //  The triangle is fully out of bounds; we don't have a proper clipper, so
-  // //  this check still needs to be performed
-  // if (boundsBR.y < 0 || boundsBR.x < 0 || boundsTL.x >= fb->width ||
-  //     boundsTL.y >= fb->height) {
-  //   return;
-  // }
+  // Unfortunately we need 1/w for everything...
+  v0v->pos.w = 1 / v0v->pos.w;
+  v1v->pos.w = 1 / v1v->pos.w;
+  v2v->pos.w = 1 / v2v->pos.w;
 
-  // - figure out min and max vert
-  // - do bresenham to get left and right lists
-  // - draw lines across
+  // Make sure vertices are sorted top to bottom
   if (v0v->pos.y > v1v->pos.y) {
     tmp = v0v;
     v0v = v1v;
@@ -401,10 +395,10 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   vec2i_assign_vec2(v2.v, v2v->pos.v);
 
   // Tracking info for left and right side. Doesn't track
-  // ever row; instead it tracks enough values to calulate the next
+  // every row; instead it tracks enough values to calulate the next
   _h3dtriside right, left;
-  _h3dtriside_init(&right);
-  _h3dtriside_init(&left);
+  _h3dtriside_init(&right, texture);
+  _h3dtriside_init(&left, texture);
   left.trackall = 1;
   _h3dtriside *onesec, *twosec;
 
@@ -440,9 +434,9 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   }
 
   // need to calc all the constant diffs
-  // mfloat_t dvx = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x);
-  // mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y);
-  mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.z);
+  mfloat_t dux = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x);
+  mfloat_t dvx = H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y);
+  mfloat_t dzx = H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w);
 
   const uint16_t scale = intensity * 256;
 
@@ -450,6 +444,9 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->wbuffer + v0.y * fb->width;
 
+  uint16_t shift = log2(texture->width);
+  uint16_t txr = texture->width - 1;
+  uint16_t tyr = texture->height - 1;
   // for (int y = v0.y; y < v2.y; y++) {
   while (1) {
     int xl = left.x;
@@ -459,17 +456,23 @@ void haloo3d_texturedtriangle2(haloo3d_fb *fb, /*haloo3d_fb *texture,*/
     if (width > 0) {
       uint16_t *buf = buf_y + xl;
       mfloat_t *zbuf = zbuf_y + xl;
-      // mfloat_t u = left.u;
-      // mfloat_t v = left.v;
+      mfloat_t u = left.u;
+      mfloat_t v = left.v;
       mfloat_t z = left.z;
       do {
         if (z > *zbuf) {
-          *buf = haloo3d_col_scalei(0xFFFF, scale);
-          *zbuf = z;
+          uint16_t c = texture->buffer[((uint16_t)u & txr) +
+                                       (((uint16_t)v & tyr) << shift)];
+          if (c & 0xF000) {
+            *buf = haloo3d_col_scalei(c, scale);
+            *zbuf = z;
+          }
         }
         buf++;
         zbuf++;
         z += dzx;
+        u += dux;
+        v += dvx;
       } while (--width);
     }
 
