@@ -45,14 +45,7 @@
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define CLAMP(v, min, max)                                                     \
-  {                                                                            \
-    if (v < min)                                                               \
-      v = min;                                                                 \
-    else if (v > max)                                                          \
-      v = max;                                                                 \
-  }
-
+#define CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
 // Die with an error (most calls in library will die on fatal error)
@@ -452,6 +445,19 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
       ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
+typedef struct {
+  haloo3d_fb *texture;
+  uint16_t basecolor;
+  mfloat_t intensity; // a darkener
+  uint8_t dither[8];  // 8x8 dithering (0 will make it transparent)
+} haloo3d_trirender;
+
+// Initialize a triangle render setting with all defaults
+void haloo3d_trirender_init(haloo3d_trirender *tr);
+
+// Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
+void haloo3d_trirender_setdither4x4(haloo3d_trirender *tr, float dither);
+
 // Top left corner of bounding box, but only x and y are computed
 static inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,
                                                  mfloat_t *v2) {
@@ -496,8 +502,8 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 // on configuration or machine. It will also always be perspective correct
 // and mostly accurate. If additional effects are added to the library, they
 // may be applied here. It is also slow
-void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
-                              mfloat_t intensity, haloo3d_facef face);
+void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
+                              haloo3d_facef face);
 
 // Draw a textured triangle into the given framebuffer using the given face.
 // This function uses an "oldschool" method for drawing triangles and is
@@ -505,8 +511,8 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
 // and will not have any new features added to it. As such, it is a
 // stable implementation that will most likely never change and always
 // be as fast as possible.
-void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
-                                   mfloat_t intensity, haloo3d_facef face);
+void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
+                                   haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.

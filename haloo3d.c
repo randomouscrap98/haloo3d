@@ -155,8 +155,41 @@ void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta) {
 //  Rendering
 // ----------------------
 
-void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
-                              mfloat_t intensity, haloo3d_facef face) {
+// 4x4 dither patterns from 0 (no fill) to 16 (high fill).
+uint8_t haloo3d_dither4x4[17][8] = {
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    {0x88, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00},
+    {0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00},
+    {0xAA, 0x00, 0x22, 0x00, 0xAA, 0x00, 0x22, 0x00},
+    {0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00},
+    {0xAA, 0x44, 0xAA, 0x00, 0xAA, 0x44, 0xAA, 0x00},
+    {0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA, 0x11},
+    {0xAA, 0x55, 0xAA, 0x11, 0xAA, 0x55, 0xAA, 0x11},
+    {0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55},
+    {0xEE, 0x55, 0xAA, 0x55, 0xEE, 0x55, 0xAA, 0x55},
+    {0xEE, 0x55, 0xBB, 0x55, 0xEE, 0x55, 0xBB, 0x55},
+    {0xFF, 0x55, 0xBB, 0x55, 0xFF, 0x55, 0xBB, 0x55},
+    {0xFF, 0x55, 0xFF, 0x55, 0xFF, 0x55, 0xFF, 0x55},
+    {0xFF, 0xDD, 0xFF, 0x55, 0xFF, 0xDD, 0xFF, 0x55},
+    {0xFF, 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF, 0x77},
+    {0xFF, 0xFF, 0xFF, 0x77, 0xFF, 0xFF, 0xFF, 0x77},
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+};
+
+void haloo3d_trirender_init(haloo3d_trirender *tr) {
+  tr->texture = NULL;
+  tr->basecolor = 0xFFFF;
+  tr->intensity = 1.0;
+  memcpy(tr->dither, haloo3d_dither4x4[16], 8);
+}
+
+void haloo3d_trirender_setdither4x4(haloo3d_trirender *tr, float dither) {
+  uint8_t ind = round(16 * CLAMP(dither, 0, 1));
+  memcpy(tr->dither, haloo3d_dither4x4[ind], 8);
+}
+
+void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
+                              haloo3d_facef face) {
   haloo3d_vertexf v0v = face[0];
   haloo3d_vertexf v1v = face[1];
   haloo3d_vertexf v2v = face[2];
@@ -222,26 +255,22 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
           face[1].tex.x, face[1].tex.y, face[2].tex.x, face[2].tex.y);
   // eprintf("TIZ: %f %f %f\n", tiz0, tiz1, tiz2);
 #endif
-  //  int32_t tiz0 = (1.0 / face[0].pos.w) * (1 << _H3D_RS);
-  //  int32_t tiz1 = (1.0 / face[1].pos.w) * (1 << _H3D_RS);
-  //  int32_t tiz2 = (1.0 / face[2].pos.w) * (1 << _H3D_RS);
-  //  int32_t tiu0 = (face[0].tex.x * tiz0) * (1 << _H3D_RS);
-  //  int32_t tiu1 = (face[1].tex.x * tiz1) * (1 << _H3D_RS);
-  //  int32_t tiu2 = (face[2].tex.x * tiz2) * (1 << _H3D_RS);
-  //  int32_t tiv0 = (face[0].tex.y * tiz0) * (1 << _H3D_RS);
-  //  int32_t tiv1 = (face[1].tex.y * tiz1) * (1 << _H3D_RS);
-  //  int32_t tiv2 = (face[2].tex.y * tiz2) * (1 << _H3D_RS);
 
   const int yend = boundsBR.y;
   const int xend = boundsBR.x;
   const int ystart = boundsTL.y;
   const int xstart = boundsTL.x;
-  const uint16_t scale = intensity * 256;
+  const uint16_t scale = render->intensity * 256;
 
   for (int y = ystart; y <= yend; y++) {
     mint_t w0 = w0_y;
     mint_t w1 = w1_y;
     mint_t w2 = w2_y;
+    uint8_t dither = render->dither[y & 7];
+    if (!dither) {
+      goto LBL_H3DTRI1STRIDE_END;
+    }
+    dither = (dither >> (xstart & 7)) | (dither << (8 - (xstart & 7)));
     for (int x = xstart; x <= xend; x++) {
       if ((w0 | w1 | w2) >= 0) {
         // This value HAS to be normalized to be useful in the buffer!!!
@@ -249,9 +278,9 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
         if (pz > haloo3d_db_get(fb, x, y)) {
           mfloat_t pcz = invarea / pz;
           uint16_t c = haloo3d_fb_getuv(
-              texture, (w0 * tiu0 + w1 * tiu1 + w2 * tiu2) * pcz,
+              render->texture, (w0 * tiu0 + w1 * tiu1 + w2 * tiu2) * pcz,
               (w0 * tiv0 + w1 * tiv1 + w2 * tiv2) * pcz);
-          if (c & 0xF000) {
+          if ((c & 0xF000) && (dither & 1)) {
             haloo3d_db_set(fb, x, y, pz);
             haloo3d_fb_set(fb, x, y, haloo3d_col_scalei(c, scale));
           }
@@ -260,7 +289,10 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
       w0 += w0_i.x;
       w1 += w1_i.x;
       w2 += w2_i.x;
+      // PLEASE emit just a rightshift rotate!! I hope!!
+      dither = (dither >> 1) | (dither << 7);
     }
+  LBL_H3DTRI1STRIDE_END:
     w0_y += w0_i.y;
     w1_y += w1_i.y;
     w2_y += w2_i.y;
@@ -354,8 +386,14 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   return 0;
 }
 
-void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
-                                   mfloat_t intensity, haloo3d_facef face) {
+void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
+                                   haloo3d_facef face) {
+  // We don't support dithering in the fast one but we WILL throw away
+  // your triangle if the dithering is low enough (actually 0)
+  if (!render->dither[0]) {
+    return;
+  }
+
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
@@ -387,8 +425,8 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
   // Tracking info for left and right side. Doesn't track
   // every row; instead it tracks enough values to calulate the next
   _h3dtriside right, left;
-  _h3dtriside_init(&right, texture);
-  _h3dtriside_init(&left, texture);
+  _h3dtriside_init(&right, render->texture);
+  _h3dtriside_init(&left, render->texture);
   left.trackall = 1;
   _h3dtriside *onesec, *twosec;
 
@@ -429,28 +467,28 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
     }
   }
 
-  const uint16_t scale = intensity * 256;
+  const uint16_t scale = render->intensity * 256;
 
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
-  uint16_t *tbuf = texture->buffer;
+  uint16_t *tbuf = render->texture->buffer;
 
   // NOTE ABOUT HOW THIS WORKS: the u and v are globally tracked with 16 bits.
   // but when going across spans, they are only tracked with 8 bits. This lets
   // us premultiply the v by width and have a constant right shift of 8 in the
   // loop. Apparently on x86, shifting by 8 is more optimized than 16; no idea
   // why
-  const uint16_t twbits = log2(texture->width);
+  const uint16_t twbits = log2(left.twidth);
   const uint16_t tvshift = abs(8 - twbits);
   const int tvshleft = (twbits > 8);
-  const uint16_t txr = texture->width - 1;
-  const uint16_t tyr = (texture->height - 1) << twbits;
+  const uint16_t txr = left.twidth - 1;
+  const uint16_t tyr = (left.theight - 1) << twbits;
 
   // need to calc all the constant diffs
   const int32_t dzx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
   const int32_t dux =
-      H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width) >> 8;
-  int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height);
+      H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;
+  int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * left.theight);
   dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
 
   while (1) {

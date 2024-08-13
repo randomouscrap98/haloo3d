@@ -21,6 +21,10 @@
 #define SKYSCALE 30
 #define AVGWEIGHT 0.85
 
+// Dithering disabled. Try 5 to 30 or so and disable the skybox with skyscale
+#define DITHERSTART 100
+#define DITHEREND 101
+
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
 #define NUMFLOWERS 300
@@ -173,6 +177,11 @@ int main(int argc, char **argv) {
   // clock_t begin, end;
   int totaldrawn = 0;
 
+  // Setup render config with defaults. We won't necessarily use all features
+  // present in this
+  haloo3d_trirender rendersettings;
+  haloo3d_trirender_init(&rendersettings);
+
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
   // -----------------------------------
@@ -195,7 +204,7 @@ int main(int argc, char **argv) {
 
     // REMEMBER TO CLEAR DEPTH BUFFER
     haloo3d_fb_cleardepth(&fb, WBUFCLEAR);
-    // memset(fb.buffer, 0xFF, sizeof(uint16_t) * fb.width * fb.height);
+    memset(fb.buffer, 0xFF, sizeof(uint16_t) * fb.width * fb.height);
 
     // Screen matrix calc. We multiply the modelview matrix with this later
     haloo3d_camera_calclook(&camera, matrixcam);
@@ -221,6 +230,12 @@ int main(int argc, char **argv) {
         haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
                            objects[i].model->vtexture, face);
         // tempstart = clock();
+        // calc dither PRE clipping
+        mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
+        mfloat_t dither = (avg > DITHERSTART)
+                              ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
+                              : 1.0;
+        haloo3d_trirender_setdither4x4(&rendersettings, dither);
         int tris = haloo3d_facef_clip(face, outfaces);
         // tempend = clock();
         // clipend += (tempend - tempstart);
@@ -231,16 +246,17 @@ int main(int argc, char **argv) {
             continue;
           }
           totaldrawn++;
-          mfloat_t intensity = 1.0;
+          rendersettings.texture = objects[i].texture;
+          rendersettings.intensity = 1.0;
           if (objects[i].lighting) {
             haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],
                               baseface);
-            intensity =
+            rendersettings.intensity =
                 haloo3d_calc_light(objects[i].lighting->v, MINLIGHT, baseface);
           }
           //   We still have to convert the points into the view
           haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-          TRIFUNC(&fb, objects[i].texture, intensity, outfaces[ti]);
+          TRIFUNC(&fb, &rendersettings, outfaces[ti]);
         }
         // tempend = clock();
         // drawend += (tempend - tempstart);
