@@ -145,6 +145,7 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
 
 void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta) {
   mfloat_t rot[MAT4_SIZE];
+  mat4_zero(rot);
   mat4_rotation_x(rot, -cam->yaw);
   struct vec4 result = haloo3d_vec4_multmat(delta, rot);
   *delta = result;
