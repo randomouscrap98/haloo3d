@@ -45,6 +45,13 @@
 #define IS2POW(x) (!(x & (x - 1)) && x)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define CLAMP(v, min, max)                                                     \
+  {                                                                            \
+    if (v < min)                                                               \
+      v = min;                                                                 \
+    else if (v > max)                                                          \
+      v = max;                                                                 \
+  }
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
