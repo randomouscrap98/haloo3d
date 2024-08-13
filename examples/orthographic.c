@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
-    haloo3d_fb_cleardepth(&fb);
+    haloo3d_fb_cleardepth(&fb, 0);
     for (int fi = 0; fi < obj.numfaces; fi++) {
       haloo3d_obj_facef(&obj, obj.faces[fi], face);
       // Oh but our zbuffer is actually our w-buffer soooo

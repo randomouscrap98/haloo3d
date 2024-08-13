@@ -1,7 +1,6 @@
 // haloopdy 2024
 
 #include "haloo3d.h"
-#include "mathc.h"
 #include <string.h>
 
 // ----------------------
@@ -274,8 +273,8 @@ typedef struct {
   // These are 16.16 fixed point kinda
   int32_t x, u, v, z;     // Tracking variables
   int32_t dx, du, dv, dz; // Delta along CURRENT edge
-  //mfloat_t z;  
-  //mfloat_t dz; 
+  // mfloat_t z;
+  // mfloat_t dz;
 } _h3dtriside;
 
 static inline void _h3dtriside_init(_h3dtriside *s, haloo3d_fb *texture) {
@@ -300,9 +299,10 @@ static inline int _h3dtriside_pop(_h3dtriside *s) { return --s->top; }
 // Calculate all deltas (or at least all set to track) and return
 // the height of this section.
 static inline int _h3dtriside_start(_h3dtriside *s) {
-  const haloo3d_vertexf * const v1 = s->stack[s->top - 1];
-  const haloo3d_vertexf * const v2 = s->stack[s->top - 2];
-  const int height = v2->pos.y - v1->pos.y; // this might throw away info, that's ok
+  const haloo3d_vertexf *const v1 = s->stack[s->top - 1];
+  const haloo3d_vertexf *const v2 = s->stack[s->top - 2];
+  const int height =
+      v2->pos.y - v1->pos.y; // this might throw away info, that's ok
   if (height == 0) {
     return 0;
   }
@@ -346,7 +346,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 }
 
 void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
-                               mfloat_t intensity, haloo3d_facef face) {
+                                   mfloat_t intensity, haloo3d_facef face) {
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
@@ -427,9 +427,10 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
   uint16_t *tbuf = texture->buffer;
 
   // NOTE ABOUT HOW THIS WORKS: the u and v are globally tracked with 16 bits.
-  // but when going across spans, they are only tracked with 8 bits. This lets 
-  // us premultiply the v by width and have a constant right shift of 8 in the loop.
-  // Apparently on x86, shifting by 8 is more optimized than 16; no idea why
+  // but when going across spans, they are only tracked with 8 bits. This lets
+  // us premultiply the v by width and have a constant right shift of 8 in the
+  // loop. Apparently on x86, shifting by 8 is more optimized than 16; no idea
+  // why
   const uint16_t twbits = log2(texture->width);
   const uint16_t tvshift = abs(8 - twbits);
   const int tvshleft = (twbits > 8);
@@ -438,7 +439,8 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
 
   // need to calc all the constant diffs
   const int32_t dzx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
-  const int32_t dux = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width) >> 8;
+  const int32_t dux =
+      H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * texture->width) >> 8;
   int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * texture->height);
   dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
 

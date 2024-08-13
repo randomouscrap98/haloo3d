@@ -1,7 +1,6 @@
 #include "../haloo3d.h"
 #include "../haloo3dex_img.h"
 #include "../haloo3dex_obj.h"
-#include "mathc.h"
 #include <stdio.h>
 
 #define DOLIGHTING
@@ -96,7 +95,7 @@ int main(int argc, char **argv) {
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
-    haloo3d_fb_cleardepth(&fb);
+    haloo3d_fb_cleardepth(&fb, 0);
     // To simulate what would actually happen per frame, let's calc the
     // camera each time
     haloo3d_camera_calclook(&camera, matrixcam);

@@ -4,7 +4,6 @@
 #include "../haloo3dex_obj.h"
 #include "../haloo3dex_print.h"
 #include "flower.h"
-#include "mathc.h"
 #include <stdlib.h>
 #include <time.h>
 

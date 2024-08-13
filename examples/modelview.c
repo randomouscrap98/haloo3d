@@ -1,7 +1,6 @@
 #include "../haloo3d.h"
 #include "../haloo3dex_img.h"
 #include "../haloo3dex_obj.h"
-#include "mathc.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -114,7 +113,7 @@ int main(int argc, char **argv) {
   // -----------------------------------
 
   // REMEMBER TO CLEAR DEPTH BUFFER
-  haloo3d_fb_cleardepth(&fb);
+  haloo3d_fb_cleardepth(&fb, 0);
 
   // Screen matrix calc. We multiply the modelview matrix with this later
   haloo3d_camera_calclook(&camera, matrixcam);

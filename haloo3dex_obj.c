@@ -1,6 +1,5 @@
 #include "haloo3dex_obj.h"
 #include "haloo3d.h"
-#include "mathc.h"
 
 #include <stdlib.h>
 #include <string.h>

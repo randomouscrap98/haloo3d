@@ -1,5 +1,0 @@
-# This is useful if you're using a clang LSP or something else to verify files
-# as you're editing them (obviously clang specific)
-CompileFlags: 
-  Add:
-    - "-Ilib" 

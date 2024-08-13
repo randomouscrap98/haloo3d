@@ -11,7 +11,7 @@
 LIBD = lib
 BUILDD = build
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -flto -I$(LIBD)
+CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -flto
 # Debug arguments maybe
 # CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
 # Make sure to enable sse on non 64 bit systems/compilers

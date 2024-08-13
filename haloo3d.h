@@ -1,7 +1,7 @@
 // haloopdy 2024
 // Header for the accompanying file haloo3d.c. Both files are required
-// to make the core library. The "haloo3dex_*" files are extras and 
-// can be used to create the "full" library, but nothing in them 
+// to make the core library. The "haloo3dex_*" files are extras and
+// can be used to create the "full" library, but nothing in them
 // is required for 3D rendering
 
 #ifndef HALOO3D_H
@@ -11,7 +11,7 @@
 #define MATHC_USE_UNIONS
 #define MATHC_NO_STRUCT_FUNCTIONS
 
-#include "mathc.h"
+#include "lib/mathc.h"
 #include <float.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -138,9 +138,9 @@ void haloo3d_fb_free(haloo3d_fb *fb);
 // but you can otherwise use it as normal
 void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 
-// Clear the depth buffer to the given value. For speed, the buffer may need to be set
-// to different values depending on the triangle function used.
-// - Regular triangle function requires 0. We use an inverse depth buffer, 
+// Clear the depth buffer to the given value. For speed, the buffer may need to
+// be set to different values depending on the triangle function used.
+// - Regular triangle function requires 0. We use an inverse depth buffer,
 //   so larger values (1/z) are actually closer
 // - Fast triangle function requires something large. An interesting option
 //   is the far clip value
@@ -490,13 +490,13 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_fb *texture,
                               mfloat_t intensity, haloo3d_facef face);
 
 // Draw a textured triangle into the given framebuffer using the given face.
-// This function uses an "oldschool" method for drawing triangles and is 
+// This function uses an "oldschool" method for drawing triangles and is
 // inherently single-threaded. It is also perspective-incorrect (like psx)
-// and will not have any new features added to it. As such, it is a 
+// and will not have any new features added to it. As such, it is a
 // stable implementation that will most likely never change and always
 // be as fast as possible.
 void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_fb *texture,
-                               mfloat_t intensity, haloo3d_facef face);
+                                   mfloat_t intensity, haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.
