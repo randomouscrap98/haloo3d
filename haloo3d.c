@@ -1,6 +1,7 @@
 // haloopdy 2024
 
 #include "haloo3d.h"
+#include "lib/mathc.h"
 #include <string.h>
 
 // ----------------------
@@ -140,6 +141,13 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
   m[11] = -1; // the z divide
   // m[14] = (far * near - near) / (near - far);
   m[14] = 2 * far * near / (near - far);
+}
+
+void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta) {
+  mfloat_t rot[MAT4_SIZE];
+  mat4_rotation_x(rot, -cam->yaw);
+  struct vec4 result = haloo3d_vec4_multmat(delta, rot);
+  *delta = result;
 }
 
 // ----------------------

@@ -330,6 +330,9 @@ void haloo3d_my_lookat(mfloat_t *view, mfloat_t *from, mfloat_t *to,
 void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
                          mfloat_t near, mfloat_t far);
 
+// Calculate movement based only on yaw (pretty normal)
+void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta);
+
 // ----------------------
 //   Math
 // ----------------------
@@ -394,7 +397,7 @@ static inline struct vec4 haloo3d_vec4_multmat(struct vec4 *v, mfloat_t *m) {
 }
 
 // Multiply the given point by the given matrix, storing the result in another
-// vec
+// vec. It HAS to be a different vec!!
 static inline void haloo3d_vec4_multmat_into(struct vec4 *v, mfloat_t *m,
                                              struct vec4 *out) {
   out->x = v->x * m[0] + v->y * m[4] + v->z * m[8] + m[12];
