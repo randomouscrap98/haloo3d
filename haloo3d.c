@@ -275,12 +275,12 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
       if ((w0 | w1 | w2) >= 0) {
         // This value HAS to be normalized to be useful in the buffer!!!
         mfloat_t pz = (w0 * tiz0 + w1 * tiz1 + w2 * tiz2) * invarea;
-        if (pz > haloo3d_db_get(fb, x, y)) {
+        if (pz > haloo3d_db_get(fb, x, y) && (dither & 1)) {
           mfloat_t pcz = invarea / pz;
           uint16_t c = haloo3d_fb_getuv(
               render->texture, (w0 * tiu0 + w1 * tiu1 + w2 * tiu2) * pcz,
               (w0 * tiv0 + w1 * tiv1 + w2 * tiv2) * pcz);
-          if ((c & 0xF000) && (dither & 1)) {
+          if ((c & 0xF000)) {
             haloo3d_db_set(fb, x, y, pz);
             haloo3d_fb_set(fb, x, y, haloo3d_col_scalei(c, scale));
           }
@@ -388,11 +388,11 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 
 void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
                                    haloo3d_facef face) {
-  // We don't support dithering in the fast one but we WILL throw away
-  // your triangle if the dithering is low enough (actually 0)
-  if (!render->dither[0]) {
-    return;
-  }
+  // // We don't support dithering in the fast one but we WILL throw away
+  // // your triangle if the dithering is low enough (actually 0)
+  // if (!render->dither[0]) {
+  //   return;
+  // }
 
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
@@ -490,6 +490,7 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
       H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;
   int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * left.theight);
   dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
+  int y = v0.y;
 
   while (1) {
     int xl = left.x >> 16;
@@ -502,9 +503,11 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
       int32_t u = left.u >> 8;
       int32_t v = tvshleft ? (left.v << tvshift) : (left.v >> tvshift);
       int32_t z = left.z;
+      uint8_t dither = render->dither[y & 7];
+      dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
 
       do {
-        if (z < *zbuf) {
+        if (z < *zbuf && (dither & 1)) {
           uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
           if (c & 0xF000) {
             *buf = haloo3d_col_scalei(c, scale);
@@ -516,11 +519,13 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
         z += dzx;
         u += dux;
         v += dvx;
+        dither = (dither >> 1) | (dither << 7);
       } while (buf < bufend);
     }
 
     buf_y += fb->width;
     zbuf_y += fb->width;
+    y++;
 
     if (_h3dtriside_next(&left)) {
       return;

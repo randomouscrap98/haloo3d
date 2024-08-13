@@ -18,12 +18,12 @@
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
-#define SKYSCALE 30
+#define SKYSCALE 0.03
 #define AVGWEIGHT 0.85
 
 // Dithering disabled. Try 5 to 30 or so and disable the skybox with skyscale
-#define DITHERSTART 100
-#define DITHEREND 101
+#define DITHERSTART 5
+#define DITHEREND 30
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
