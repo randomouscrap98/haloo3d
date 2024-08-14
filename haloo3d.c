@@ -216,17 +216,19 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
     v1v = tmpv;
     parea = -parea;
   }
+  struct vec2i boundsTL = {.x = boundsTLf.x, .y = boundsTLf.y};
+  struct vec2i boundsBR = {.x = boundsBRf.x, .y = boundsBRf.y};
+#ifdef H3D_SANITY_CHECK
   // struct vec2i boundsTL = {.x = MAX(boundsTLf.x, 0), .y = MAX(boundsTLf.y,
   // 0)}; struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
   //                          .y = MIN(boundsBRf.y, fb->height - 1)};
-  struct vec2i boundsTL = {.x = boundsTLf.x, .y = boundsTLf.y};
-  struct vec2i boundsBR = {.x = boundsBRf.x, .y = boundsBRf.y};
   if (boundsTL.x < 0 || boundsBR.x < 0 || boundsTL.y < 0 || boundsBR.y < 0 ||
       boundsTL.x >= fb->width || boundsBR.x >= fb->width ||
       boundsTL.y >= fb->height || boundsBR.y >= fb->height) {
-    dieerr("YOU SUCK: (%d,%d)->(%d,%d)", boundsTL.x, boundsTL.y, boundsBR.x,
+    dieerr("PIXEL OOB: (%d,%d)->(%d,%d)", boundsTL.x, boundsTL.y, boundsBR.x,
            boundsBR.y);
   }
+#endif
   //  BTW our scanning starts at boundsTL
   // int32_t invarea = (1.0 / parea) * (1 << _H3D_RS);
   mfloat_t invarea = 1.0 / parea;
@@ -386,18 +388,43 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   return 0;
 }
 
+#ifdef H3D_FAST_NO_DITHERING
+#define H3D_DITHER_CHECK(dither) 1
+#else
+#define H3D_DITHER_CHECK(dither) (dither & 1)
+#endif
+
+#ifdef H3D_FAST_NO_TRANSPARENCY
+#define H3D_TRANSPARENCY_CHECK(c) 1
+#else
+#define H3D_TRANSPARENCY_CHECK(c) (c & 0xFF00)
+#endif
+
+#ifdef H3D_FAST_NO_COLSCALING
+#define H3D_SCALE_COL(c, s) (c)
+#else
+#define H3D_SCALE_COL(c, s) (haloo3d_col_scalei(c, s))
+#endif
+
 void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
                                    haloo3d_facef face) {
-  // // We don't support dithering in the fast one but we WILL throw away
-  // // your triangle if the dithering is low enough (actually 0)
-  // if (!render->dither[0]) {
-  //   return;
-  // }
-
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
   haloo3d_vertexf *tmp;
+
+#ifdef H3D_SANITY_CHECK
+  struct vec2 boundsTLf =
+      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  struct vec2 boundsBRf =
+      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
+      boundsBRf.y < 0 || boundsTLf.x >= fb->width || boundsBRf.x >= fb->width ||
+      boundsTLf.y >= fb->height || boundsBRf.y >= fb->height) {
+    dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
+           boundsBRf.y);
+  }
+#endif
 
   // NOTE: MAKE SURE YOU CLEAR THE Z-BUFFER TO A HIGH VALUE INSTEAD OF 0
   // Here, we fix v because it's actually the inverse
@@ -467,7 +494,9 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
     }
   }
 
+#ifndef H3D_FAST_NO_COLSCALING
   const uint16_t scale = render->intensity * 256;
+#endif
 
   uint16_t *buf_y = fb->buffer + v0.y * fb->width;
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
@@ -490,7 +519,9 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
       H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;
   int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * left.theight);
   dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
+#ifndef H3D_FAST_NO_DITHERING
   int y = v0.y;
+#endif
 
   while (1) {
     int xl = left.x >> 16;
@@ -503,14 +534,16 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
       int32_t u = left.u >> 8;
       int32_t v = tvshleft ? (left.v << tvshift) : (left.v >> tvshift);
       int32_t z = left.z;
+#ifndef H3D_FAST_NO_DITHERING
       uint8_t dither = render->dither[y & 7];
       dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
+#endif
 
       do {
-        if (z < *zbuf && (dither & 1)) {
+        if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
           uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
-          if (c & 0xF000) {
-            *buf = haloo3d_col_scalei(c, scale);
+          if (H3D_TRANSPARENCY_CHECK(c)) {
+            *buf = H3D_SCALE_COL(c, scale);
             *zbuf = z;
           }
         }
@@ -519,13 +552,17 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
         z += dzx;
         u += dux;
         v += dvx;
+#ifndef H3D_FAST_NO_DITHERING
         dither = (dither >> 1) | (dither << 7);
+#endif
       } while (buf < bufend);
     }
 
     buf_y += fb->width;
     zbuf_y += fb->width;
+#ifndef H3D_FAST_NO_DITHERING
     y++;
+#endif
 
     if (_h3dtriside_next(&left)) {
       return;
@@ -565,19 +602,17 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
 
   // Do for each plane
   for (int p = 0; p < H3D_FACEF_CLIPPLANES; p++) {
-    if (!assign) {
+    if (!assign) { // There's no triangles left
       break;
     }
     // How far to move to store triangle 2, also how many tris
     int tris = (1 << p);
-    uint64_t tricheck = assign;
-    // uint64_t mask = 1; // This will get left shifted
+    uint64_t tricheck = assign; // local tracker for assign that gets shifted
     for (int t = 0; t < tris; t++) {
-      if (!tricheck) {
+      if (!tricheck) { // There's no triangles left
         break;
       }
-      // Only do tris that are set
-      if (tricheck & 1) {
+      if (tricheck & 1) { // Only do tris that are set
         int numinners = 0;
         int numouters = 0;
         haloo3d_vertexf *f = out[t];
@@ -660,6 +695,8 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   int numout = 0;
   int index = 0;
 
+  // Though this could be expensive, generally speaking, there won't be
+  // many triangles here. It doesn't scale well though
   while (assign) {
     if (assign & 1) {
       if (index != numout) {
@@ -705,7 +742,7 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
     for (int x = outrect.x1; x < outrect.x2; x++) {
       uint16_t pix = haloo3d_fb_get(sprite, texx >> FIXEDPOINTDEPTH,
                                     texy >> FIXEDPOINTDEPTH);
-      if (pix >> 12) {
+      if (pix & 0xF000) {
         haloo3d_fb_set(fb, x, y, pix);
       }
       texx += stepx;

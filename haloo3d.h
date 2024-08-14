@@ -7,6 +7,21 @@
 #ifndef HALOO3D_H
 #define HALOO3D_H
 
+// Flags to control system at compile time
+
+// Force system to check uncertain bounds and die if bad
+// #define H3D_SANITY_CHECK
+
+// Performance flags
+// Completely disable "lighting" in fast triangle renderer, even when requested
+// #define H3D_FAST_NO_COLSCALING
+// Completely disable dithering in fast triangle renderer, even when requested.
+// The triangles may still disappear in some circumstances
+// #define H3D_FAST_NO_DITHERING
+// Disable transparency checks in fast triangle renderer. Has no effect on
+// dithering
+// #define H3D_FAST_NO_TRANSPARENCY
+
 // Configure the mathc library before importing
 #define MATHC_USE_UNIONS
 #define MATHC_NO_STRUCT_FUNCTIONS
@@ -30,7 +45,8 @@
 #define H3D_OBJ_MAXVERTICES 8192
 #define H3D_OBJ_MAXFACES 8192
 
-#define H3D_SPRITE_FPDEPTH 12
+// Better to work in multiples of 8??
+#define H3D_SPRITE_FPDEPTH 16
 
 // Convert floating point to a 16.16 integer.
 #define H3D_FP16(x) ((int32_t)((x) * (1 << 16)))

@@ -3,12 +3,13 @@
 #include "../haloo3dex_img.h"
 #include "../haloo3dex_obj.h"
 #include "../haloo3dex_print.h"
+#include "camera.h"
 #include "flower.h"
 #include <stdlib.h>
 #include <time.h>
 
 #define DOLIGHTING
-#define FASTTRIS
+// #define FASTTRIS
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -18,12 +19,12 @@
 #define FARCLIP 100.0
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.25
-#define SKYSCALE 0.03
+#define SKYSCALE 30
 #define AVGWEIGHT 0.85
 
 // Dithering disabled. Try 5 to 30 or so and disable the skybox with skyscale
-#define DITHERSTART 5
-#define DITHEREND 30
+#define DITHERSTART 100
+#define DITHEREND 101
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
@@ -47,36 +48,7 @@
     sum = thistime;                                                            \
   sum = AVGWEIGHT * sum + (1 - AVGWEIGHT) * thistime;
 
-typedef struct {
-  mfloat_t xofs;
-  mfloat_t yofs;
-  mfloat_t zofs;
-  mfloat_t yaw;
-  mfloat_t pitch;
-} camset;
-
 uint16_t redflower[64] = H3D_FLOWER(0xFE55, 0xF6C4, 0xFFE0, 0xFD44, 0xF492);
-
-int readcam(camset *set, int max, char *filename) {
-  FILE *f = fopen(filename, "r");
-  if (f == NULL) {
-    dieerr("Can't open %s for reading cam\n", filename);
-  }
-  int num = 0;
-  while (5 == fscanf(f, "%f %f %f %f %f", &set[num].xofs, &set[num].yofs,
-                     &set[num].zofs, &set[num].yaw, &set[num].pitch)) {
-    // char linebuf[1024];
-    //  fgets(linebuf, sizeof(linebuf), f)) {
-    num++;
-    if (num >= max) {
-      eprintf("Camera file too big! Ignoring rest\n");
-      break;
-    }
-  }
-  fclose(f);
-  printf("Read %d camlines from %s\n", num, filename);
-  return num;
-}
 
 int main(int argc, char **argv) {
 
@@ -84,7 +56,6 @@ int main(int argc, char **argv) {
     eprintf("WARN: THIS PROGRAM GENERATES A LOT OF FILES!\n");
     dieerr("You must pass in the following:\n- obj file .obj\n- texture file "
            ".ppm\n- camera file (xofs yofs zofs yawdeg pitchdeg)\n");
-    //- obj xofs\n- obj yofs\n- obj zofs\n- obj rotation deg\n");
   }
 
   // Load the junk + generate stuff
@@ -99,7 +70,6 @@ int main(int argc, char **argv) {
   haloo3d_gen_sloped(models + 2, PLANESIZE, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
-  // memset(textures[3].buffer, 0xFF, sizeof(uint16_t) * 64);
   haloo3d_gen_crossquad(models + 3, textures + 3);
 
   camset cams[MAXCAM];

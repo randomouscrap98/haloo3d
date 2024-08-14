@@ -11,11 +11,22 @@
 LIBD = lib
 BUILDD = build
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -flto
-# Debug arguments maybe
-# CFLAGS = -std=c99 -Wall -O2 -g -flto -I$(LIBS)
-# Make sure to enable sse on non 64 bit systems/compilers
-# CFLAGS = -std=c99 -Wall -Wextra -Werror -O3 -msse -flto -I$(LIBD)
+DEFINES = -DH3D_SANITY_CHECK
+CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra
+ifdef MARCH 		# Allows you to define the architecture (usually not required)
+	CFLAGS += -march=$(MARCH)
+endif
+ifdef LOWSPEC  	# Set the build to enable ALL optimization flags. It will look ugly
+	CFLAGS += -DH3D_FAST_NO_TRANSPARENCY -DH3D_FAST_NO_DITHERING -DH3D_FAST_NO_COLSCALING
+endif
+ifndef FORCE 		# Force the build to move past warnings (disable warnings as errors)
+	CFLAGS += -Werror
+endif
+ifdef DEBUG 		# Build in debug mode, usable in gdb/valgrind/etc
+	CFLAGS += -O2 -g
+else
+	CFLAGS += -O3 -flto
+endif
 
 
 # Define the object files for the static library
