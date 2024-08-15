@@ -50,7 +50,7 @@ typedef struct {
   float avgweight;
 } haloo3d_easytimer;
 
-void haloo3d_easytimer_init(haloo3d_easytimer *t);
+void haloo3d_easytimer_init(haloo3d_easytimer *t, float avgweight);
 void haloo3d_easytimer_start(haloo3d_easytimer *t);
 void haloo3d_easytimer_end(haloo3d_easytimer *t);
 
@@ -66,6 +66,9 @@ typedef struct {
   haloo3d_print_tracker tprint;
   haloo3d_camera camera;
   haloo3d_fb window;
+  haloo3d_trirender rendersettings;
+  uint32_t totalfaces;
+  uint32_t totalverts;
   uint16_t nextobj;
   uint8_t trifunc;
 } haloo3d_easyrender;
@@ -91,6 +94,13 @@ void haloo3d_easyrender_deleteinstance(haloo3d_easyrender *r,
 haloo3d_obj_instance *
 haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
                                 haloo3d_obj_instance *last);
+// Full render function using default values. If you need something special,
+// such as unique dithering, you will need to do what this function does
+// manually
+int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
+                                  haloo3d_obj_instance *object, int facei,
+                                  mfloat_t ditherstart, mfloat_t ditherend,
+                                  mfloat_t minlight);
 
 // Calculate the dither used for a face when your dither distance starts at
 // start and ends at end. Also sets the dither on the render settings.

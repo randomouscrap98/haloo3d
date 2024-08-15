@@ -121,9 +121,10 @@ void haloo3d_easystore_deletealltex(haloo3d_easystore *s,
   }
 }
 
-void haloo3d_easytimer_init(haloo3d_easytimer *t) {
+void haloo3d_easytimer_init(haloo3d_easytimer *t, float avgweight) {
   t->sum = 0;
   t->last = 0;
+  t->avgweight = avgweight;
 }
 
 void haloo3d_easytimer_start(haloo3d_easytimer *t) { t->start = clock(); }
@@ -137,8 +138,11 @@ void haloo3d_easytimer_end(haloo3d_easytimer *t) {
 }
 
 void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
+  r->totalfaces = 0;
+  r->totalverts = 0;
   r->nextobj = 0;
   memset(r->_objstate, 0, sizeof(r->_objstate));
+  haloo3d_trirender_init(&r->rendersettings);
   haloo3d_fb_init(&r->window, width, height);
   haloo3d_camera_init(&r->camera);
   haloo3d_print_initdefault(&r->tprint, r->printbuf, sizeof(r->printbuf));
@@ -173,6 +177,7 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
   haloo3d_mat4_scalev(modelm, o->scale.v);
   mat4_multiply(finalmatrix, r->screenmatrix, modelm);
   haloo3d_precalc_verts(o->model, finalmatrix, r->precalcs);
+  r->rendersettings.texture = o->texture;
 }
 
 haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
@@ -184,6 +189,8 @@ haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
     r->nextobj = (r->nextobj + 1) % H3D_EASYRENDER_MAXOBJS;
     if (r->_objstate[thisobj] == 0) {
       r->_objstate[thisobj] = 1;
+      r->totalfaces += model->numfaces;
+      r->totalverts += model->numvertices;
       haloo3d_objin_init(r->objects + thisobj, model, texture);
       return r->objects + thisobj;
     }
@@ -200,9 +207,13 @@ void haloo3d_easyrender_deleteinstance(haloo3d_easyrender *r,
     return;
   }
   // Deleting is just setting state to 0. The hole will get picked up
-  // somewhere...
+  // somewhere... also we track total faces and verts but who knows
+  // if it'll be accurate. Users can add or delete faces and vertices
+  // at runtime.
   uint16_t offset = in - r->objects;
   r->_objstate[offset] = 0;
+  r->totalfaces -= r->objects[offset].model->numfaces;
+  r->totalverts -= r->objects[offset].model->numvertices;
 }
 
 haloo3d_obj_instance *
@@ -220,4 +231,48 @@ haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
   }
 
   return NULL;
+}
+
+int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
+                                  haloo3d_obj_instance *object, int facei,
+                                  mfloat_t ditherstart, mfloat_t ditherend,
+                                  mfloat_t minlight) {
+  int totaldrawn = 0;
+  haloo3d_facef face, baseface;
+  // Copy face values out of precalc array and clip them
+  haloo3d_make_facef(object->model->faces[facei], r->precalcs,
+                     object->model->vtexture, face);
+  int tris = haloo3d_facef_clip(face, r->outfaces);
+  if (tris > 0) {
+    if (ditherstart > 0) {
+      haloo3d_easy_calcdither4x4(&r->rendersettings, face, ditherstart,
+                                 ditherend);
+    }
+    r->rendersettings.intensity = 1.0;
+    if (object->lighting) {
+      haloo3d_obj_facef(object->model, object->model->faces[facei], baseface);
+      r->rendersettings.intensity =
+          haloo3d_calc_light(object->lighting->v, minlight, baseface);
+    }
+  }
+  for (int ti = 0; ti < tris; ti++) {
+    int backface = !haloo3d_facef_finalize(r->outfaces[ti]);
+    if (object->cullbackface && backface) {
+      continue;
+    }
+    totaldrawn++;
+    //   We still have to convert the points into the view
+    haloo3d_facef_viewport_into(r->outfaces[ti], r->window.width,
+                                r->window.height);
+    switch (r->trifunc) {
+    case H3D_EASYRENDER_NORMFUNC:
+      haloo3d_texturedtriangle(&r->window, &r->rendersettings, r->outfaces[ti]);
+      break;
+    case H3D_EASYRENDER_FASTFUNC:
+      haloo3d_texturedtriangle_fast(&r->window, &r->rendersettings,
+                                    r->outfaces[ti]);
+      break;
+    }
+  }
+  return totaldrawn;
 }
