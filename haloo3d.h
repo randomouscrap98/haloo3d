@@ -41,6 +41,9 @@
 #define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
 #define H3D_FACEF_CLIPLOW 0.0
 
+#define H3D_DBUF_NORM 0
+#define H3D_DBUF_FAST (1 << 24)
+
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
 #define H3D_OBJ_MAXFACES 8192
@@ -107,9 +110,9 @@
 // framebuffer, the depth buffer, etc
 typedef struct {
   uint16_t *buffer;  // actual buffer (managed manually)
+  mfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
   uint16_t width;    // width of the framebuffer
   uint16_t height;   // height of the framebuffer
-  mfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
 } haloo3d_fb;
 
 // Get a value from the framebuffer at the given location
@@ -226,10 +229,11 @@ int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix, struct vec4 *out);
 typedef struct {
   struct vec3 pos;
   struct vec3 lookvec;
+  struct vec3 up;
   haloo3d_obj *model;
   haloo3d_fb *texture;
   struct vec3 *lighting; // a pointer to lighting, null for none
-  mfloat_t scale;        // how big the thing should be in world
+  struct vec3 scale;     // how big the thing should be in world
   uint16_t color;        // baseline color if textures aren't used
   uint8_t cullbackface;
 } haloo3d_obj_instance;
@@ -390,6 +394,12 @@ static inline void haloo3d_mat4_scale(mfloat_t *m, mfloat_t scale) {
   m[0] *= scale;
   m[5] *= scale;
   m[10] *= scale;
+}
+
+static inline void haloo3d_mat4_scalev(mfloat_t *m, mfloat_t *scale) {
+  m[0] *= scale[0];
+  m[5] *= scale[1];
+  m[10] *= scale[2];
 }
 
 // Divide x, y, and z by the w value. Preserves the original w value!!

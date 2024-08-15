@@ -35,13 +35,14 @@ void haloo3d_objin_init(haloo3d_obj_instance *obj, haloo3d_obj *model,
   obj->cullbackface = 1;
   obj->model = model;
   obj->texture = tex;
-  obj->scale = 1.0;
   obj->color = 0xFFFF;
   obj->lighting = NULL; // Default no lighting
+  vec3(obj->scale.v, 1.0, 1.0, 1.0);
   vec3(obj->pos.v, 0, 0, 0);
   // Assume user is going to use lookvec as a facing offset and not a raw
   // lookat. Though, this value will work regardless, considering the position
   vec3(obj->lookvec.v, 0, 0, -1);
+  vec3(obj->up.v, 0, 1, 0);
 }
 
 // ----------------------

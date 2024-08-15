@@ -1,4 +1,6 @@
 #include "haloo3dex_easy.h"
+#include "haloo3d.h"
+#include <string.h>
 
 void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef face,
                                 mfloat_t ditherstart, mfloat_t ditherend) {
@@ -6,4 +8,216 @@ void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef face,
   mfloat_t dither =
       (avg > ditherstart) ? (ditherend - avg) / (ditherend - ditherstart) : 1.0;
   haloo3d_trirender_setdither4x4(settings, dither);
+}
+
+void haloo3d_easystore_init(haloo3d_easystore *s) {
+  for (int i = 0; i < H3D_EASYSTORE_MAX; i++) {
+    s->objkeys[i][0] = 0;
+    s->texkeys[i][0] = 0;
+  }
+}
+
+#define _H3D_ES_CHECKKEY(key)                                                  \
+  if (strlen(key) >= H3D_EASYSTORE_MAXKEY) {                                   \
+    dieerr("Key too long! Max: %d\n", H3D_EASYSTORE_MAXKEY - 1);               \
+  }
+#define _H3D_ES_FOREACH(i) for (int i = 0; i < H3D_EASYSTORE_MAX; i++)
+#define _H3D_ES_EMPTY(f) if (f[0] == 0)
+#define _H3D_ES_NOTEMPTY(f) if (f[0] != 0)
+#define _H3D_ES_FIND(f, key) if (strcmp(f, key) == 0)
+#define _H3D_ES_NOEMPTY()                                                      \
+  dieerr("No more room for objects! Max: %d\n", H3D_EASYSTORE_MAX);
+#define _H3D_ES_NOFIND(key) dieerr("Object not found: %s\n", key);
+
+haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_EMPTY(s->objkeys[i]) {
+      strcpy(s->objkeys[i], key);
+      return s->_objects + i;
+    }
+  }
+  _H3D_ES_NOEMPTY()
+}
+
+haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->objkeys[i], key) { return s->_objects + i; }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void haloo3d_easystore_deleteobj(haloo3d_easystore *s, char *key,
+                                 void (*ondelete)(haloo3d_obj *)) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->objkeys[i], key) {
+      s->objkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_objects + i);
+      }
+      return;
+    }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void haloo3d_easystore_deleteallobj(haloo3d_easystore *s,
+                                    void (*ondelete)(haloo3d_obj *)) {
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_NOTEMPTY(s->objkeys[i]) {
+      s->objkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_objects + i);
+      }
+    }
+  }
+}
+
+haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_EMPTY(s->texkeys[i]) {
+      strcpy(s->texkeys[i], key);
+      return s->_textures + i;
+    }
+  }
+  _H3D_ES_NOEMPTY()
+}
+
+haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->texkeys[i], key) { return s->_textures + i; }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void haloo3d_easystore_deletetex(haloo3d_easystore *s, char *key,
+                                 void (*ondelete)(haloo3d_fb *)) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->texkeys[i], key) {
+      s->texkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_textures + i);
+      }
+      return;
+    }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void haloo3d_easystore_deletealltex(haloo3d_easystore *s,
+                                    void (*ondelete)(haloo3d_fb *)) {
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_NOTEMPTY(s->texkeys[i]) {
+      s->texkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_textures + i);
+      }
+    }
+  }
+}
+
+void haloo3d_easytimer_init(haloo3d_easytimer *t) {
+  t->sum = 0;
+  t->last = 0;
+}
+
+void haloo3d_easytimer_start(haloo3d_easytimer *t) { t->start = clock(); }
+
+void haloo3d_easytimer_end(haloo3d_easytimer *t) {
+  clock_t end = clock();
+  t->last = (float)(end - t->start) / CLOCKS_PER_SEC;
+  if (t->sum == 0)
+    t->sum = t->last;
+  t->sum = t->avgweight * t->sum + (1 - t->avgweight) * t->last;
+}
+
+void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
+  r->nextobj = 0;
+  memset(r->_objstate, 0, sizeof(r->_objstate));
+  haloo3d_fb_init(&r->window, width, height);
+  haloo3d_camera_init(&r->camera);
+  haloo3d_print_initdefault(&r->tprint, r->printbuf, sizeof(r->printbuf));
+  r->tprint.fb = &r->window;
+  r->trifunc = H3D_EASYRENDER_NORMFUNC;
+}
+
+void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
+  haloo3d_print_refresh(&r->tprint);
+  mfloat_t clearval;
+  switch (r->trifunc) {
+  case H3D_EASYRENDER_FASTFUNC:
+    clearval = H3D_DBUF_FAST;
+    break;
+  default:
+    clearval = H3D_DBUF_NORM;
+  }
+  haloo3d_fb_cleardepth(&r->window, clearval);
+  mfloat_t cammatrix[MAT4_SIZE];
+  haloo3d_camera_calclook(&r->camera, cammatrix);
+  mat4_inverse(cammatrix, cammatrix);
+  mat4_multiply(r->screenmatrix, r->perspective, cammatrix);
+}
+
+void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
+                                   haloo3d_obj_instance *o) {
+  mfloat_t tmp[VEC4_SIZE];
+  mfloat_t modelm[MAT4_SIZE];
+  mfloat_t finalmatrix[MAT4_SIZE];
+  vec3_add(tmp, o->pos.v, o->lookvec.v);
+  haloo3d_my_lookat(modelm, o->pos.v, tmp, o->up.v);
+  haloo3d_mat4_scalev(modelm, o->scale.v);
+  mat4_multiply(finalmatrix, r->screenmatrix, modelm);
+  haloo3d_precalc_verts(o->model, finalmatrix, r->precalcs);
+}
+
+haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
+                                                     haloo3d_obj *model,
+                                                     haloo3d_fb *texture) {
+  // For loop lets us finish if there's no space for new objects
+  for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
+    uint16_t thisobj = r->nextobj;
+    r->nextobj = (r->nextobj + 1) % H3D_EASYRENDER_MAXOBJS;
+    if (r->_objstate[thisobj] == 0) {
+      r->_objstate[thisobj] = 1;
+      haloo3d_objin_init(r->objects + thisobj, model, texture);
+      return r->objects + thisobj;
+    }
+  }
+  dieerr("No more room for object instances! Max: %d\n",
+         H3D_EASYRENDER_MAXOBJS);
+}
+
+// Delete the instance with the given pointer. Will not fail if it's not there.
+void haloo3d_easyrender_deleteinstance(haloo3d_easyrender *r,
+                                       haloo3d_obj_instance *in) {
+  // no use doing anything if it's outside our buffer
+  if (in < r->objects || in >= (r->objects + H3D_EASYRENDER_MAXOBJS)) {
+    return;
+  }
+  // Deleting is just setting state to 0. The hole will get picked up
+  // somewhere...
+  uint16_t offset = in - r->objects;
+  r->_objstate[offset] = 0;
+}
+
+haloo3d_obj_instance *
+haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
+                                haloo3d_obj_instance *last) {
+  if (last == NULL) {
+    last = r->objects - 1; // Technically an invalid address but that's ok
+  }
+
+  while (last < r->objects + H3D_EASYRENDER_MAXOBJS - 1) {
+    last++;
+    if (r->_objstate[last - r->objects] != 0) {
+      return last;
+    }
+  }
+
+  return NULL;
 }
