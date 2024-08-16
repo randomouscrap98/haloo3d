@@ -212,7 +212,7 @@ void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
 // sides
 void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size) {
   haloo3d_gen_obj_prealloc(obj, 2 * (size + 1) * (size + 1), 4,
-                           4 * size * (size /*+ 1*/));
+                           4 * size * (size + 1));
   // Vtexture is just the four corners again
   haloo3d_gen_boxvtexture(obj->vtexture);
   // Generate the bottom vertices. It's the same as the plane
@@ -271,6 +271,49 @@ void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size) {
       obj->faces[i][2].texi = 3;
       i++;
     }
+  }
+  // And then we generate some walls along the edges we didn't finish
+  for (int z = 0; z < size; z++) {
+    int topright = size + z * (size + 1);
+    int bottomright = size + (z + 1) * (size + 1);
+    int topright2 = topright + vertplanesize;
+    int bottomright2 = bottomright + vertplanesize;
+    // remember to wind counter-clockwise
+    obj->faces[i][0].posi = topright;
+    obj->faces[i][0].texi = 0;
+    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].texi = 2;
+    obj->faces[i][2].posi = topright2;
+    obj->faces[i][2].texi = 1;
+    i++;
+    obj->faces[i][0].posi = topright2;
+    obj->faces[i][0].texi = 1;
+    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].texi = 2;
+    obj->faces[i][2].posi = bottomright2;
+    obj->faces[i][2].texi = 3;
+    i++;
+  }
+  for (int x = 0; x < size; x++) {
+    int bottomleft = x + size * (size + 1);
+    int bottomright = x + 1 + size * (size + 1);
+    int bottomleft2 = bottomleft + vertplanesize;
+    int bottomright2 = bottomright + vertplanesize;
+    // remember to wind counter-clockwise
+    obj->faces[i][0].posi = bottomleft;
+    obj->faces[i][0].texi = 0;
+    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].texi = 2;
+    obj->faces[i][2].posi = bottomleft2;
+    obj->faces[i][2].texi = 1;
+    i++;
+    obj->faces[i][0].posi = bottomleft2;
+    obj->faces[i][0].texi = 1;
+    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].texi = 2;
+    obj->faces[i][2].posi = bottomright2;
+    obj->faces[i][2].texi = 3;
+    i++;
   }
 }
 
