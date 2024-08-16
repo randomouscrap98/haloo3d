@@ -7,20 +7,26 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Generate a checkerboard pattern within the texture
-void haloo3d_gen_checkerboard(haloo3d_fb *fb, uint16_t *cols, uint16_t numcols,
-                              uint16_t size);
-// Generate a 1 pixel wide gradient from bottom to top
-void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
-                             uint16_t height);
+// Given an ALREADY allocated texture, blend a checkerboard on top of it. You
+// can use this to generate solid colors by passing in only one col
+void haloo3d_apply_alternating(haloo3d_fb *fb, uint16_t *cols,
+                               uint16_t numcols);
+// Given an ALREADY allocated texture, blend a vertical gradient on top of it.
+// THe
+void haloo3d_apply_vgradient(haloo3d_fb *fb, uint16_t top, uint16_t bottom);
+// Given an ALREADY allocated texture, blend noise on top of it. if null is
+// passed, simple noise is applied. The last value indicates how much of an
+// effect the noise has. 1.0 means full application of noise and should
+// probably not be used. THe noise should be -1 to 1
+void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale);
 
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
                               uint16_t numvtex, uint16_t numfaces);
 
-// With an already-allocated array for vtextures, this fills it with the obvious
-// 4 corners. The order is bottomleft, topleft, bottomright, topright
+// With an already-allocated array for vtextures, this fills it with the
+// obvious 4 corners. The order is bottomleft, topleft, bottomright, topright
 void haloo3d_gen_boxvtexture(struct vec3 *textures);
 
 // Generate a cube where all faces face inwards

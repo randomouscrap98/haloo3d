@@ -1,23 +1,70 @@
 #include "haloo3dex_gen.h"
 #include "haloo3d.h"
+#include "lib/FastNoiseLite.h"
 
-void haloo3d_gen_checkerboard(haloo3d_fb *fb, uint16_t *cols, uint16_t numcols,
-                              uint16_t size) {
-  haloo3d_fb_init_tex(fb, size, size);
+// how do i wnat to generte the layers?
+// - Alpha? some parts are blank?
+// - Noise? Hmmm
+// - Shapes?
+// Imagine generating the following:
+// - Dirt: just a brown layer with noise applied directly to it
+// - Checkerboard: alternating colors as already implemented, but with...
+//   the ability to merge alpha? yeah
+// - What if checkerboard dark? Just black checkerboard with transparency
+// - Bricks: red base, add small noise, brick lines, add small noise again
+// - Now that we know, textures should always be NOT generated, so we can
+//   apply them on top of each other. Or could we check to see if it's init?
+//   no, values are all random.
+// - How do we stack transaprent values?
+
+void haloo3d_apply_alternating(haloo3d_fb *fb, uint16_t *cols,
+                               uint16_t numcols) {
   for (int y = 0; y < fb->height; y++) {
     for (int x = 0; x < fb->width; x++) {
-      haloo3d_fb_set(fb, x, y, cols[(x + y) % numcols]);
+      uint16_t basecol = haloo3d_fb_get(fb, x, y);
+      haloo3d_fb_set(fb, x, y,
+                     haloo3d_col_blend(cols[(x + y) % numcols], basecol));
     }
   }
 }
 
-void haloo3d_gen_1pxgradient(haloo3d_fb *fb, uint16_t bottom, uint16_t top,
-                             uint16_t height) {
-  haloo3d_fb_init_tex(fb, 1, height);
+void haloo3d_apply_vgradient(haloo3d_fb *fb, uint16_t top, uint16_t bottom) {
   for (int y = 0; y < fb->height; y++) {
-    haloo3d_fb_set(
-        fb, 0, y,
-        haloo3d_col_lerp(top, bottom, (mfloat_t)y / (fb->height - 1)));
+    uint16_t col =
+        haloo3d_col_lerp(top, bottom, (mfloat_t)y / (fb->height - 1));
+    for (int x = 0; x < fb->width; x++) {
+      uint16_t basecol = haloo3d_fb_get(fb, x, y);
+      haloo3d_fb_set(fb, x, y, haloo3d_col_blend(col, basecol));
+    }
+  }
+}
+
+void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale) {
+  int malloced = 0;
+  if (noise == NULL) {
+    mallocordie(noise, sizeof(float) * fb->width * fb->height);
+    fnl_state ns = fnlCreateState();
+    ns.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    ns.seed = 0;
+    ns.frequency = 1;
+    for (int y = 0; y < 128; y++) {
+      for (int x = 0; x < 128; x++) {
+        noise[x + y * fb->width] = fnlGetNoise2D(&ns, x, y);
+      }
+    }
+  }
+  uint16_t noisealpha = scale * 15;
+  for (int y = 0; y < fb->height; y++) {
+    for (int x = 0; x < fb->width; x++) {
+      uint16_t basecol = haloo3d_fb_get(fb, x, y);
+      uint16_t noisecolv = (noise[x + y * fb->width] + 1.0) / 2.0 * 15;
+      uint16_t noisecol =
+          H3DC_ARGB(noisealpha, noisecolv, noisecolv, noisecolv);
+      haloo3d_fb_set(fb, x, y, haloo3d_col_blend(noisecol, basecol));
+    }
+  }
+  if (malloced) {
+    free(noise);
   }
 }
 

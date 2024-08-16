@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define DOLIGHTING
-// #define FASTTRIS
+#define FASTTRIS
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -63,10 +63,12 @@ int main(int argc, char **argv) {
   haloo3d_fb textures[NUMOBJECTS];
   haloo3d_obj_loadfile(models, argv[1]);
   haloo3d_img_loadppmfile(textures, argv[2]);
-  haloo3d_gen_1pxgradient(textures + 1, 0xF44F, 0xF001, 32);
+  haloo3d_fb_init_tex(textures + 1, 32, 32);
+  haloo3d_apply_vgradient(textures + 1, 0xF44F, 0xF001);
   haloo3d_gen_skybox(models + 1);
   uint16_t checkcols[2] = {0xF0A0, 0xF270};
-  haloo3d_gen_checkerboard(textures + 2, checkcols, 2, 32);
+  haloo3d_fb_init_tex(textures + 2, 32, 32);
+  haloo3d_apply_alternating(textures + 2, checkcols, 2);
   haloo3d_gen_sloped(models + 2, PLANESIZE, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
@@ -101,7 +103,7 @@ int main(int argc, char **argv) {
     } else { // Setup the flowers
       haloo3d_objin_init(objects + i, models + FLOWERIND, textures + FLOWERIND);
       objects[i].cullbackface = 0;
-      objects[i].scale = 0.5;
+      vec3(objects[i].scale.v, 0.5, 0.5, 0.5);
       int rvi = rand() % models[2].numvertices;
       vec3_assign(objects[i].pos.v, models[2].vertices[rvi].v);
       objects[i].pos.y += 0.5;
@@ -117,7 +119,7 @@ int main(int argc, char **argv) {
   // objects[0].pos.y = -10;
   // vec3(objects[2].pos.v, 0.5, 0.8, 0.5);
   objects[0].pos.y = 1;
-  objects[1].scale = SKYSCALE;
+  vec3(objects[1].scale.v, SKYSCALE, SKYSCALE, SKYSCALE);
 
   // Now we create a framebuffer to draw the triangle into
   haloo3d_fb fb;
@@ -189,7 +191,7 @@ int main(int argc, char **argv) {
       //  Setup final model matrix and the precalced vertices
       vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
       haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
-      haloo3d_mat4_scale(matrixmodel, objects[i].scale);
+      haloo3d_mat4_scalev(matrixmodel, objects[i].scale.v);
       mat4_multiply(matrix3d, matrixscreen, matrixmodel);
       haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
       // tempend = clock();

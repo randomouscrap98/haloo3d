@@ -13,8 +13,10 @@ BUILDD = build
 CC = gcc
 DEFINES = -DH3D_SANITY_CHECK
 CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra
+# CLIBFLAGS = -std=c99
 ifdef MARCH 		# Allows you to define the architecture (usually not required)
 	CFLAGS += -march=$(MARCH)
+	# CLIBFLAGS += -march=$(MARCH)
 endif
 ifdef LOWSPEC  	# Set the build to enable ALL optimization flags. It will look ugly
 	CFLAGS += -DH3D_FAST_NO_TRANSPARENCY -DH3D_FAST_NO_DITHERING -DH3D_FAST_NO_COLSCALING
@@ -24,8 +26,10 @@ ifndef FORCE 		# Force the build to move past warnings (disable warnings as erro
 endif
 ifdef DEBUG 		# Build in debug mode, usable in gdb/valgrind/etc
 	CFLAGS += -O2 -g
+	# CLIBFLAGS += -O2 -g
 else
 	CFLAGS += -O3 -flto
+	# CLIBFLAGS += -O3 -flto
 endif
 
 
@@ -33,7 +37,7 @@ endif
 STATICOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/$(LIBD)/mathc.o
 FULLOBJS = $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o \
 					 $(BUILDD)/haloo3dex_gen.o $(BUILDD)/haloo3dex_print.o \
-					 $(BUILDD)/haloo3dex_easy.o
+					 $(BUILDD)/haloo3dex_easy.o $(BUILDD)/$(LIBD)/FastNoiseLite.o
 BASEOUT = $(BUILDD)/haloo3d.a
 FULLOUT = $(BUILDD)/haloo3d_full.a
 

@@ -275,6 +275,7 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
 //   Colors
 // ----------------------
 
+#define H3DC_A4(c) (((c) >> 12) & 0xF)
 #define H3DC_R4(c) (((c) >> 8) & 0xF)
 #define H3DC_G4(c) (((c) >> 4) & 0xF)
 #define H3DC_B4(c) ((c) & 0xF)
@@ -283,6 +284,8 @@ static inline void haloo3d_facef_fixw(haloo3d_facef face) {
 #define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
 #define H3DC_RGB(r, g, b)                                                      \
   (0xF000 | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
+#define H3DC_ARGB(a, r, g, b)                                                  \
+  ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
 // "scale" a color by a given intensity. it WILL clip...
 static inline uint16_t haloo3d_col_scale(uint16_t col, mfloat_t scale) {
@@ -317,6 +320,34 @@ static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
   return H3DC_RGB((uint8_t)(t * (r2 - r1) + r1), 
                   (uint8_t)(t * (g2 - g1) + g1),
                   (uint8_t)(t * (b2 - b1) + b1));
+  // clang-format on
+}
+
+// Blend src onto dest. Doesn't use floats, so may not be very accurate.
+// Remember, src goes on top of dst.
+static inline uint16_t haloo3d_col_blend(uint16_t src, uint16_t dst) {
+  if ((src & 0xF000) == 0xF000) { // The basic cases, since there's only 4 bits
+    return src;
+  } else if ((src & 0xF000) == 0) {
+    return dst;
+  }
+  uint16_t a1 = H3DC_A4(src);
+  uint16_t r1 = H3DC_R4(src);
+  uint16_t g1 = H3DC_G4(src);
+  uint16_t b1 = H3DC_B4(src);
+
+  uint16_t a2 = H3DC_A4(dst);
+  uint16_t r2 = H3DC_R4(dst);
+  uint16_t g2 = H3DC_G4(dst);
+  uint16_t b2 = H3DC_B4(dst);
+
+  uint8_t a = (a1 * a1 + (15 - a1) * a2) / 15;
+  uint8_t r = (r1 * a1 + (15 - a1) * r2) / 15;
+  uint8_t g = (g1 * a1 + (15 - a1) * g2) / 15;
+  uint8_t b = (b1 * a1 + (15 - a1) * b2) / 15;
+
+  // clang-format off
+  return H3DC_ARGB(a, r, g, b);
   // clang-format on
 }
 
