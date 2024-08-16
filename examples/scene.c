@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   haloo3d_obj_loadfile(models, argv[1]);
   haloo3d_img_loadppmfile(textures, argv[2]);
   haloo3d_fb_init_tex(textures + 1, 32, 32);
-  haloo3d_apply_vgradient(textures + 1, 0xF44F, 0xF001);
+  haloo3d_apply_vgradient(textures + 1, 0xF001, 0xF44F);
   haloo3d_gen_skybox(models + 1);
   uint16_t checkcols[2] = {0xF0A0, 0xF270};
   haloo3d_fb_init_tex(textures + 2, 32, 32);
