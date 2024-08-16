@@ -40,15 +40,16 @@ void haloo3d_apply_vgradient(haloo3d_fb *fb, uint16_t top, uint16_t bottom) {
 }
 
 void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale) {
+  static int noisenext = 0;
   int malloced = 0;
   if (noise == NULL) {
     mallocordie(noise, sizeof(float) * fb->width * fb->height);
     fnl_state ns = fnlCreateState();
     ns.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    ns.seed = 0;
+    ns.seed = noisenext++;
     ns.frequency = 1;
-    for (int y = 0; y < 128; y++) {
-      for (int x = 0; x < 128; x++) {
+    for (int y = 0; y < fb->height; y++) {
+      for (int x = 0; x < fb->width; x++) {
         noise[x + y * fb->width] = fnlGetNoise2D(&ns, x, y);
       }
     }
@@ -65,6 +66,30 @@ void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale) {
   }
   if (malloced) {
     free(noise);
+  }
+}
+
+void haloo3d_apply_brick(haloo3d_fb *fb, uint16_t width, uint16_t height,
+                         uint16_t color) {
+  int i = 0;
+  for (int y = height - 1; y < fb->height + height; y += height) {
+    int yofs = (width * (2 + 5 * (i & 1))) / 10;
+    for (int x = 0; x < fb->width; x++) {
+      if (y < fb->height) {
+        uint16_t basecol = haloo3d_fb_get(fb, x, y);
+        haloo3d_fb_set(fb, x, y, haloo3d_col_blend(color, basecol));
+      }
+      if (x == yofs) {
+        for (int v = y - (height - 1); v < y; v++) {
+          if (v < fb->height) {
+            uint16_t basecol = haloo3d_fb_get(fb, x, v);
+            haloo3d_fb_set(fb, x, v, haloo3d_col_blend(color, basecol));
+          }
+        }
+        yofs += width;
+      }
+    }
+    i++;
   }
 }
 
@@ -181,6 +206,72 @@ void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
   }
   eprintf("Generated plane with %d vertices, %d faces\n", obj->numvertices,
           obj->numfaces);
+}
+
+// Generate a basic grid of given size. Expect walls to be viewed from both
+// sides
+void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size) {
+  haloo3d_gen_obj_prealloc(obj, 2 * (size + 1) * (size + 1), 4,
+                           4 * size * (size /*+ 1*/));
+  // Vtexture is just the four corners again
+  haloo3d_gen_boxvtexture(obj->vtexture);
+  // Generate the bottom vertices. It's the same as the plane
+  int i = 0;
+  for (mfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (mfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+      vec4(obj->vertices[i].v, x, 0, z, 1);
+      i++;
+    }
+  }
+  // Generate the top vertices. It's the same as the plane
+  for (mfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (mfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+      vec4(obj->vertices[i].v, x, 1, z, 1);
+      i++;
+    }
+  }
+  i = 0;
+  int vertplanesize = (size + 1) * (size + 1);
+  // Generate the normal faces on the top left corners
+  for (int z = 0; z < size; z++) {
+    for (int x = 0; x < size; x++) {
+      int topleft = x + z * (size + 1);
+      int topright = x + 1 + z * (size + 1);
+      int bottomleft = x + (z + 1) * (size + 1);
+      int topleft2 = topleft + vertplanesize;
+      int topright2 = topright + vertplanesize;
+      int bottomleft2 = bottomleft + vertplanesize;
+      // remember to wind counter-clockwise
+      obj->faces[i][0].posi = topleft;
+      obj->faces[i][0].texi = 0;
+      obj->faces[i][1].posi = topright;
+      obj->faces[i][1].texi = 2;
+      obj->faces[i][2].posi = topleft2;
+      obj->faces[i][2].texi = 1;
+      i++;
+      obj->faces[i][0].posi = topleft2;
+      obj->faces[i][0].texi = 1;
+      obj->faces[i][1].posi = topright;
+      obj->faces[i][1].texi = 2;
+      obj->faces[i][2].posi = topright2;
+      obj->faces[i][2].texi = 3;
+      i++;
+      obj->faces[i][0].posi = bottomleft;
+      obj->faces[i][0].texi = 0;
+      obj->faces[i][1].posi = topleft;
+      obj->faces[i][1].texi = 2;
+      obj->faces[i][2].posi = bottomleft2;
+      obj->faces[i][2].texi = 1;
+      i++;
+      obj->faces[i][0].posi = bottomleft2;
+      obj->faces[i][0].texi = 1;
+      obj->faces[i][1].posi = topleft;
+      obj->faces[i][1].texi = 2;
+      obj->faces[i][2].posi = topleft2;
+      obj->faces[i][2].texi = 3;
+      i++;
+    }
+  }
 }
 
 void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,

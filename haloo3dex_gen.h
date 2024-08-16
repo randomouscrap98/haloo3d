@@ -19,6 +19,9 @@ void haloo3d_apply_vgradient(haloo3d_fb *fb, uint16_t top, uint16_t bottom);
 // effect the noise has. 1.0 means full application of noise and should
 // probably not be used. THe noise should be -1 to 1
 void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale);
+// Given an ALREADY allocated texture, blend a brick grid on top.
+void haloo3d_apply_brick(haloo3d_fb *fb, uint16_t width, uint16_t height,
+                         uint16_t color);
 
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc
@@ -33,6 +36,8 @@ void haloo3d_gen_boxvtexture(struct vec3 *textures);
 void haloo3d_gen_skybox(haloo3d_obj *obj);
 // Generate a flat plane made up of individual squares
 void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size);
+// Generate a grid that lines up with a plane.
+void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size);
 
 // Generate a simple mountain where the center is the top.
 // This one expects your obj to already be initialized

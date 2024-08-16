@@ -170,6 +170,13 @@ static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb, const mfloat_t value) {
   }
 }
 
+static inline void haloo3d_fb_clear(haloo3d_fb *fb, const uint16_t value) {
+  const int len = haloo3d_fb_size(fb);
+  for (int i = 0; i < len; i++) {
+    fb->buffer[i] = value;
+  }
+}
+
 // ----------------------
 //   Faces and objects
 // ----------------------
