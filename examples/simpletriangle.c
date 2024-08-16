@@ -51,8 +51,12 @@ int main(int argc, char **argv) {
   face[2].tex.x = 1;
   face[2].tex.y = 1;
 
+  haloo3d_trirender rsettings;
+  haloo3d_trirender_init(&rsettings);
+  rsettings.texture = &tex;
+
   for (int i = 0; i < ITERATIONS; i++) {
-    haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
+    haloo3d_texturedtriangle(&fb, &rsettings, face);
   }
 
   // And now we should be able to save the framebuffer

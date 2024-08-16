@@ -92,6 +92,10 @@ int main(int argc, char **argv) {
   struct vec3 light;
   vec3(light.v, 0, -MCOS(LIGHTANG), MSIN(LIGHTANG));
 
+  haloo3d_trirender rsettings;
+  haloo3d_trirender_init(&rsettings);
+  rsettings.texture = &tex;
+
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
@@ -115,13 +119,13 @@ int main(int argc, char **argv) {
       }
 #ifdef DOLIGHTING
       haloo3d_obj_facef(&obj, obj.faces[fi], baseface);
-      mfloat_t intensity = haloo3d_calc_light(light.v, MINLIGHT, baseface);
+      rsettings.intensity = haloo3d_calc_light(light.v, MINLIGHT, baseface);
 #else
-      mfloat_t intensity = 1.0;
+      rsettings.intensity = 1.0;
 #endif
       //   We still have to convert the points into the view
       haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
-      haloo3d_texturedtriangle(&fb, &tex, intensity, face);
+      haloo3d_texturedtriangle(&fb, &rsettings, face);
     }
   }
 

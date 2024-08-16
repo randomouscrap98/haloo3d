@@ -58,6 +58,10 @@ int main(int argc, char **argv) {
   haloo3d_fb fb;
   haloo3d_fb_init(&fb, WIDTH, HEIGHT);
 
+  haloo3d_trirender rsettings;
+  haloo3d_trirender_init(&rsettings);
+  rsettings.texture = &tex;
+
   haloo3d_facef face;
 
   // For each face in the model, we draw it with simple orthographic projection
@@ -72,7 +76,7 @@ int main(int argc, char **argv) {
       haloo3d_viewport_into(face[0].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[1].pos.v, WIDTH, HEIGHT);
       haloo3d_viewport_into(face[2].pos.v, WIDTH, HEIGHT);
-      haloo3d_texturedtriangle(&fb, &tex, 1.0, face);
+      haloo3d_texturedtriangle(&fb, &rsettings, face);
     }
   }
 

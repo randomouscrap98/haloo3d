@@ -108,6 +108,9 @@ int main(int argc, char **argv) {
   struct vec4 *vert_precalc;
   mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
 
+  haloo3d_trirender rsettings;
+  haloo3d_trirender_init(&rsettings);
+
   // -----------------------------------
   //     Actual rendering
   // -----------------------------------
@@ -125,7 +128,7 @@ int main(int argc, char **argv) {
     // Setup final model matrix and the precalced vertices
     vec3_add(tmp1.v, objects[i].pos.v, objects[i].lookvec.v);
     haloo3d_my_lookat(matrixmodel, objects[i].pos.v, tmp1.v, camera.up.v);
-    mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
+    // mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
     mat4_multiply(matrix3d, matrixscreen, matrixmodel);
     haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
     // Iterate over object faces
@@ -134,23 +137,23 @@ int main(int argc, char **argv) {
       haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
                          objects[i].model->vtexture, face);
       int tris = haloo3d_facef_clip(face, outfaces);
+      rsettings.texture = objects[i].texture;
       for (int ti = 0; ti < tris; ti++) {
         // You (perhaps unfortunately) still need to finalize the face. This
         // lets you ignore backface culling if you want (we turn it on here)
         if (!haloo3d_facef_finalize(outfaces[tris])) {
           continue;
         }
-        mfloat_t intensity = 1.0;
+        rsettings.intensity = 1.0;
         if (objects[i].lighting) {
           haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],
                             baseface);
-          intensity =
+          rsettings.intensity =
               haloo3d_calc_light(objects[i].lighting->v, MINLIGHT, baseface);
         }
         //   We still have to convert the points into the view
         haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-        haloo3d_texturedtriangle(&fb, objects[i].texture, intensity,
-                                 outfaces[ti]);
+        haloo3d_texturedtriangle(&fb, &rsettings, outfaces[ti]);
       }
     }
   }
