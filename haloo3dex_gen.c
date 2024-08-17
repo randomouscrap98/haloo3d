@@ -268,7 +268,7 @@ void haloo3d_gen_grid_quad(haloo3d_obj *obj, int x, int y, struct vec2i dir) {
   }
   if (dir.y == 1) {
     dir.y = -1;
-    haloo3d_gen_grid_quad(obj, x, y, dir);
+    haloo3d_gen_grid_quad(obj, x, y + 1, dir);
     return;
   }
   const int vertplanesize = obj->numvertices / 2;
