@@ -752,6 +752,41 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
   }
 }
 
+#define _H3D_FBF_BL(dbuf, sbuf)                                                \
+  *dbuf = *sbuf;                                                               \
+  dbuf++;
+
+// Explicit loop unrolling for various amounts of scale factors
+#define _H3D_FBF_ROW1(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROW2(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROW3(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROW4(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
 void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
   int scalex = dst->width / src->width;
   int scaley = dst->height / src->height;
@@ -763,20 +798,39 @@ void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
   int newheight = scale * src->height;
   int dstofsx = (dst->width - newwidth) / 2;
   int dstofsy = (dst->height - newheight) / 2;
-  for (int y = dstofsy; y < dst->height; y++) {
-    // int bi = dstofsx + y * newwidth;
-    //  integer division? egghhh... hope it's not too bad
-    //  int si = (y / scale) * src->width;
-    // int sie = si + src->width;
-    uint16_t *dbuf = &dst->buffer[dstofsx + y * newwidth];
-    uint16_t *sbuf = &src->buffer[(y / scale) * src->width];
-    uint16_t *sbufe = sbuf + src->width;
-    while (sbuf < sbufe) {
-      for (int sx = 0; sx < scale; sx++) {
-        *dbuf = *sbuf;
-        dbuf++;
+  // Need a step per y of src and a step per y of dst
+  uint16_t *dbuf_y = &dst->buffer[dstofsx + dstofsy * dst->width];
+  uint16_t *sbuf_y = src->buffer;
+  uint16_t *sbuf_ye = src->buffer + src->width * src->height;
+  // Iterate over original image
+  while (sbuf_y < sbuf_ye) {
+    for (int sy = 0; sy < scale; sy++) {
+      uint16_t *sbuf = sbuf_y;
+      uint16_t *sbufe = sbuf_y + src->width;
+      uint16_t *dbuf = dbuf_y + dstofsx;
+      switch (scale) {
+      case 1:
+        _H3D_FBF_ROW1(dbuf, sbuf, sbufe);
+        break;
+      case 2:
+        _H3D_FBF_ROW2(dbuf, sbuf, sbufe);
+        break;
+      case 3:
+        _H3D_FBF_ROW3(dbuf, sbuf, sbufe);
+        break;
+      case 4:
+        _H3D_FBF_ROW4(dbuf, sbuf, sbufe);
+        break;
+      default:
+        while (sbuf < sbufe) {
+          for (int sx = 0; sx < scale; sx++) {
+            _H3D_FBF_BL(dbuf, sbuf);
+          }
+          sbuf++;
+        }
       }
-      sbuf++;
+      dbuf_y += dst->width;
     }
+    sbuf_y += src->width;
   }
 }
