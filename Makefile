@@ -37,7 +37,8 @@ endif
 STATICOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/$(LIBD)/mathc.o
 FULLOBJS = $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o \
 					 $(BUILDD)/haloo3dex_gen.o $(BUILDD)/haloo3dex_print.o \
-					 $(BUILDD)/haloo3dex_easy.o $(BUILDD)/$(LIBD)/FastNoiseLite.o
+					 $(BUILDD)/haloo3dex_easy.o $(BUILDD)/$(LIBD)/FastNoiseLite.o \
+					 $(BUILDD)/haloo3dex_console.o
 BASEOUT = $(BUILDD)/haloo3d.a
 FULLOUT = $(BUILDD)/haloo3d_full.a
 
