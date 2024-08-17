@@ -244,7 +244,7 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                      object->model->vtexture, face);
   int tris = haloo3d_facef_clip(face, r->outfaces);
   if (tris > 0) {
-    if (ditherstart > 0) {
+    if (ditherstart >= 0) {
       haloo3d_easy_calcdither4x4(&r->rendersettings, face, ditherstart,
                                  ditherend);
     }

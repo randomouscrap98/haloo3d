@@ -165,7 +165,10 @@ void haloo3d_debugconsole_beginprompt(haloo3d_debugconsole *dc) {
   char value[1024];
   while (1) {
     printf("DEBUG> ");
-    fgets(line, 1024, stdin);
+    char *fgetsresult = fgets(line, 1024, stdin);
+    if (fgetsresult == NULL) {
+      return;
+    }
     // Scan for the most complicated format
     int values = sscanf(line, "%31s %1023s %1023s", cmd, path, value);
     if (values >= 1 && strcmp(cmd, "exit") == 0) {
