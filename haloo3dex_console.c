@@ -141,12 +141,16 @@ void haloo3d_debugconsole_print(haloo3d_debugconsole *dc, char *path) {
   } else {
     char *type = haloo3d_debugconsole_type(dc->names[index]);
     void *v = dc->values[index];
-    if (strcmp(type, "int") == 0) {
+    if (strcmp(type, "i") == 0) {
       printf("%s = %d\n", path, *(int *)v);
-    } else if (strcmp(type, "uint16") == 0) {
-      printf("%s = %hu\n", path, *(uint16_t *)v);
+    } else if (strcmp(type, "u16x") == 0) {
+      printf("%s = 0x%hx\n", path, *(uint16_t *)v);
+    } else if (strcmp(type, "u8") == 0) {
+      printf("%s = %hhu\n", path, *(uint8_t *)v);
     } else if (strcmp(type, "str") == 0) {
       printf("%s = %s\n", path, (char *)v);
+    } else if (strcmp(type, "f") == 0) {
+      printf("%s = %f\n", path, *(float *)v);
     } else {
       printf("Unsupported type: %s\n", type);
     }
@@ -188,10 +192,16 @@ void haloo3d_debugconsole_beginprompt(haloo3d_debugconsole *dc) {
         void *v = dc->values[index];
         char *type = haloo3d_debugconsole_type(path);
         int scanned = 0;
-        if (strcmp(type, "int") == 0) {
+        if (strcmp(type, "i") == 0) {
           scanned = sscanf(value, "%d", (int *)v);
-        } else if (strcmp(type, "uint16") == 0) {
+        } else if (strcmp(type, "u16") == 0) {
           scanned = sscanf(value, "%hu", (uint16_t *)v);
+        } else if (strcmp(type, "u16x") == 0) {
+          scanned = sscanf(value, "%hx", (uint16_t *)v);
+        } else if (strcmp(type, "u8") == 0) {
+          scanned = sscanf(value, "%hhu", (uint8_t *)v);
+        } else if (strcmp(type, "f") == 0) {
+          scanned = sscanf(value, "%f", (float *)v);
         } else if (strcmp(type, "str") == 0) {
           // This is EXTREMELY DANGEROUS: how big is that char container??
           // Is it even writable? I don't know... be careful!
