@@ -36,8 +36,12 @@ void haloo3d_gen_boxvtexture(struct vec3 *textures);
 void haloo3d_gen_skybox(haloo3d_obj *obj);
 // Generate a flat plane made up of individual squares
 void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size);
-// Generate a grid that lines up with a plane.
-void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size);
+// Generate a grid that lines up with a plane. Pass 1 to faces to pregenerate
+// full grid of faces (vertices are always available)
+void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size, uint8_t faces);
+// Generate a face at the given cell in the given direction. WILL regenerate
+// duplicate faces if you pass the same parameters (be careful)
+void haloo3d_gen_grid_quad(haloo3d_obj *obj, int x, int y, struct vec2i dir);
 
 // Generate a simple mountain where the center is the top.
 // This one expects your obj to already be initialized

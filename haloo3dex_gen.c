@@ -209,8 +209,9 @@ void haloo3d_gen_plane(haloo3d_obj *obj, uint16_t size) {
 }
 
 // Generate a basic grid of given size. Expect walls to be viewed from both
-// sides
-void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size) {
+// sides. Put enough room for faces, even if they're not used (yes it's
+// wasteful)
+void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size, uint8_t faces) {
   haloo3d_gen_obj_prealloc(obj, 2 * (size + 1) * (size + 1), 4,
                            4 * size * (size + 1));
   // Vtexture is just the four corners again
@@ -230,90 +231,89 @@ void haloo3d_gen_grid(haloo3d_obj *obj, uint16_t size) {
       i++;
     }
   }
-  i = 0;
-  int vertplanesize = (size + 1) * (size + 1);
-  // Generate the normal faces on the top left corners
+  obj->numfaces = 0;
+  if (!faces) {
+    return;
+  }
+  // Now go crazy and generate the monstrous amount of faces.
+  // First is the main grid of left and top for each cell
+  struct vec2i dir;
   for (int z = 0; z < size; z++) {
     for (int x = 0; x < size; x++) {
-      int topleft = x + z * (size + 1);
-      int topright = x + 1 + z * (size + 1);
-      int bottomleft = x + (z + 1) * (size + 1);
-      int topleft2 = topleft + vertplanesize;
-      int topright2 = topright + vertplanesize;
-      int bottomleft2 = bottomleft + vertplanesize;
-      // remember to wind counter-clockwise
-      obj->faces[i][0].posi = topleft;
-      obj->faces[i][0].texi = 0;
-      obj->faces[i][1].posi = topright;
-      obj->faces[i][1].texi = 2;
-      obj->faces[i][2].posi = topleft2;
-      obj->faces[i][2].texi = 1;
-      i++;
-      obj->faces[i][0].posi = topleft2;
-      obj->faces[i][0].texi = 1;
-      obj->faces[i][1].posi = topright;
-      obj->faces[i][1].texi = 2;
-      obj->faces[i][2].posi = topright2;
-      obj->faces[i][2].texi = 3;
-      i++;
-      obj->faces[i][0].posi = bottomleft;
-      obj->faces[i][0].texi = 0;
-      obj->faces[i][1].posi = topleft;
-      obj->faces[i][1].texi = 2;
-      obj->faces[i][2].posi = bottomleft2;
-      obj->faces[i][2].texi = 1;
-      i++;
-      obj->faces[i][0].posi = bottomleft2;
-      obj->faces[i][0].texi = 1;
-      obj->faces[i][1].posi = topleft;
-      obj->faces[i][1].texi = 2;
-      obj->faces[i][2].posi = topleft2;
-      obj->faces[i][2].texi = 3;
-      i++;
+      dir.x = -1;
+      dir.y = 0;
+      haloo3d_gen_grid_quad(obj, x, z, dir);
+      dir.x = 0;
+      dir.y = -1;
+      haloo3d_gen_grid_quad(obj, x, z, dir);
     }
   }
   // And then we generate some walls along the edges we didn't finish
-  for (int z = 0; z < size; z++) {
-    int topright = size + z * (size + 1);
-    int bottomright = size + (z + 1) * (size + 1);
-    int topright2 = topright + vertplanesize;
-    int bottomright2 = bottomright + vertplanesize;
+  for (int i = 0; i < size; i++) {
+    dir.x = -1;
+    dir.y = 0;
+    haloo3d_gen_grid_quad(obj, size, i, dir);
+    dir.x = 0;
+    dir.y = -1;
+    haloo3d_gen_grid_quad(obj, i, size, dir);
+  }
+}
+
+// Generate a face at the given cell in the given direction.
+void haloo3d_gen_grid_quad(haloo3d_obj *obj, int x, int y, struct vec2i dir) {
+  if (dir.x == 1) {
+    dir.x = -1;
+    haloo3d_gen_grid_quad(obj, x + 1, y, dir);
+    return;
+  }
+  if (dir.y == 1) {
+    dir.y = -1;
+    haloo3d_gen_grid_quad(obj, x, y, dir);
+    return;
+  }
+  const int vertplanesize = obj->numvertices / 2;
+  const int vertplanewidth = sqrt(vertplanesize);
+
+  int topleft = x + y * vertplanewidth;
+  int topright = x + 1 + y * vertplanewidth;
+  int bottomleft = x + (y + 1) * vertplanewidth;
+  int topleft2 = topleft + vertplanesize;
+  int topright2 = topright + vertplanesize;
+  int bottomleft2 = bottomleft + vertplanesize;
+
+  int i = obj->numfaces;
+
+  if (dir.y == -1) {
     // remember to wind counter-clockwise
-    obj->faces[i][0].posi = topright;
+    obj->faces[i][0].posi = topleft;
     obj->faces[i][0].texi = 0;
-    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].posi = topright;
     obj->faces[i][1].texi = 2;
-    obj->faces[i][2].posi = topright2;
+    obj->faces[i][2].posi = topleft2;
     obj->faces[i][2].texi = 1;
     i++;
-    obj->faces[i][0].posi = topright2;
+    obj->faces[i][0].posi = topleft2;
     obj->faces[i][0].texi = 1;
-    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].posi = topright;
     obj->faces[i][1].texi = 2;
-    obj->faces[i][2].posi = bottomright2;
+    obj->faces[i][2].posi = topright2;
     obj->faces[i][2].texi = 3;
-    i++;
-  }
-  for (int x = 0; x < size; x++) {
-    int bottomleft = x + size * (size + 1);
-    int bottomright = x + 1 + size * (size + 1);
-    int bottomleft2 = bottomleft + vertplanesize;
-    int bottomright2 = bottomright + vertplanesize;
-    // remember to wind counter-clockwise
+    obj->numfaces += 2;
+  } else if (dir.x == -1) {
     obj->faces[i][0].posi = bottomleft;
     obj->faces[i][0].texi = 0;
-    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].posi = topleft;
     obj->faces[i][1].texi = 2;
     obj->faces[i][2].posi = bottomleft2;
     obj->faces[i][2].texi = 1;
     i++;
     obj->faces[i][0].posi = bottomleft2;
     obj->faces[i][0].texi = 1;
-    obj->faces[i][1].posi = bottomright;
+    obj->faces[i][1].posi = topleft;
     obj->faces[i][1].texi = 2;
-    obj->faces[i][2].posi = bottomright2;
+    obj->faces[i][2].posi = topleft2;
     obj->faces[i][2].texi = 3;
-    i++;
+    obj->numfaces += 2;
   }
 }
 
