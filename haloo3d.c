@@ -787,6 +787,14 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
     sbuf++;                                                                    \
   }
 
+#define _H3D_FBF_ROWN(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    for (int sx = 0; sx < scale; sx++) {                                       \
+      _H3D_FBF_BL(dbuf, sbuf);                                                 \
+    }                                                                          \
+    sbuf++;                                                                    \
+  }
+
 void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
   int scalex = dst->width / src->width;
   int scaley = dst->height / src->height;
@@ -822,12 +830,7 @@ void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
         _H3D_FBF_ROW4(dbuf, sbuf, sbufe);
         break;
       default:
-        while (sbuf < sbufe) {
-          for (int sx = 0; sx < scale; sx++) {
-            _H3D_FBF_BL(dbuf, sbuf);
-          }
-          sbuf++;
-        }
+        _H3D_FBF_ROWN(dbuf, sbuf, sbufe);
       }
       dbuf_y += dst->width;
     }
