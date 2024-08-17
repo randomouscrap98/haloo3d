@@ -751,3 +751,32 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
     texy += stepy;
   }
 }
+
+void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
+  int scalex = dst->width / src->width;
+  int scaley = dst->height / src->height;
+  int scale = scalex < scaley ? scalex : scaley;
+  if (scale == 0) {
+    return;
+  }
+  int newwidth = scale * src->width;
+  int newheight = scale * src->height;
+  int dstofsx = (dst->width - newwidth) / 2;
+  int dstofsy = (dst->height - newheight) / 2;
+  for (int y = dstofsy; y < dst->height; y++) {
+    // int bi = dstofsx + y * newwidth;
+    //  integer division? egghhh... hope it's not too bad
+    //  int si = (y / scale) * src->width;
+    // int sie = si + src->width;
+    uint16_t *dbuf = &dst->buffer[dstofsx + y * newwidth];
+    uint16_t *sbuf = &src->buffer[(y / scale) * src->width];
+    uint16_t *sbufe = sbuf + src->width;
+    while (sbuf < sbufe) {
+      for (int sx = 0; sx < scale; sx++) {
+        *dbuf = *sbuf;
+        dbuf++;
+      }
+      sbuf++;
+    }
+  }
+}

@@ -598,4 +598,10 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
                     haloo3d_recti outrect);
 
+// Trivially fill a whole framebuffer with no transparency at integer scaling.
+// Faster than haloo3d_sprite for the specific task of scaling a framebuffer
+// into another. Scale is determined by the largest whole number which will fit
+// each dimension. Image is centered and aspect ratio is preserved
+void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src);
+
 #endif
