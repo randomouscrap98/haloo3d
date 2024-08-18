@@ -29,7 +29,6 @@ ifdef DEBUG 		# Build in debug mode, usable in gdb/valgrind/etc
 	# CLIBFLAGS += -O2 -g
 else
 	CFLAGS += -O3 -flto
-	# CLIBFLAGS += -O3 -flto
 endif
 
 

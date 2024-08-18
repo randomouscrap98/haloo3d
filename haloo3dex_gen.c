@@ -283,6 +283,7 @@ void haloo3d_gen_grid_quad(haloo3d_obj *obj, int x, int y, struct vec2i dir) {
 
   int i = obj->numfaces;
 
+  // We only do south (negative?) and west (negative) walls?
   if (dir.y == -1) {
     // remember to wind counter-clockwise
     obj->faces[i][0].posi = topleft;
@@ -355,7 +356,7 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
         }
         obj->vertices[pi].y =
             obj->vertices[ti].y +
-            slopiness * ((mfloat_t)rand() / RAND_MAX - downbias);
+            slopiness * ((mfloat_t)rand() / (mfloat_t)RAND_MAX - downbias);
       }
     }
   }

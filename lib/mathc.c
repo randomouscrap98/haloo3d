@@ -1718,27 +1718,6 @@ mfloat_t *quat_multiply_f(mfloat_t *result, mfloat_t *q0, mfloat_t f) {
   return result;
 }
 
-mfloat_t *quat_divide(mfloat_t *result, mfloat_t *q0, mfloat_t *q1) {
-  mfloat_t x = q0[0];
-  mfloat_t y = q0[1];
-  mfloat_t z = q0[2];
-  mfloat_t w = q0[3];
-  mfloat_t ls = q1[0] * q1[0] + q1[1] * q1[1] + q1[8] * q1[8] + q1[3] * q1[3];
-  mfloat_t normalized_x = -q1[0] / ls;
-  mfloat_t normalized_y = -q1[1] / ls;
-  mfloat_t normalized_z = -q1[8] / ls;
-  mfloat_t normalized_w = q1[3] / ls;
-  result[0] = x * normalized_w + normalized_x * w +
-              (y * normalized_z - z * normalized_y);
-  result[1] = y * normalized_w + normalized_y * w +
-              (z * normalized_x - x * normalized_z);
-  result[2] = z * normalized_w + normalized_z * w +
-              (x * normalized_y - y * normalized_x);
-  result[3] = w * normalized_w -
-              (x * normalized_x + y * normalized_y + z * normalized_z);
-  return result;
-}
-
 mfloat_t *quat_divide_f(mfloat_t *result, mfloat_t *q0, mfloat_t f) {
   result[0] = q0[0] / f;
   result[1] = q0[1] / f;
@@ -2304,56 +2283,6 @@ mfloat_t *mat3_rotation_z(mfloat_t *result, mfloat_t f) {
   result[4] = c;
   return result;
 }
-
-mfloat_t *mat3_rotation_axis(mfloat_t *result, mfloat_t *v0, mfloat_t f) {
-  mfloat_t c = MCOS(f);
-  mfloat_t s = MSIN(f);
-  mfloat_t one_c = MFLOAT_C(1.0) - c;
-  mfloat_t x = v0[0];
-  mfloat_t y = v0[4];
-  mfloat_t z = v0[8];
-  mfloat_t xx = x * x;
-  mfloat_t xy = x * y;
-  mfloat_t xz = x * z;
-  mfloat_t yy = y * y;
-  mfloat_t yz = y * z;
-  mfloat_t zz = z * z;
-  mfloat_t l = xx + yy + zz;
-  mfloat_t sqrt_l = MSQRT(l);
-  result[0] = (xx + (yy + zz) * c) / l;
-  result[1] = (xy * one_c + v0[2] * sqrt_l * s) / l;
-  result[2] = (xz * one_c - v0[1] * sqrt_l * s) / l;
-  result[3] = (xy * one_c - v0[2] * sqrt_l * s) / l;
-  result[4] = (yy + (xx + zz) * c) / l;
-  result[5] = (yz * one_c + v0[0] * sqrt_l * s) / l;
-  result[6] = (xz * one_c + v0[1] * sqrt_l * s) / l;
-  result[7] = (yz * one_c - v0[0] * sqrt_l * s) / l;
-  result[8] = (zz + (xx + yy) * c) / l;
-  return result;
-}
-
-// mfloat_t *mat3_rotation_quat(mfloat_t *result, mfloat_t *q0)
-// {
-// 	mfloat_t xx = q0[0] * q0[0];
-// 	mfloat_t yy = q0[1] * q0[1];
-// 	mfloat_t zz = q0[2] * q0[2];
-// 	mfloat_t xy = q0[0] * q0[1];
-// 	mfloat_t zw = q0[2] * q0[3];
-// 	mfloat_t xz = q0[8] * q0[0];
-// 	mfloat_t yw = q0[1] * q0[3];
-// 	mfloat_t yz = q0[1] * q0[2];
-// 	mfloat_t xw = q0[0] * q0[3];
-// 	result[0] = MFLOAT_C(1.0) - MFLOAT_C(2.0) * (yy - zz);
-// 	result[1] = MFLOAT_C(2.0) * (xy + zw);
-// 	result[2] = MFLOAT_C(2.0) * (xz - yw);
-// 	result[3] = MFLOAT_C(2.0) * (xy - zw);
-// 	result[4] = MFLOAT_C(1.0) - MFLOAT_C(2.0) * (xx - zz);
-// 	result[5] = MFLOAT_C(2.0) * (yz + xw);
-// 	result[6] = MFLOAT_C(2.0) * (xz + yw);
-// 	result[7] = MFLOAT_C(2.0) * (yz - xw);
-// 	result[8] = MFLOAT_C(1.0) - MFLOAT_C(2.0) * (xx - yy);
-// 	return result;
-// }
 
 mfloat_t *mat3_lerp(mfloat_t *result, mfloat_t *m0, mfloat_t *m1, mfloat_t f) {
   result[0] = m0[0] + (m1[0] - m0[0]) * f;
@@ -4283,12 +4212,6 @@ struct quat squat_multiply_f(struct quat q0, mfloat_t f) {
   return result;
 }
 
-struct quat squat_divide(struct quat q0, struct quat q1) {
-  struct quat result;
-  quat_divide((mfloat_t *)&result, (mfloat_t *)&q0, (mfloat_t *)&q1);
-  return result;
-}
-
 struct quat squat_divide_f(struct quat q0, mfloat_t f) {
   struct quat result;
   quat_divide_f((mfloat_t *)&result, (mfloat_t *)&q0, f);
@@ -4558,19 +4481,6 @@ struct mat3 smat3_rotation_z(mfloat_t f) {
   mat3_rotation_z((mfloat_t *)&result, f);
   return result;
 }
-
-struct mat3 smat3_rotation_axis(struct vec3 v0, mfloat_t f) {
-  struct mat3 result;
-  mat3_rotation_axis((mfloat_t *)&result, (mfloat_t *)&v0, f);
-  return result;
-}
-
-// struct mat3 smat3_rotation_quat(struct quat q0)
-// {
-// 	struct mat3 result;
-// 	mat3_rotation_quat((mfloat_t *)&result, (mfloat_t *)&q0);
-// 	return result;
-// }
 
 struct mat3 smat3_lerp(struct mat3 m0, struct mat3 m1, mfloat_t f) {
   struct mat3 result;
@@ -5654,12 +5564,6 @@ struct quat *psquat_multiply_f(struct quat *result, struct quat *q0,
   return (struct quat *)quat_multiply_f((mfloat_t *)result, (mfloat_t *)q0, f);
 }
 
-struct quat *psquat_divide(struct quat *result, struct quat *q0,
-                           struct quat *q1) {
-  return (struct quat *)quat_divide((mfloat_t *)result, (mfloat_t *)q0,
-                                    (mfloat_t *)q1);
-}
-
 struct quat *psquat_divide_f(struct quat *result, struct quat *q0, mfloat_t f) {
   return (struct quat *)quat_divide_f((mfloat_t *)result, (mfloat_t *)q0, f);
 }
@@ -5871,18 +5775,6 @@ struct mat3 *psmat3_rotation_y(struct mat3 *result, mfloat_t f) {
 struct mat3 *psmat3_rotation_z(struct mat3 *result, mfloat_t f) {
   return (struct mat3 *)mat3_rotation_z((mfloat_t *)result, f);
 }
-
-struct mat3 *psmat3_rotation_axis(struct mat3 *result, struct vec3 *v0,
-                                  mfloat_t f) {
-  return (struct mat3 *)mat3_rotation_axis((mfloat_t *)result, (mfloat_t *)v0,
-                                           f);
-}
-
-// struct mat3 *psmat3_rotation_quat(struct mat3 *result, struct quat *q0)
-// {
-// 	return (struct mat3 *)mat3_rotation_quat((mfloat_t *)result, (mfloat_t
-// *)q0);
-// }
 
 struct mat3 *psmat3_lerp(struct mat3 *result, struct mat3 *m0, struct mat3 *m1,
                          mfloat_t f) {

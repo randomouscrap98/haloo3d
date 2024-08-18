@@ -679,7 +679,7 @@ mfloat_t *mat3_scale(mfloat_t *result, mfloat_t *m0, mfloat_t *v0);
 mfloat_t *mat3_rotation_x(mfloat_t *result, mfloat_t f);
 mfloat_t *mat3_rotation_y(mfloat_t *result, mfloat_t f);
 mfloat_t *mat3_rotation_z(mfloat_t *result, mfloat_t f);
-mfloat_t *mat3_rotation_axis(mfloat_t *result, mfloat_t *v0, mfloat_t f);
+// mfloat_t *mat3_rotation_axis(mfloat_t *result, mfloat_t *v0, mfloat_t f);
 // mfloat_t *mat3_rotation_quat(mfloat_t *result, mfloat_t *q0);
 mfloat_t *mat3_lerp(mfloat_t *result, mfloat_t *m0, mfloat_t *m1, mfloat_t f);
 mfloat_t *mat4(mfloat_t *result, mfloat_t m11, mfloat_t m12, mfloat_t m13,
@@ -980,7 +980,7 @@ struct mat3 smat3_scale(struct mat3 m0, struct vec3 v0);
 struct mat3 smat3_rotation_x(mfloat_t f);
 struct mat3 smat3_rotation_y(mfloat_t f);
 struct mat3 smat3_rotation_z(mfloat_t f);
-struct mat3 smat3_rotation_axis(struct vec3 v0, mfloat_t f);
+// struct mat3 smat3_rotation_axis(struct vec3 v0, mfloat_t f);
 // struct mat3 smat3_rotation_quat(struct quat q0);
 struct mat3 smat3_lerp(struct mat3 m0, struct mat3 m1, mfloat_t f);
 struct mat4 smat4(mfloat_t m11, mfloat_t m12, mfloat_t m13, mfloat_t m14,
@@ -1304,8 +1304,6 @@ struct quat *psquat_multiply(struct quat *result, struct quat *q0,
                              struct quat *q1);
 struct quat *psquat_multiply_f(struct quat *result, struct quat *q0,
                                mfloat_t f);
-struct quat *psquat_divide(struct quat *result, struct quat *q0,
-                           struct quat *q1);
 struct quat *psquat_divide_f(struct quat *result, struct quat *q0, mfloat_t f);
 struct quat *psquat_negative(struct quat *result, struct quat *q0);
 struct quat *psquat_conjugate(struct quat *result, struct quat *q0);
