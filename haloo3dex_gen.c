@@ -384,7 +384,7 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
 }
 
 void haloo3d_gen_crossquad_generic(haloo3d_obj *obj, haloo3d_fb *fb,
-                                   int count) {
+                                   struct vec3 center, int count) {
   struct vec2 dims;
   uint16_t width = fb->width;
   uint16_t height = fb->height;
@@ -400,16 +400,16 @@ void haloo3d_gen_crossquad_generic(haloo3d_obj *obj, haloo3d_fb *fb,
   haloo3d_gen_boxvtexture(obj->vtexture);
   // We create two quads each, first on the x axis = 0 then on z = 0.
   // Order is topleft, topright, bottomleft, bottomright
-  vec4(obj->vertices[0].v, -dims.x, dims.y, 0, 1);
-  vec4(obj->vertices[1].v, dims.x, dims.y, 0, 1);
-  vec4(obj->vertices[2].v, -dims.x, -dims.y, 0, 1);
-  vec4(obj->vertices[3].v, dims.x, -dims.y, 0, 1);
+  vec4(obj->vertices[0].v, center.x - dims.x, center.y + dims.y, center.z, 1);
+  vec4(obj->vertices[1].v, center.x + dims.x, center.y + dims.y, center.z, 1);
+  vec4(obj->vertices[2].v, center.x - dims.x, center.y - dims.y, center.z, 1);
+  vec4(obj->vertices[3].v, center.x + dims.x, center.y - dims.y, center.z, 1);
   if (count == 2) {
     // then the x aligned one, same order
-    vec4(obj->vertices[4].v, 0, dims.y, -dims.x, 1);
-    vec4(obj->vertices[5].v, 0, dims.y, dims.x, 1);
-    vec4(obj->vertices[6].v, 0, -dims.y, -dims.x, 1);
-    vec4(obj->vertices[7].v, 0, -dims.y, dims.x, 1);
+    vec4(obj->vertices[4].v, center.x, center.y + dims.y, center.z - dims.x, 1);
+    vec4(obj->vertices[5].v, center.x, center.y + dims.y, center.z + dims.x, 1);
+    vec4(obj->vertices[6].v, center.x, center.y - dims.y, center.z - dims.x, 1);
+    vec4(obj->vertices[7].v, center.x, center.y - dims.y, center.z + dims.x, 1);
   }
   // Only four faces. Do two per quad (iterate over quads)
   for (int i = 0; i < count; i++) {
@@ -422,10 +422,11 @@ void haloo3d_gen_crossquad_generic(haloo3d_obj *obj, haloo3d_fb *fb,
   }
 }
 
-void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
-  haloo3d_gen_crossquad_generic(obj, fb, 2);
+void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb,
+                           struct vec3 center) {
+  haloo3d_gen_crossquad_generic(obj, fb, center, 2);
 }
 
-void haloo3d_gen_quad(haloo3d_obj *obj, haloo3d_fb *fb) {
-  haloo3d_gen_crossquad_generic(obj, fb, 1);
+void haloo3d_gen_quad(haloo3d_obj *obj, haloo3d_fb *fb, struct vec3 center) {
+  haloo3d_gen_crossquad_generic(obj, fb, center, 1);
 }
