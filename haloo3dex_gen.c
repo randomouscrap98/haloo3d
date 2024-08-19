@@ -93,6 +93,27 @@ void haloo3d_apply_brick(haloo3d_fb *fb, uint16_t width, uint16_t height,
   }
 }
 
+void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
+                        int width) {
+  uint16_t basecol;
+  for (int i = 0; i < width; i++) {
+    for (int x = rect->x1; x <= rect->x2; x++) {
+      // Top and bottom
+      basecol = haloo3d_fb_get(fb, x, rect->y1 + i);
+      haloo3d_fb_set(fb, x, rect->y1 + i, haloo3d_col_blend(color, basecol));
+      basecol = haloo3d_fb_get(fb, x, rect->y2 - i);
+      haloo3d_fb_set(fb, x, rect->y2 - i, haloo3d_col_blend(color, basecol));
+    }
+    for (int y = rect->y1; y <= rect->y2; y++) {
+      // Top and bottom
+      basecol = haloo3d_fb_get(fb, rect->x1 + i, y);
+      haloo3d_fb_set(fb, rect->x1 + i, y, haloo3d_col_blend(color, basecol));
+      basecol = haloo3d_fb_get(fb, rect->x2 - i, y);
+      haloo3d_fb_set(fb, rect->x2 - i, y, haloo3d_col_blend(color, basecol));
+    }
+  }
+}
+
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
                               uint16_t numvtex, uint16_t numfaces) {
   obj->numvertices = numverts;
@@ -362,7 +383,8 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
   }
 }
 
-void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
+void haloo3d_gen_crossquad_generic(haloo3d_obj *obj, haloo3d_fb *fb,
+                                   int count) {
   struct vec2 dims;
   uint16_t width = fb->width;
   uint16_t height = fb->height;
@@ -373,7 +395,7 @@ void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
     dims.x = (mfloat_t)width / height;
     dims.y = 1.0;
   }
-  haloo3d_gen_obj_prealloc(obj, 8, 4, 4);
+  haloo3d_gen_obj_prealloc(obj, 4 * count, 4, 2 * count);
   // There's only 4 vtextures, as usual
   haloo3d_gen_boxvtexture(obj->vtexture);
   // We create two quads each, first on the x axis = 0 then on z = 0.
@@ -382,13 +404,15 @@ void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
   vec4(obj->vertices[1].v, dims.x, dims.y, 0, 1);
   vec4(obj->vertices[2].v, -dims.x, -dims.y, 0, 1);
   vec4(obj->vertices[3].v, dims.x, -dims.y, 0, 1);
-  // then the x aligned one, same order
-  vec4(obj->vertices[4].v, 0, dims.y, -dims.x, 1);
-  vec4(obj->vertices[5].v, 0, dims.y, dims.x, 1);
-  vec4(obj->vertices[6].v, 0, -dims.y, -dims.x, 1);
-  vec4(obj->vertices[7].v, 0, -dims.y, dims.x, 1);
+  if (count == 2) {
+    // then the x aligned one, same order
+    vec4(obj->vertices[4].v, 0, dims.y, -dims.x, 1);
+    vec4(obj->vertices[5].v, 0, dims.y, dims.x, 1);
+    vec4(obj->vertices[6].v, 0, -dims.y, -dims.x, 1);
+    vec4(obj->vertices[7].v, 0, -dims.y, dims.x, 1);
+  }
   // Only four faces. Do two per quad (iterate over quads)
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < count; i++) {
     obj->faces[i * 2][0] = (haloo3d_vertexi){.posi = 0 + i * 4, .texi = 1};
     obj->faces[i * 2][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};
     obj->faces[i * 2][2] = (haloo3d_vertexi){.posi = 1 + i * 4, .texi = 3};
@@ -396,4 +420,12 @@ void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
     obj->faces[i * 2 + 1][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};
     obj->faces[i * 2 + 1][2] = (haloo3d_vertexi){.posi = 3 + i * 4, .texi = 2};
   }
+}
+
+void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb) {
+  haloo3d_gen_crossquad_generic(obj, fb, 2);
+}
+
+void haloo3d_gen_quad(haloo3d_obj *obj, haloo3d_fb *fb) {
+  haloo3d_gen_crossquad_generic(obj, fb, 1);
 }

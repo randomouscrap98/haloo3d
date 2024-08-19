@@ -22,6 +22,10 @@ void haloo3d_apply_noise(haloo3d_fb *fb, float *noise, float scale);
 // Given an ALREADY allocated texture, blend a brick grid on top.
 void haloo3d_apply_brick(haloo3d_fb *fb, uint16_t width, uint16_t height,
                          uint16_t color);
+// Draw a rectangle of the given width into the given texture. Not guaranteed
+// to be fast
+void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
+                        int width);
 
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc
@@ -52,5 +56,9 @@ void haloo3d_gen_sloped(haloo3d_obj *obj, uint16_t size, mfloat_t slopiness,
 // the middle of -1 to 1 in each direction. The exact shape will
 // depend on the given texture dimensions
 void haloo3d_gen_crossquad(haloo3d_obj *obj, haloo3d_fb *fb);
+
+// Generate a single quad aligned on the x axis facing in the
+// positive Z direction.
+void haloo3d_gen_quad(haloo3d_obj *obj, haloo3d_fb *fb);
 
 #endif
