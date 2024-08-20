@@ -509,6 +509,9 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
       ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
+// Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
+void haloo3d_getdither4x4(float dither, uint8_t *buf);
+
 typedef struct {
   haloo3d_fb *texture;
   uint16_t basecolor;
@@ -518,9 +521,6 @@ typedef struct {
 
 // Initialize a triangle render setting with all defaults
 void haloo3d_trirender_init(haloo3d_trirender *tr);
-
-// Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
-void haloo3d_trirender_setdither4x4(haloo3d_trirender *tr, float dither);
 
 // Top left corner of bounding box, but only x and y are computed
 static inline struct vec2 haloo3d_boundingbox_tl(mfloat_t *v0, mfloat_t *v1,

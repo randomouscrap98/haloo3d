@@ -97,19 +97,35 @@ void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
                         int width) {
   uint16_t basecol;
   for (int i = 0; i < width; i++) {
-    for (int x = rect->x1; x <= rect->x2; x++) {
+    for (int x = rect->x1; x < rect->x2; x++) {
       // Top and bottom
       basecol = haloo3d_fb_get(fb, x, rect->y1 + i);
       haloo3d_fb_set(fb, x, rect->y1 + i, haloo3d_col_blend(color, basecol));
-      basecol = haloo3d_fb_get(fb, x, rect->y2 - i);
-      haloo3d_fb_set(fb, x, rect->y2 - i, haloo3d_col_blend(color, basecol));
+      basecol = haloo3d_fb_get(fb, x, rect->y2 - i - 1);
+      haloo3d_fb_set(fb, x, rect->y2 - i - 1,
+                     haloo3d_col_blend(color, basecol));
     }
-    for (int y = rect->y1; y <= rect->y2; y++) {
-      // Top and bottom
+    for (int y = rect->y1; y < rect->y2; y++) {
+      // left and right
       basecol = haloo3d_fb_get(fb, rect->x1 + i, y);
       haloo3d_fb_set(fb, rect->x1 + i, y, haloo3d_col_blend(color, basecol));
-      basecol = haloo3d_fb_get(fb, rect->x2 - i, y);
-      haloo3d_fb_set(fb, rect->x2 - i, y, haloo3d_col_blend(color, basecol));
+      basecol = haloo3d_fb_get(fb, rect->x2 - i - 1, y);
+      haloo3d_fb_set(fb, rect->x2 - i - 1, y,
+                     haloo3d_col_blend(color, basecol));
+    }
+  }
+}
+
+// Fill rectangle, EXCLUSIVE
+void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
+                            uint8_t dithering[8]) {
+  for (int y = rect->y1; y < rect->y2; y++) {
+    uint8_t dither = dithering[y & 7];
+    for (int x = rect->x1; x < rect->x2; x++) {
+      if (dither & (1 << (x & 7))) {
+        uint16_t basecol = haloo3d_fb_get(fb, x, y);
+        haloo3d_fb_set(fb, x, y, haloo3d_col_blend(color, basecol));
+      }
     }
   }
 }
@@ -413,8 +429,11 @@ void haloo3d_gen_crossquad_generic(haloo3d_obj *obj, haloo3d_fb *fb,
   }
   // Only four faces. Do two per quad (iterate over quads)
   for (int i = 0; i < count; i++) {
+    // topleft
     obj->faces[i * 2][0] = (haloo3d_vertexi){.posi = 0 + i * 4, .texi = 1};
+    // bottomleft
     obj->faces[i * 2][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};
+    // topright
     obj->faces[i * 2][2] = (haloo3d_vertexi){.posi = 1 + i * 4, .texi = 3};
     obj->faces[i * 2 + 1][0] = (haloo3d_vertexi){.posi = 1 + i * 4, .texi = 3};
     obj->faces[i * 2 + 1][1] = (haloo3d_vertexi){.posi = 2 + i * 4, .texi = 0};

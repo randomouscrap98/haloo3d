@@ -184,9 +184,9 @@ void haloo3d_trirender_init(haloo3d_trirender *tr) {
   memcpy(tr->dither, haloo3d_dither4x4[16], 8);
 }
 
-void haloo3d_trirender_setdither4x4(haloo3d_trirender *tr, float dither) {
+void haloo3d_getdither4x4(float dither, uint8_t *buffer) {
   uint8_t ind = round(16 * CLAMP(dither, 0, 1));
-  memcpy(tr->dither, haloo3d_dither4x4[ind], 8);
+  memcpy(buffer, haloo3d_dither4x4[ind], 8);
 }
 
 void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
