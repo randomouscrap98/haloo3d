@@ -61,6 +61,14 @@ void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
   }
 }
 
+void haloo3d_img_totransparent(haloo3d_fb *fb, uint16_t col) {
+  const int size = haloo3d_fb_size(fb);
+  for (int i = 0; i < size; i++) {
+    if (fb->buffer[i] == col)
+      fb->buffer[i] = 0;
+  }
+}
+
 void haloo3d_img_writeppmfile(haloo3d_fb *fb, char *filename) {
   // And now we should be able to save the framebuffer
   FILE *f = fopen(filename, "w");
