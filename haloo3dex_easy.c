@@ -172,9 +172,17 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
   mfloat_t tmp[VEC4_SIZE];
   mfloat_t modelm[MAT4_SIZE];
   mfloat_t finalmatrix[MAT4_SIZE];
+  // mfloat_t scale[MAT4_SIZE];
+  //  This is wasteful, you should make this fewer operations
+  // mat4_identity(scale);
+  // haloo3d_mat4_scalev(scale, o->scale.v);
+
   vec3_add(tmp, o->pos.v, o->lookvec.v);
   haloo3d_my_lookat(modelm, o->pos.v, tmp, o->up.v);
-  haloo3d_mat4_scalev(modelm, o->scale.v);
+  // You PRE multiply scale (remember, mat4_multiply is reverse order from what
+  // you expect)
+  // mat4_multiply(modelm, modelm, scale);
+  haloo3d_mat4_prescalev(modelm, o->scale.v);
   mat4_multiply(finalmatrix, r->screenmatrix, modelm);
   haloo3d_precalc_verts(o->model, finalmatrix, r->precalcs);
   r->rendersettings.texture = o->texture;

@@ -63,7 +63,8 @@ int main() {
 
   haloo3d_obj_instance *quadi =
       haloo3d_easyrender_addinstance(&render, obj, tex);
-  vec3(quadi->scale.v, 0.3, 0.3, 0.3);
+  vec3(quadi->scale.v, 0.3, 0.5,
+       0.3); // Make it slightly taller than it should be
   quadi->cullbackface = 0;
 
   eprintf("Scene has %d tris, %d verts\n", render.totalfaces,
@@ -92,9 +93,21 @@ int main() {
   quadi->lookvec.x = -1;
   renderframe(&render);
   haloo3d_img_writeppmfile(&render.window, "quadlook_west_backwards.ppm");
+  // Do something funny with up
+  quadi->up.y = quadi->up.z = sin(MPI / 4);
+  renderframe(&render);
+  haloo3d_img_writeppmfile(&render.window,
+                           "quadlook_west_backwards_rotate_half.ppm");
+  quadi->up.y = 0;
+  quadi->up.z = 1;
+  renderframe(&render);
+  haloo3d_img_writeppmfile(&render.window,
+                           "quadlook_west_backwards_rotate_full.ppm");
 
   // And now, zoom WAY the hell out and set the scale larger
-  vec3(quadi->scale.v, 3, 3, 3);
+  quadi->up.y = 1;
+  quadi->up.z = 0;
+  vec3(quadi->scale.v, 3, 5, 3);
   render.camera.pos.x = 9;
   renderframe(&render);
   haloo3d_img_writeppmfile(&render.window, "quadlook_west_zoomout.ppm");

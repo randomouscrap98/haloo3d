@@ -427,17 +427,36 @@ static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
   haloo3d_viewport_into(face[2].pos.v, width, height);
 }
 
-// Apply a scale factor to a model (or otherwise) matrix
+// Apply a simple scaling (this PROBABLY isn't what you want)
 static inline void haloo3d_mat4_scale(mfloat_t *m, mfloat_t scale) {
   m[0] *= scale;
   m[5] *= scale;
   m[10] *= scale;
 }
 
+// Apply a simple scaling (this PROBABLY isn't what you want)
 static inline void haloo3d_mat4_scalev(mfloat_t *m, mfloat_t *scale) {
   m[0] *= scale[0];
   m[5] *= scale[1];
   m[10] *= scale[2];
+}
+
+// Apply a "prescale" to some model matrix. This will apply a scale to the
+// model-view matrix like you expect, this IS the function you want
+static inline void haloo3d_mat4_prescalev(mfloat_t *m, mfloat_t *scale) {
+  m[0] *= scale[0];
+  m[1] *= scale[0];
+  m[2] *= scale[0];
+  m[3] *= scale[0];
+  m[4] *= scale[1];
+  m[5] *= scale[1];
+  m[6] *= scale[1];
+  m[7] *= scale[1];
+  m[8] *= scale[2];
+  m[9] *= scale[2];
+  m[10] *= scale[2];
+  m[11] *= scale[2];
+  // W in the scale matrix is 1, like identity. No need to do anything
 }
 
 // Divide x, y, and z by the w value. Preserves the original w value!!
