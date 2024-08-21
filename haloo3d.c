@@ -224,8 +224,8 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
   // 0)}; struct vec2i boundsBR = {.x = MIN(boundsBRf.x, fb->width - 1),
   //                          .y = MIN(boundsBRf.y, fb->height - 1)};
   if (boundsTL.x < 0 || boundsBR.x < 0 || boundsTL.y < 0 || boundsBR.y < 0 ||
-      boundsTL.x >= fb->width || boundsBR.x >= fb->width ||
-      boundsTL.y >= fb->height || boundsBR.y >= fb->height) {
+      boundsTL.x > fb->width || boundsBR.x > fb->width ||
+      boundsTL.y > fb->height || boundsBR.y > fb->height) {
     dieerr("PIXEL OOB: (%d,%d)->(%d,%d)", boundsTL.x, boundsTL.y, boundsBR.x,
            boundsBR.y);
   }
@@ -265,7 +265,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
   const int xstart = boundsTL.x;
   const uint16_t scale = render->intensity * 256;
 
-  for (int y = ystart; y <= yend; y++) {
+  for (int y = ystart; y < yend; y++) {
     mint_t w0 = w0_y;
     mint_t w1 = w1_y;
     mint_t w2 = w2_y;
@@ -274,7 +274,7 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
       goto LBL_H3DTRI1STRIDE_END;
     }
     dither = (dither >> (xstart & 7)) | (dither << (8 - (xstart & 7)));
-    for (int x = xstart; x <= xend; x++) {
+    for (int x = xstart; x < xend; x++) {
       if ((w0 | w1 | w2) >= 0) {
         // This value HAS to be normalized to be useful in the buffer!!!
         mfloat_t pz = (w0 * tiz0 + w1 * tiz1 + w2 * tiz2) * invarea;
@@ -420,8 +420,8 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
   struct vec2 boundsBRf =
       haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
   if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
-      boundsBRf.y < 0 || boundsTLf.x >= fb->width || boundsBRf.x >= fb->width ||
-      boundsTLf.y >= fb->height || boundsBRf.y >= fb->height) {
+      boundsBRf.y < 0 || boundsTLf.x > fb->width || boundsBRf.x > fb->width ||
+      boundsTLf.y > fb->height || boundsBRf.y > fb->height) {
     dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
            boundsBRf.y);
   }

@@ -413,8 +413,9 @@ static inline struct vec2i haloo3d_recti_dims(haloo3d_recti *bounds) {
 
 // Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
-  v[0] = round((v[0] + 1.0) / 2.0 * (width - 1));
-  v[1] = round((1.0 - ((v[1] + 1.0) / 2.0)) * (height - 1));
+  // SOMETIMES we need -1, but it's because of bad programming maybe? IDK
+  v[0] = round((v[0] + 1.0) / 2.0 * (width - 0));
+  v[1] = round((1.0 - ((v[1] + 1.0) / 2.0)) * (height - 0));
   //  Don't touch Z or whatever
 }
 

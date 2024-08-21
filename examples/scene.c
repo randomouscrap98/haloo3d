@@ -72,7 +72,8 @@ int main(int argc, char **argv) {
   haloo3d_gen_sloped(models + 2, PLANESIZE, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
-  haloo3d_gen_crossquad(models + 3, textures + 3, (struct vec3){0, 0, 0});
+  haloo3d_gen_crossquad(models + 3, textures + 3,
+                        (struct vec3){.x = 0, .y = 0, .z = 0});
 
   camset cams[MAXCAM];
   int numcams = readcam(cams, MAXCAM, argv[3]);
