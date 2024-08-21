@@ -24,11 +24,11 @@ void haloo3d_apply_brick(haloo3d_fb *fb, uint16_t width, uint16_t height,
                          uint16_t color);
 // Draw a rectangle of the given width into the given texture. Not guaranteed
 // to be fast
-void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
+void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
                         int width);
 // Draw a filled rectangle with dithering. The dithering 0 bit is full
 // transparency
-void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti *rect, uint16_t color,
+void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
                             uint8_t dithering[8]);
 
 // If you know the amount of vertices, textures, and faces ahead of time, you

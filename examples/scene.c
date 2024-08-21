@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   haloo3d_gen_sloped(models + 2, PLANESIZE, 1.0, 1.25);
   haloo3d_fb_init_tex(textures + 3, 8, 8);
   memcpy(textures[3].buffer, redflower, sizeof(uint16_t) * 64);
-  haloo3d_gen_crossquad(models + 3, textures + 3);
+  haloo3d_gen_crossquad(models + 3, textures + 3, (struct vec3){0, 0, 0});
 
   camset cams[MAXCAM];
   int numcams = readcam(cams, MAXCAM, argv[3]);
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
         mfloat_t dither = (avg > DITHERSTART)
                               ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
                               : 1.0;
-        haloo3d_trirender_setdither4x4(&rendersettings, dither);
+        haloo3d_getdither4x4(dither, rendersettings.dither);
         int tris = haloo3d_facef_clip(face, outfaces);
         // tempend = clock();
         // clipend += (tempend - tempstart);
