@@ -278,3 +278,10 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
   }
   return totaldrawn;
 }
+
+haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
+                                              char *name) {
+  haloo3d_obj *obj = haloo3d_easystore_getobj(ins->storage, name);
+  haloo3d_fb *tex = haloo3d_easystore_gettex(ins->storage, name);
+  return haloo3d_easyrender_addinstance(ins->render, obj, tex);
+}

@@ -107,4 +107,16 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
 void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef face,
                                 mfloat_t ditherstart, mfloat_t ditherend);
 
+// Creating certain objects is a pain. If you put together a struct like this,
+// you can call functions to easily create object instances where the name
+// of the object and texture are the same, to simplify the process
+typedef struct {
+  haloo3d_easystore *storage;
+  haloo3d_easyrender *render;
+} haloo3d_easyinstancer;
+
+// Quickly create an instance with texture/obj having the given name
+haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
+                                              char *name);
+
 #endif
