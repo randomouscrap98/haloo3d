@@ -42,6 +42,7 @@
 #define H3D_FACEF_CLIPLOW 0.0
 
 #define H3D_DBUF_NORM 0
+#define H3D_DBUF_MID 0
 #define H3D_DBUF_FAST (1 << 24)
 
 // These aren't necessarily hard limits; that's 65536
@@ -522,6 +523,12 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
    (v1->t - v2->t) * (v0->pos.y - v2->pos.y)) /                                \
       ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
+// return horizontal difference per pixel for any generic value
+#define H3D_TRIDIFF_HG(v0, v1, v2, t0, t1, t2)                                 \
+  (((t0) - (t2)) * (v1->pos.y - v2->pos.y) -                                   \
+   ((t1) - (t2)) * (v0->pos.y - v2->pos.y)) /                                  \
+      ((v0->pos.x - v2->pos.x) * (v1->pos.y - v2->pos.y) -                     \
+       (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 // return vertical difference per pixel for some property
 #define H3D_TRIDIFF_V(v0, v1, v2, t)                                           \
   ((v0->t - v2->t) * (v1->pos.x - v2->pos.x) -                                 \
@@ -597,6 +604,14 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
 // be as fast as possible.
 void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
                                    haloo3d_facef face);
+
+// Draw a textured triangle into the given framebuffer using the given face.
+// This function uses an "oldschool" method for drawing triangles and is
+// inherently single-threaded. However, it is slower than the fast function
+// because it uses floats and is perspective correct. Like the fast render
+// function, it will most likely not have new features added to it
+void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
+                                  haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.

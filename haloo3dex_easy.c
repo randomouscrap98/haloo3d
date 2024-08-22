@@ -157,6 +157,9 @@ void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
   case H3D_EASYRENDER_FASTFUNC:
     clearval = H3D_DBUF_FAST;
     break;
+  case H3D_EASYRENDER_MIDFUNC:
+    clearval = H3D_DBUF_MID;
+    break;
   default:
     clearval = H3D_DBUF_NORM;
   }
@@ -273,6 +276,10 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
     case H3D_EASYRENDER_FASTFUNC:
       haloo3d_texturedtriangle_fast(&r->window, &r->rendersettings,
                                     r->outfaces[ti]);
+      break;
+    case H3D_EASYRENDER_MIDFUNC:
+      haloo3d_texturedtriangle_mid(&r->window, &r->rendersettings,
+                                   r->outfaces[ti]);
       break;
     }
   }

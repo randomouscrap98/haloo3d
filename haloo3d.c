@@ -574,6 +574,257 @@ void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
   }
 }
 
+// Represents tracking information for one side of a triangle.
+// It may not use or calculate all fields; the left sides require
+// the interpolation and the right side only needs x. It uses a
+// stack of vectors setup by determining the "direction" of the
+// scanline; the "stack" is popped when a vector section is complete
+typedef struct {
+  haloo3d_vertexf *stack[3];
+  uint16_t twidth;
+  uint16_t theight;
+  int top;
+  int sectionheight; // Tracking for how much is left in the current section
+  int trackall;
+  mfloat_t x, uoz, voz, ioz;     // Tracking variables
+  mfloat_t dx, duoz, dvoz, dioz; // Delta along CURRENT edge
+} _h3dtrisidef;
+
+static inline void _h3dtrisidef_init(_h3dtrisidef *s, haloo3d_fb *texture) {
+  s->top = 0;
+  s->trackall = 0;
+  s->sectionheight = 0;
+  s->twidth = texture->width;
+  s->theight = texture->height;
+}
+
+// Push a normal vector onto the vector stack. Remember it is a stack,
+// so the ones you want on top should go last
+static inline int _h3dtrisidef_push(_h3dtrisidef *s, haloo3d_vertexf *v) {
+  s->stack[s->top] = v;
+  return ++s->top;
+}
+
+// Pop a vector off the stack, returning the new top. Top is technically
+// the size of the stack; if 0, it is empty
+static inline int _h3dtrisidef_pop(_h3dtrisidef *s) { return --s->top; }
+
+// Calculate all deltas (or at least all set to track) and return
+// the height of this section.
+static inline int _h3dtrisidef_start(_h3dtrisidef *s) {
+  const haloo3d_vertexf *const v1 = s->stack[s->top - 1];
+  const haloo3d_vertexf *const v2 = s->stack[s->top - 2];
+  // this won't throw away info; points are adjusted to whole nums
+  const int height = v2->pos.y - v1->pos.y;
+  if (height == 0) {
+    return 0;
+  }
+  s->dx = (v2->pos.x - v1->pos.x) / height;
+  s->x = v1->pos.x;
+  if (s->trackall) {
+    mfloat_t v2oz = 1 / v2->pos.w;
+    mfloat_t v1oz = 1 / v1->pos.w;
+    mfloat_t v2uoz = v2->tex.x * v2oz;
+    mfloat_t v1uoz = v1->tex.x * v1oz;
+    mfloat_t v2voz = v2->tex.y * v2oz;
+    mfloat_t v1voz = v1->tex.y * v1oz;
+    s->duoz = ((v2uoz - v1uoz) * s->twidth) / height;
+    s->uoz = v1uoz * s->twidth;
+    s->dvoz = ((v2voz - v1voz) * s->theight * s->twidth) / height;
+    s->voz = v1voz * s->theight * s->twidth;
+    s->dioz = (v2oz - v1oz) / height;
+    s->ioz = v1oz;
+  }
+  s->sectionheight = height;
+  return height;
+}
+
+// Move to the next line along the side. Returns 1 if the
+// entire side is done
+static inline int _h3dtrisidef_next(_h3dtrisidef *s) {
+  // At bottom of current section
+  if (--s->sectionheight <= 0) {
+    // There needs to be at least two vertices to work
+    if (_h3dtrisidef_pop(s) < 2) {
+      return 1;
+    }
+    // The next section has no height. Note that if this succeeds,
+    // this begins the next section, and thus no recalcs are needed
+    if (_h3dtrisidef_start(s) <= 0) {
+      return 1;
+    }
+  } else {
+    s->x += s->dx;
+    if (s->trackall) {
+      s->uoz += s->duoz;
+      s->voz += s->dvoz;
+      s->ioz += s->dioz;
+    }
+  }
+  return 0;
+}
+
+void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
+                                  haloo3d_facef face) {
+  haloo3d_vertexf *v0v = face;
+  haloo3d_vertexf *v1v = face + 1;
+  haloo3d_vertexf *v2v = face + 2;
+  haloo3d_vertexf *tmp;
+
+#ifdef H3D_SANITY_CHECK
+  struct vec2 boundsTLf =
+      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  struct vec2 boundsBRf =
+      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
+      boundsBRf.y < 0 || boundsTLf.x > fb->width || boundsBRf.x > fb->width ||
+      boundsTLf.y > fb->height || boundsBRf.y > fb->height) {
+    dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
+           boundsBRf.y);
+  }
+#endif
+
+  // NOTE: MAKE SURE YOU CLEAR THE Z-BUFFER TO A LOW VALUE LIKE THE SLOW TRI
+  // FUNC Here, we fix v because it's actually the inverse
+  v0v->tex.y = 1 - v0v->tex.y;
+  v1v->tex.y = 1 - v1v->tex.y;
+  v2v->tex.y = 1 - v2v->tex.y;
+
+  // Make sure vertices are sorted top to bottom
+  if (v0v->pos.y > v1v->pos.y) {
+    tmp = v0v;
+    v0v = v1v;
+    v1v = tmp;
+  }
+  if (v1v->pos.y > v2v->pos.y) {
+    tmp = v1v;
+    v1v = v2v;
+    v2v = tmp;
+  }
+  if (v0v->pos.y > v1v->pos.y) {
+    tmp = v0v;
+    v0v = v1v;
+    v1v = tmp;
+  }
+
+  // Tracking info for left and right side. Doesn't track
+  // every row; instead it tracks enough values to calulate the next
+  _h3dtrisidef right, left;
+  _h3dtrisidef_init(&right, render->texture);
+  _h3dtrisidef_init(&left, render->texture);
+  left.trackall = 1;
+  _h3dtrisidef *onesec, *twosec;
+
+  // Is this useful? I don't know...
+  struct vec2i v0, v1, v2;
+  vec2i_assign_vec2(v0.v, v0v->pos.v);
+  vec2i_assign_vec2(v1.v, v1v->pos.v);
+  vec2i_assign_vec2(v2.v, v2v->pos.v);
+
+  mint_t parea = haloo3d_edgefunci(v0.v, v1.v, v2.v);
+  if (parea == 0) {
+    return;
+  } else if (parea < 0) {
+    // The middle point is on the right side, because it's wound clockwise
+    onesec = &left;
+    twosec = &right;
+  } else {
+    // The middle point is on the left side, because it's wound
+    // counter-clockwise
+    onesec = &right;
+    twosec = &left;
+  }
+  _h3dtrisidef_push(twosec, v2v);
+  _h3dtrisidef_push(twosec, v1v);
+  _h3dtrisidef_push(twosec, v0v);
+  _h3dtrisidef_push(onesec, v2v);
+  _h3dtrisidef_push(onesec, v0v);
+  // Calculate the deltas. If the "onesection" side has no height, we die
+  if (_h3dtrisidef_start(onesec) <= 0) {
+    return;
+  }
+  if (_h3dtrisidef_start(twosec) <= 0) {
+    // The "twosection" side has another section. We skip the first if
+    // it has nothing
+    _h3dtrisidef_pop(twosec);
+    if (_h3dtrisidef_start(twosec) <= 0) {
+      return;
+    }
+  }
+
+  const uint16_t scale = render->intensity * 256;
+
+  uint16_t *buf_y = fb->buffer + v0.y * fb->width;
+  mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
+  uint16_t *tbuf = render->texture->buffer;
+
+  const uint16_t twbits = log2(left.twidth);
+  const uint16_t txr = left.twidth - 1;
+  const uint16_t tyr = (left.theight - 1) << twbits;
+
+  // need to calc all the constant horizontal diffs. The strides calculate
+  // the vertical diffs.
+  const mfloat_t v0ioz = 1 / v0v->pos.w;
+  const mfloat_t v1ioz = 1 / v1v->pos.w;
+  const mfloat_t v2ioz = 1 / v2v->pos.w;
+  const mfloat_t dzx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0ioz, v1ioz, v2ioz);
+  const mfloat_t dux = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.x * v0ioz,
+                                      v1v->tex.x * v1ioz, v2v->tex.x * v2ioz) *
+                       left.twidth;
+  const mfloat_t dvx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.y * v0ioz,
+                                      v1v->tex.y * v1ioz, v2v->tex.y * v2ioz) *
+                       left.theight * left.twidth;
+
+  int y = v0.y;
+
+  while (1) {
+    int xl = left.x;
+    int xr = right.x;
+
+    if (xl != xr) {
+      uint16_t *buf = buf_y + xl;
+      uint16_t *bufend = buf_y + xr;
+      mfloat_t *zbuf = (zbuf_y + xl);
+      mfloat_t uoz = left.uoz;
+      mfloat_t voz = left.voz;
+      mfloat_t ioz = left.ioz;
+
+      uint8_t dither = render->dither[y & 7];
+      dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
+
+      do {
+        if (ioz > *zbuf && H3D_DITHER_CHECK(dither)) {
+          // The horrible divide! Per pixel, no less!!
+          mfloat_t pz = 1 / ioz;
+          uint16_t c = tbuf[((uint32_t)ceil(uoz * pz) & txr) +
+                            ((uint32_t)ceil(voz * pz) & tyr)];
+          if (H3D_TRANSPARENCY_CHECK(c)) {
+            *buf = H3D_SCALE_COL(c, scale);
+            *zbuf = ioz;
+          }
+        }
+        buf++;
+        zbuf++;
+        ioz += dzx;
+        uoz += dux;
+        voz += dvx;
+        dither = (dither >> 1) | (dither << 7);
+      } while (buf < bufend);
+    }
+
+    buf_y += fb->width;
+    zbuf_y += fb->width;
+    y++;
+
+    if (_h3dtrisidef_next(&left)) {
+      return;
+    }
+    if (_h3dtrisidef_next(&right)) {
+      return;
+    }
+  }
+}
+
 int haloo3d_facef_finalize(haloo3d_facef face) {
   // We HAVE to divide points first BEFORE checking the edge function
   haloo3d_vec4_conventional(&face[0].pos); // face[0].pos

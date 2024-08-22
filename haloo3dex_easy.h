@@ -13,6 +13,7 @@
 #define H3D_EASYRENDER_MAXOBJS 1024
 #define H3D_EASYRENDER_NORMFUNC 0
 #define H3D_EASYRENDER_FASTFUNC 1
+#define H3D_EASYRENDER_MIDFUNC 2
 
 // A storage container for easy access to models and textures by name.
 // Adds overhead compared to direct access of models and textures.

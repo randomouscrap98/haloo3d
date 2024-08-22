@@ -37,6 +37,7 @@ int main() {
 
   haloo3d_easyrender render;
   haloo3d_easyrender_init(&render, WIDTH, HEIGHT);
+  render.trifunc = H3D_EASYRENDER_MIDFUNC;
   eprintf("Initialized renderer\n");
 
   haloo3d_obj *obj = haloo3d_easystore_addobj(&storage, "quad");
