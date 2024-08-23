@@ -777,17 +777,19 @@ void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
   int y = v0.y;
 
   while (1) {
-    // May need ceil
+    // Supposed to use ceiling but idk, mine works with floor... kinda.
+    // I have holes but with ceil I get actual seams.
     int xl = left.x;
     int xr = right.x;
 
-    if (xl != xr) {
+    if (xl < xr) {
+      mfloat_t xofs = xl - left.x;
       uint16_t *buf = buf_y + xl;
       uint16_t *bufend = buf_y + xr;
       mfloat_t *zbuf = (zbuf_y + xl);
-      mfloat_t uoz = left.uoz;
-      mfloat_t voz = left.voz;
-      mfloat_t ioz = left.ioz;
+      mfloat_t uoz = left.uoz + xofs * dux;
+      mfloat_t voz = left.voz + xofs * dvx;
+      mfloat_t ioz = left.ioz + xofs * dzx;
 
       uint8_t dither = render->dither[y & 7];
       dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
