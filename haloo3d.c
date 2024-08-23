@@ -758,9 +758,8 @@ void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
   uint16_t *tbuf = render->texture->buffer;
 
-  const uint16_t twbits = log2(left.twidth);
-  const uint16_t txr = left.twidth - 1;
-  const uint16_t tyr = (left.theight - 1) << twbits;
+  const uint32_t txr = left.twidth - 1;
+  const uint32_t tyr = (left.theight - 1) * left.twidth;
 
   // need to calc all the constant horizontal diffs. The strides calculate
   // the vertical diffs.
@@ -778,6 +777,7 @@ void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
   int y = v0.y;
 
   while (1) {
+    // May need ceil
     int xl = left.x;
     int xr = right.x;
 
@@ -796,8 +796,8 @@ void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
         if (ioz > *zbuf && H3D_DITHER_CHECK(dither)) {
           // The horrible divide! Per pixel, no less!!
           mfloat_t pz = 1 / ioz;
-          uint16_t c = tbuf[((uint32_t)ceil(uoz * pz) & txr) +
-                            ((uint32_t)ceil(voz * pz) & tyr)];
+          uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
+                            (((uint32_t)(voz * pz)) & tyr)];
           if (H3D_TRANSPARENCY_CHECK(c)) {
             *buf = H3D_SCALE_COL(c, scale);
             *zbuf = ioz;
