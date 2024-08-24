@@ -93,8 +93,7 @@ struct vec3 haloo3d_camera_calclook(haloo3d_camera *cam, mfloat_t *view) {
   struct vec3 lookat;
   // Use sphere equation to compute lookat vector through the two
   // player-controled angles (pitch and yaw)
-  vec3(lookvec.v, MSIN(cam->pitch) * MSIN(cam->yaw), MCOS(cam->pitch),
-       -MSIN(cam->pitch) * MCOS(cam->yaw));
+  YAWP2VEC(cam->yaw, cam->pitch, lookvec.v);
   vec3_add(lookat.v, cam->pos.v, lookvec.v);
   haloo3d_my_lookat(view, cam->pos.v, lookat.v, cam->up.v);
   return lookvec;

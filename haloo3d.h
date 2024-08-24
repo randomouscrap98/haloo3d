@@ -67,6 +67,10 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
+// NOTE: pitch = 0 means pointing straight up, this is to prevent gimbal
+// lock!
+#define YAWP2VEC(yaw, pitch, out)                                              \
+  vec3(out, MSIN(pitch) * MSIN(yaw), MCOS(pitch), -MSIN(pitch) * MCOS(yaw));
 
 // Die with an error (most calls in library will die on fatal error)
 #define dieerr(...)                                                            \

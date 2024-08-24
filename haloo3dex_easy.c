@@ -193,6 +193,11 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
     // Calc the same lookat just without translation. THis should be the same
     // rotation matrix used on the model
     haloo3d_my_lookat(modelm, ltmp.v, o->lookvec.v, o->up.v);
+    // We actually want the inverse. Apparently to speed things up, the
+    // transpose works for rotation matrices(?) but I don't trust that this
+    // lookat does that
+    // mat4_inverse(modelm, modelm);
+    mat4_transpose(modelm, modelm);
     // We HAVE to have a vec4 (oof)
     vec4(ltmp.v, o->lighting->x, o->lighting->y, o->lighting->z, 1);
     haloo3d_vec4_multmat_into(&ltmp, modelm, &lout);
