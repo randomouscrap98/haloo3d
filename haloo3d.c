@@ -17,6 +17,7 @@ int haloo3d_precalc_verts(haloo3d_obj *obj, mfloat_t *matrix,
 }
 
 // TODO: optimize whole light calc (including normals) to use mostly integers
+// For efficiency, this function expects light to be NORMALIZED
 mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
                             haloo3d_facef face) {
   mfloat_t lnorm[VEC3_SIZE];

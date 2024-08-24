@@ -95,7 +95,7 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
         scanned = sscanf(tmp, "%d//%d", &vi, &ni);
         if (scanned < 2) { // if we did not specifically read the weird format
           scanned = sscanf(tmp, "%d/%d/%d", &vi, &ti, &ni);
-          if (scanned != 1 && scanned != 3) {
+          if (scanned == 0) {
             eprintf("Could not parse face: %s | %s\n", tmp, line);
             err = 1;
             break;
@@ -119,7 +119,8 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
         }
         // Check each against the lists to make sure it's not out of whatever
         if (vi < 0 || vi >= obj->numvertices || ti < 0 ||
-            ti >= obj->numvtextures || ni < 0 || ni >= obj->numvnormals) {
+            (ti >= obj->numvtextures && obj->numvtextures) || ni < 0 ||
+            (ni >= obj->numvnormals && obj->numvnormals)) {
           eprintf("Invalid face index: %s | %s\n", tmp, line);
           err = 1;
           break;

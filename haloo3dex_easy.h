@@ -27,16 +27,16 @@ typedef struct {
 // Initialize storage unit
 void haloo3d_easystore_init(haloo3d_easystore *s);
 
-haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, char *key);
-haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, char *key);
-void haloo3d_easystore_deleteobj(haloo3d_easystore *s, char *key,
+haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, const char *key);
+haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, const char *key);
+void haloo3d_easystore_deleteobj(haloo3d_easystore *s, const char *key,
                                  void (*ondelete)(haloo3d_obj *));
 void haloo3d_easystore_deleteallobj(haloo3d_easystore *s,
                                     void (*ondelete)(haloo3d_obj *));
 
-haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, char *key);
-haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, char *key);
-void haloo3d_easystore_deletetex(haloo3d_easystore *s, char *key,
+haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, const char *key);
+haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, const char *key);
+void haloo3d_easystore_deletetex(haloo3d_easystore *s, const char *key,
                                  void (*ondelete)(haloo3d_fb *));
 void haloo3d_easystore_deletealltex(haloo3d_easystore *s,
                                     void (*ondelete)(haloo3d_fb *));
@@ -72,6 +72,10 @@ typedef struct {
   uint32_t totalverts;
   uint16_t nextobj;
   uint8_t trifunc;
+  // Whether to automatically move lighting when models have a
+  // lookvec. This also normalizes the light
+  uint8_t autolightfix;
+  struct vec3 fixedlighting;
 } haloo3d_easyrender;
 
 // Initialize ALL the values inside of the renderer
@@ -118,6 +122,6 @@ typedef struct {
 
 // Quickly create an instance with texture/obj having the given name
 haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
-                                              char *name);
+                                              const char *name);
 
 #endif

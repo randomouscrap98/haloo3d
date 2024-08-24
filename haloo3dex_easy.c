@@ -29,7 +29,7 @@ void haloo3d_easystore_init(haloo3d_easystore *s) {
   dieerr("No more room for objects! Max: %d\n", H3D_EASYSTORE_MAX);
 #define _H3D_ES_NOFIND(key) dieerr("Object not found: %s\n", key);
 
-haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, char *key) {
+haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, const char *key) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
     _H3D_ES_EMPTY(s->objkeys[i]) {
@@ -40,7 +40,7 @@ haloo3d_obj *haloo3d_easystore_addobj(haloo3d_easystore *s, char *key) {
   _H3D_ES_NOEMPTY()
 }
 
-haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, char *key) {
+haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, const char *key) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
     _H3D_ES_FIND(s->objkeys[i], key) { return s->_objects + i; }
@@ -48,7 +48,7 @@ haloo3d_obj *haloo3d_easystore_getobj(haloo3d_easystore *s, char *key) {
   _H3D_ES_NOFIND(key);
 }
 
-void haloo3d_easystore_deleteobj(haloo3d_easystore *s, char *key,
+void haloo3d_easystore_deleteobj(haloo3d_easystore *s, const char *key,
                                  void (*ondelete)(haloo3d_obj *)) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
@@ -75,7 +75,7 @@ void haloo3d_easystore_deleteallobj(haloo3d_easystore *s,
   }
 }
 
-haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, char *key) {
+haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, const char *key) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
     _H3D_ES_EMPTY(s->texkeys[i]) {
@@ -86,7 +86,7 @@ haloo3d_fb *haloo3d_easystore_addtex(haloo3d_easystore *s, char *key) {
   _H3D_ES_NOEMPTY()
 }
 
-haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, char *key) {
+haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, const char *key) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
     _H3D_ES_FIND(s->texkeys[i], key) { return s->_textures + i; }
@@ -94,7 +94,7 @@ haloo3d_fb *haloo3d_easystore_gettex(haloo3d_easystore *s, char *key) {
   _H3D_ES_NOFIND(key);
 }
 
-void haloo3d_easystore_deletetex(haloo3d_easystore *s, char *key,
+void haloo3d_easystore_deletetex(haloo3d_easystore *s, const char *key,
                                  void (*ondelete)(haloo3d_fb *)) {
   _H3D_ES_CHECKKEY(key);
   _H3D_ES_FOREACH(i) {
@@ -141,6 +141,7 @@ void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
   r->totalfaces = 0;
   r->totalverts = 0;
   r->nextobj = 0;
+  r->autolightfix = 0;
   memset(r->_objstate, 0, sizeof(r->_objstate));
   haloo3d_trirender_init(&r->rendersettings);
   haloo3d_fb_init(&r->window, width, height);
@@ -183,6 +184,23 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
   mat4_multiply(finalmatrix, r->screenmatrix, modelm);
   haloo3d_precalc_verts(o->model, finalmatrix, r->precalcs);
   r->rendersettings.texture = o->texture;
+  if (r->autolightfix && o->lighting) {
+    // Lighting doesn't rotate with the model unless you do it yourself.
+    // In the easy system, you can request the renderer to do it for you
+    struct vec4 ltmp, lout;
+    // Lighting is centered at 0
+    vec4(ltmp.v, 0, 0, 0, 1);
+    // Calc the same lookat just without translation. THis should be the same
+    // rotation matrix used on the model
+    haloo3d_my_lookat(modelm, ltmp.v, o->lookvec.v, o->up.v);
+    // We HAVE to have a vec4 (oof)
+    vec4(ltmp.v, o->lighting->x, o->lighting->y, o->lighting->z, 1);
+    haloo3d_vec4_multmat_into(&ltmp, modelm, &lout);
+    // No need to fix W, should all be good (no perspective divide). But we DO
+    // need to pull out that result
+    vec3(r->fixedlighting.v, lout.x, lout.y, lout.z);
+    vec3_normalize(r->fixedlighting.v, r->fixedlighting.v);
+  }
 }
 
 haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
@@ -256,8 +274,13 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
     r->rendersettings.intensity = 1.0;
     if (object->lighting) {
       haloo3d_obj_facef(object->model, object->model->faces[facei], baseface);
-      r->rendersettings.intensity =
-          haloo3d_calc_light(object->lighting->v, minlight, baseface);
+      if (r->autolightfix) {
+        r->rendersettings.intensity =
+            haloo3d_calc_light(r->fixedlighting.v, minlight, baseface);
+      } else {
+        r->rendersettings.intensity =
+            haloo3d_calc_light(object->lighting->v, minlight, baseface);
+      }
     }
   }
   for (int ti = 0; ti < tris; ti++) {
@@ -287,7 +310,7 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
 }
 
 haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
-                                              char *name) {
+                                              const char *name) {
   haloo3d_obj *obj = haloo3d_easystore_getobj(ins->storage, name);
   haloo3d_fb *tex = haloo3d_easystore_gettex(ins->storage, name);
   return haloo3d_easyrender_addinstance(ins->render, obj, tex);
