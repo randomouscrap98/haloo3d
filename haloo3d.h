@@ -544,10 +544,10 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
 void haloo3d_getdither4x4(float dither, uint8_t *buf);
 
 typedef struct {
+  uint8_t dither[8]; // 8x8 dithering (0 will make it transparent)
   haloo3d_fb *texture;
-  uint16_t basecolor;
   mfloat_t intensity; // a darkener
-  uint8_t dither[8];  // 8x8 dithering (0 will make it transparent)
+  uint16_t basecolor;
 } haloo3d_trirender;
 
 // Initialize a triangle render setting with all defaults
