@@ -14,6 +14,7 @@
 // all the pointers. If precalc_verts is null, the system
 // will try to use the stack, though this may not be
 // supported on all systems since the data is large.
+
 typedef struct {
   haloo3d_fb *buffer;
   mfloat_t *perspective;
@@ -59,6 +60,7 @@ typedef struct {
   struct vec3 *lighting; // a pointer to lighting, null for none
   uint16_t color;        // baseline color if textures aren't used
   uint8_t cullbackface;
+  h3decs_rendercontext *context; // Which context to render into
 } h3decs_renderobject;
 
 // Attach this component to become the "view" into some

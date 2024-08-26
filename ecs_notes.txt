@@ -1,0 +1,35 @@
+So I've been trying to get an ecs-like system set up for the renderer but:
+- I don't know what is needed just yet; my only ecs trial was the maze
+  and it didn't utilize it quite well, since rendering wasn't included in it
+  and there was a LOT of back and forth between the "easyrender" system and
+  the ecs system
+- I'm not sure if a generic ecs system will be possible, as there are plenty
+  of different needs. Supplying a generic system might actually harm my
+  ability to create
+- I think I should create another demo where everything goes into the ecs
+  system and try to get it running smoothly, without easyrender. Doing this
+  several times might show where the holes are so I can design a better
+  system for the base library
+
+So, I should first come up with a new idea, then come up with ways to 
+create an ecs system FOR that idea that's a bit more generic than the 
+one I created for the maze but not super generic. 
+- I want the ability to have multiple "render contexts" so an object could
+  render itself on several screens (like splitscreen)
+- I want a one to one relationship between some "controlling" entity and
+  a single render context. They thus might need to be one and the same;
+  simply having the context component (or whatever) makes you the viewport
+  for rendering.
+- Attaching a "camera" to an entity seems to be a very common thing. 
+  Perhaps my "camera" could really be the render context instead, since
+  all fields of the usual "camera" (up, pos, lookvec) are stored in the
+  "world placement" component.
+- Since systems will NEED to run in specific orders, I think I will need
+  to come up with new/alternative function generators in the macros which
+  are able to iterate over all entities. I don't want to make the systems
+  pull the entities themselves, since that's just nonsense busywork for
+  nearly all systems, so really it's just changing the sys function generator
+  from getting an entity id and the ecs system to JUST getting the ecs
+  system and each function loops on their own.
+
+
