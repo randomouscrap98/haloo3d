@@ -547,6 +547,7 @@ void haloo3d_getdither4x4(float dither, uint8_t *buf);
 
 #define H3DR_LIGHTING (1 << 0)
 #define H3DR_TRANSPARENCY (1 << 1)
+// DON'T USE THIS! LET THE SYSTEM CALC IT FOR YOU!
 #define H3DR_TEXTURED (1 << 2)
 #define H3DR_DITHERTRI (1 << 3)
 #define H3DR_DITHERPIX (1 << 4)
@@ -565,7 +566,7 @@ typedef struct {
   // for always perspective incorrect
   uint32_t pctminsize;
   // solid color for triangle. only applies if texture null
-  uint16_t basecolor;
+  // uint16_t basecolor;
   // Some flags for rendering. If these aren't set, values in this
   // struct may NOT be used
   uint8_t flags;

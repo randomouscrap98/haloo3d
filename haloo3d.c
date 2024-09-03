@@ -179,9 +179,9 @@ uint8_t haloo3d_dither4x4[17][8] = {
 
 void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->texture = NULL;
-  tr->basecolor = 0xFFFF;
+  // tr->basecolor = 0xFFFF;
   tr->intensity = 1.0;
-  tr->flags = H3DR_TRANSPARENCY | H3DR_TEXTURED;
+  tr->flags = H3DR_TRANSPARENCY;
   // memcpy(tr->dither, haloo3d_dither4x4[16], 8);
 }
 
@@ -797,8 +797,22 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   _h3dtriside_push(onesec, v2v);
   _h3dtriside_push(onesec, v0v);
 
-  int (*startfunc)(_h3dtriside *) =
-      (render->flags & H3DR_PCT) ? _h3dtriside_start_f : _h3dtriside_start_i;
+  // This is a single color triangle
+  if (v0v->tex.x == v1v->tex.x && v0v->tex.x == v2v->tex.x &&
+      v0v->tex.y == v1v->tex.y && v0v->tex.y == v2v->tex.y) {
+  } else if (parea < render->pctminsize) {
+    // Eh?
+  }
+
+  int (*startfunc)(_h3dtriside *);
+  int (*nextfunc)(_h3dtriside *);
+  if (render->flags & H3DR_PCT) {
+    startfunc = _h3dtriside_start_f;
+    nextfunc = _h3dtriside_next_f;
+  } else {
+    startfunc = _h3dtriside_start_i;
+    nextfunc = _h3dtriside_next_i;
+  }
 
   // Calculate the deltas. If the "onesection" side has no height, we die
   if (startfunc(onesec) <= 0) {
@@ -901,12 +915,10 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     zbuf_y += fb->width;
     y++;
 
-    // TODO: MUST choose a different func based on fields, but DON'T
-    // do it in the loop! Part of the precompiler!
-    if (_h3dtriside_next_f(&left)) {
+    if (nextfunc(&left)) {
       return;
     }
-    if (_h3dtriside_next_f(&right)) {
+    if (nextfunc(&right)) {
       return;
     }
   }
