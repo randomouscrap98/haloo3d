@@ -41,9 +41,9 @@
 #define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
 #define H3D_FACEF_CLIPLOW 0.0
 
-#define H3D_DBUF_NORM 0
-#define H3D_DBUF_MID 0
-#define H3D_DBUF_FAST (1 << 24)
+// #define H3D_DBUF_NORM 0
+// #define H3D_DBUF_MID 0
+// #define H3D_DBUF_FAST (1 << 24)
 
 // These aren't necessarily hard limits; that's 65536
 #define H3D_OBJ_MAXVERTICES 8192
@@ -168,10 +168,12 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 //   so larger values (1/z) are actually closer
 // - Fast triangle function requires something large. An interesting option
 //   is the far clip value
-static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb, const mfloat_t value) {
+static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
+  //, const mfloat_t value) {
+  const mfloat_t MAXBUF = 999999999.0;
   const int len = haloo3d_fb_size(fb);
   for (int i = 0; i < len; i++) {
-    fb->dbuffer[i] = value;
+    fb->dbuffer[i] = MAXBUF;
   }
 }
 
@@ -543,12 +545,35 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
 // Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
 void haloo3d_getdither4x4(float dither, uint8_t *buf);
 
+#define H3DR_LIGHTING (1 << 0)
+#define H3DR_TRANSPARENCY (1 << 1)
+#define H3DR_TEXTURED (1 << 2)
+#define H3DR_DITHERTRI (1 << 3)
+#define H3DR_DITHERPIX (1 << 4)
+// DON'T USE THIS! LET THE SYSTEM CALC IT FOR YOU!
+#define H3DR_PCT (1 << 5)
+
 typedef struct {
+  // pointer to texture.
   haloo3d_fb *texture;
+  // 1 = normal, 0 = black
+  mfloat_t intensity;
+  // where dithering starts and becomes full.
+  mfloat_t ditherclose, ditherfar;
+  // What size triangle perspective correct textures kick in. Set to
+  // 0 to always have perspective correct, and like a billion or something
+  // for always perspective incorrect
+  uint32_t pctminsize;
+  // solid color for triangle. only applies if texture null
   uint16_t basecolor;
-  mfloat_t intensity; // a darkener
-  uint8_t dither[8];  // 8x8 dithering (0 will make it transparent)
+  // Some flags for rendering. If these aren't set, values in this
+  // struct may NOT be used
+  uint8_t flags;
+  // 0 = none, 1 = per-triangle dither, 2 = per-pixel dither (slower)
+  // uint8_t dithertype;
 } haloo3d_trirender;
+
+// uint8_t dither[8];  // 8x8 dithering (0 will make it transparent)
 
 // Initialize a triangle render setting with all defaults
 void haloo3d_trirender_init(haloo3d_trirender *tr);
@@ -597,8 +622,9 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 // on configuration or machine. It will also always be perspective correct
 // and mostly accurate. If additional effects are added to the library, they
 // may be applied here. It is also slow
-void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
-                              haloo3d_facef face);
+
+void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
+                      haloo3d_facef face);
 
 // Draw a textured triangle into the given framebuffer using the given face.
 // This function uses an "oldschool" method for drawing triangles and is
@@ -606,16 +632,16 @@ void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
 // and will not have any new features added to it. As such, it is a
 // stable implementation that will most likely never change and always
 // be as fast as possible.
-void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
-                                   haloo3d_facef face);
+// void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
+// haloo3d_facef face);
 
 // Draw a textured triangle into the given framebuffer using the given face.
 // This function uses an "oldschool" method for drawing triangles and is
 // inherently single-threaded. However, it is slower than the fast function
 // because it uses floats and is perspective correct. Like the fast render
 // function, it will most likely not have new features added to it
-void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
-                                  haloo3d_facef face);
+// void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
+// haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.

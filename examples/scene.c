@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define DOLIGHTING
-#define FASTTRIS
+// #define FASTTRIS
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -34,13 +34,14 @@
 #define NUMINSTANCES (NUMOBJECTS - 1 + NUMFLOWERS)
 #define MAXCAM 1200
 
-#ifdef FASTTRIS
-#define WBUFCLEAR FARCLIP
-#define TRIFUNC haloo3d_texturedtriangle_fast
-#else
-#define WBUFCLEAR 0
-#define TRIFUNC haloo3d_texturedtriangle
-#endif
+// #ifdef FASTTRIS
+// #define WBUFCLEAR FARCLIP
+// // #define TRIFUNC haloo3d_texturedtriangle_fast
+// #define TRIFUNC haloo3d_texturedtriangle_mid
+// #else
+// #define WBUFCLEAR 0
+// #define TRIFUNC haloo3d_texturedtriangle
+// #endif
 
 #define CALCTIME(thistime, start, end, sum)                                    \
   float thistime = 1000.0 * (float)(end - start) / CLOCKS_PER_SEC;             \
@@ -176,7 +177,7 @@ int main(int argc, char **argv) {
     camera.pitch = cams[cami].pitch + MPI_2;
 
     // REMEMBER TO CLEAR DEPTH BUFFER
-    haloo3d_fb_cleardepth(&fb, WBUFCLEAR);
+    haloo3d_fb_cleardepth(&fb);
     memset(fb.buffer, 0xFF, sizeof(uint16_t) * fb.width * fb.height);
 
     // Screen matrix calc. We multiply the modelview matrix with this later
@@ -208,7 +209,7 @@ int main(int argc, char **argv) {
         mfloat_t dither = (avg > DITHERSTART)
                               ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
                               : 1.0;
-        haloo3d_getdither4x4(dither, rendersettings.dither);
+        // haloo3d_getdither4x4(dither, rendersettings.dither);
         int tris = haloo3d_facef_clip(face, outfaces);
         // tempend = clock();
         // clipend += (tempend - tempstart);
@@ -229,7 +230,7 @@ int main(int argc, char **argv) {
           }
           //   We still have to convert the points into the view
           haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-          TRIFUNC(&fb, &rendersettings, outfaces[ti]);
+          haloo3d_triangle(&fb, &rendersettings, outfaces[ti]);
         }
         // tempend = clock();
         // drawend += (tempend - tempstart);
