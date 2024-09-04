@@ -188,7 +188,7 @@ void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->ditherfar = 999999;
   // Forces perspective correct textures
   tr->pctminsize = 0;
-  tr->flags = H3DR_TRANSPARENCY | H3DR_LIGHTING | H3DR_TEXTURED;
+  tr->flags = H3DR_TRANSPARENCY | H3DR_LIGHTING | H3DR_TEXTURED | H3DR_PCT;
 }
 
 static inline uint8_t *haloo3d_4x4dither(float dither) {
@@ -827,10 +827,6 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     // This is a small triangle with textures
     // Turn of perspective correct textures
     rflags &= ~H3DR_PCT;
-  } else {
-    // This is a big triangle with textures
-    // Turn ON perspective correct textures
-    rflags |= H3DR_PCT;
   }
 
   // More optimizations. No textures means no need for transparency or
@@ -841,7 +837,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
 
   int (*startfunc)(_h3dtriside *);
   int (*nextfunc)(_h3dtriside *);
-  if (render->flags & H3DR_PCT) {
+  if (rflags & H3DR_PCT) {
     startfunc = _h3dtriside_start_f;
     nextfunc = _h3dtriside_next_f;
   } else {
@@ -866,8 +862,11 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
   uint16_t *tbuf = render->texture->buffer;
 
+  uint32_t txr = left.twidth - 1;
+  uint32_t tyr = (left.theight - 1) * left.twidth;
+
   int tvshleft = 0;
-  uint32_t tvshift = 0, txr, tyr;
+  uint32_t tvshift = 0;
   mfloat_t dzx = 0, dux = 0, dvx = 0;
   int32_t dzxi = 0, duxi = 0, dvxi = 0;
 
@@ -875,19 +874,16 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   // the vertical diffs.
   if (rflags & H3DR_PCT) {
     // Perspective correct values, which are all floating point and simple
-    txr = left.twidth - 1;
-    tyr = (left.theight - 1) * left.twidth;
-
     const mfloat_t v0ioz = 1 / v0v->pos.w;
     const mfloat_t v1ioz = 1 / v1v->pos.w;
     const mfloat_t v2ioz = 1 / v2v->pos.w;
+    // clang-format off
     dzx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0ioz, v1ioz, v2ioz);
     dux = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.x * v0ioz, v1v->tex.x * v1ioz,
-                         v2v->tex.x * v2ioz) *
-          left.twidth;
+                         v2v->tex.x * v2ioz) * left.twidth;
     dvx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.y * v0ioz, v1v->tex.y * v1ioz,
-                         v2v->tex.y * v2ioz) *
-          left.theight * left.twidth;
+                         v2v->tex.y * v2ioz) * left.theight * left.twidth;
+    // clang-format on
   } else {
     // NOTE ABOUT HOW THIS WORKS: the u and v are globally tracked with 16 bits.
     // but when going across spans, they are only tracked with 8 bits. This lets
@@ -897,9 +893,6 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     const int twbits = log2(left.twidth);
     tvshift = abs(8 - twbits);
     tvshleft = (twbits > 8);
-    txr = left.twidth - 1;
-    tyr = (left.theight - 1) << twbits;
-
     // need to calc all the constant diffs
     dzxi = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
     duxi = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;

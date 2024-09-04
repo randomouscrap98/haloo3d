@@ -22,9 +22,9 @@
 #define SKYSCALE 30
 #define AVGWEIGHT 0.85
 
-// Dithering disabled. Try 5 to 30 or so and disable the skybox with skyscale
-#define DITHERSTART 100
-#define DITHEREND 101
+// Dithering disabled by default, fyi
+#define DITHERSTART 5
+#define DITHEREND 30
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
@@ -157,8 +157,8 @@ int main(int argc, char **argv) {
   haloo3d_trirender_init(&rendersettings);
   rendersettings.ditherclose = DITHERSTART;
   rendersettings.ditherfar = DITHEREND;
-  rendersettings.pctminsize = 999999999;
-  // rendersettings.flags |= H3DR_TRANSPARENCY;
+  rendersettings.pctminsize = 0;
+  rendersettings.flags |= H3DR_DITHERTRI;
 
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
