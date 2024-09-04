@@ -157,8 +157,8 @@ int main(int argc, char **argv) {
   haloo3d_trirender_init(&rendersettings);
   rendersettings.ditherclose = DITHERSTART;
   rendersettings.ditherfar = DITHEREND;
-  rendersettings.pctminsize = 0;
-  rendersettings.flags |= H3DR_DITHERPIX;
+  rendersettings.pctminsize = 1000;
+  // rendersettings.flags |= H3DR_DITHERPIX;
 
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
