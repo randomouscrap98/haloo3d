@@ -12,6 +12,10 @@
 
 #define H3D_EASYRENDER_MAXOBJS 1024
 
+#define H3D_EASYOBJSTATE_ACTIVE 1
+#define H3D_EASYOBJSTATE_NOTRANS 2
+// #define H3D_EASYOBJSTATE_NOLIGHTING 4
+
 // A storage container for easy access to models and textures by name.
 // Adds overhead compared to direct access of models and textures.
 typedef struct {

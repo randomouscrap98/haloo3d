@@ -274,10 +274,6 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                      object->model->vtexture, face);
   int tris = haloo3d_facef_clip(face, r->outfaces);
   if (tris > 0) {
-    // if (ditherstart >= 0) {
-    //   haloo3d_easy_calcdither4x4(&r->rendersettings, face, ditherstart,
-    //                              ditherend);
-    // }
     r->rendersettings.intensity = 1.0;
     if (object->lighting) {
       haloo3d_obj_facef(object->model, object->model->faces[facei], baseface);
@@ -300,19 +296,6 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
     haloo3d_facef_viewport_into(r->outfaces[ti], r->window.width,
                                 r->window.height);
     haloo3d_triangle(&r->window, &r->rendersettings, r->outfaces[ti]);
-    // switch (r->trifunc) {
-    // case H3D_EASYRENDER_NORMFUNC:
-    //   haloo3d_texturedtriangle(&r->window, &r->rendersettings,
-    //   r->outfaces[ti]); break;
-    // case H3D_EASYRENDER_FASTFUNC:
-    //   haloo3d_texturedtriangle_fast(&r->window, &r->rendersettings,
-    //                                 r->outfaces[ti]);
-    //   break;
-    // case H3D_EASYRENDER_MIDFUNC:
-    //   haloo3d_texturedtriangle_mid(&r->window, &r->rendersettings,
-    //                                r->outfaces[ti]);
-    //   break;
-    // }
   }
   return totaldrawn;
 }

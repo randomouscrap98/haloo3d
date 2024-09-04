@@ -361,18 +361,17 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   uint8_t rflags = render->flags;
 
   if (rflags & (H3DR_DITHERPIX | H3DR_DITHERTRI)) {
-    // if (v0v->pos.w > render->ditherfar && v1v->pos.w > render->ditherfar &&
-    //     v2v->pos.w > render->ditherfar) {
-    //   // Trivially reject triangles that will not render because of dithering
-    //   return;
-    // }
-    // if (v0v->pos.w < render->ditherclose && v1v->pos.w < render->ditherclose
-    // &&
-    //     v2v->pos.w < render->ditherclose) {
-    //   // Trivially remove expensive dithering for triangles that are fully
-    //   // inside the dither start radius
-    //   rflags &= ~(H3DR_DITHERPIX | H3DR_DITHERTRI);
-    // }
+    if (v0v->pos.w > render->ditherfar && v1v->pos.w > render->ditherfar &&
+        v2v->pos.w > render->ditherfar) {
+      // Trivially reject triangles that will not render because of dithering
+      return;
+    }
+    if (v0v->pos.w < render->ditherclose && v1v->pos.w < render->ditherclose &&
+        v2v->pos.w < render->ditherclose) {
+      // Trivially remove expensive dithering for triangles that are fully
+      // inside the dither start radius
+      rflags &= ~(H3DR_DITHERPIX | H3DR_DITHERTRI);
+    }
   }
 
   // Here, we fix v because it's actually the inverse
@@ -528,9 +527,14 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     dvxi = tvshleft ? (dvxi << tvshift) : (dvxi >> tvshift);
   }
 
-  // TODO: don't bother calcing this if no lighting?
-  const uint16_t scale = render->intensity * 256;
   int y = v0.y;
+
+  uint16_t scale = 0;
+  if (render->intensity >= 1.0) {
+    rflags &= ~H3DR_LIGHTING;
+  } else {
+    scale = render->intensity * 256;
+  }
 
   mfloat_t ditherscale = 1 / (render->ditherfar - render->ditherclose);
   int dithofs = 0;
