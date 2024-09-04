@@ -1,3 +1,25 @@
+#undef H3D_DITHER_CHECK
+#undef H3D_TRANSPARENCY_CHECK
+#undef H3D_SCALE_COL
+
+#if _HTF & H3DR_DITHERTRI
+#define H3D_DITHER_CHECK(dither) (dither & 1)
+#else
+#define H3D_DITHER_CHECK(dither) 1
+#endif
+
+#if _HTF & H3DR_TRANSPARENCY
+#define H3D_TRANSPARENCY_CHECK(c) (c & 0xFF00)
+#else
+#define H3D_TRANSPARENCY_CHECK(c) 1
+#endif
+
+#if _HTF & H3DR_LIGHTING
+#define H3D_SCALE_COL(c, s) (haloo3d_col_scalei(c, s))
+#else
+#define H3D_SCALE_COL(c, s) (c)
+#endif
+
 while (1) {
 #if _HTF & H3DR_PCT
   // Supposed to use ceiling but idk, mine works with floor... kinda.
@@ -5,8 +27,8 @@ while (1) {
   int xl = left.x;
   int xr = right.x;
 #else
-  int xl = left.x >> 16;
-  int xr = right.x >> 16;
+  int xl = left.ix >> 16;
+  int xr = right.ix >> 16;
 #endif
 
   if (xl < xr) {
@@ -20,9 +42,9 @@ while (1) {
     mfloat_t voz = left.voz + xofs * dvx;
     mfloat_t ioz = left.ioz + xofs * dzx;
 #else
-    int32_t u = left.u >> 8;
-    int32_t v = tvshleft ? (left.v << tvshift) : (left.v >> tvshift);
-    int32_t z = left.z;
+    int32_t u = left.iu >> 8;
+    int32_t v = tvshleft ? (left.iv << tvshift) : (left.iv >> tvshift);
+    int32_t z = left.iz;
 #endif
 
 #if _HTF & (H3DR_DITHERTRI)
@@ -33,20 +55,20 @@ while (1) {
     do {
 #if _HTF & H3DR_PCT
       mfloat_t pz = 1 / ioz;
-      if (pz < *zbuf && (dither & 1)) {
+      if (pz < *zbuf && H3D_DITHER_CHECK(dither)) {
         // The horrible divide! Per pixel, no less!!
         uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
                           (((uint32_t)(voz * pz)) & tyr)];
-        if (c & 0xFF00) {
-          *buf = haloo3d_col_scalei(c, scale);
+        if (H3D_TRANSPARENCY_CHECK(c)) {
+          *buf = H3D_SCALE_COL(c, scale);
           *zbuf = pz;
         }
       }
 #else
-      if (z < *zbuf && (dither & 1)) {
+      if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
-        if (c & 0xFF00) {
-          *buf = haloo3d_col_scalei(c, scale);
+        if (H3D_TRANSPARENCY_CHECK(c)) {
+          *buf = H3D_SCALE_COL(c, scale);
           *zbuf = z;
         }
       }

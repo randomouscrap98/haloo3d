@@ -566,7 +566,7 @@ typedef struct {
   // What size triangle perspective correct textures kick in. Set to
   // 0 to always have perspective correct, and like a billion or something
   // for always perspective incorrect
-  uint32_t pctminsize;
+  int pctminsize;
   // solid color for triangle. only applies if texture null
   // uint16_t basecolor;
   // Some flags for rendering. If these aren't set, values in this

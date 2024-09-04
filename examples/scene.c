@@ -155,6 +155,9 @@ int main(int argc, char **argv) {
   // present in this
   haloo3d_trirender rendersettings;
   haloo3d_trirender_init(&rendersettings);
+  rendersettings.ditherclose = DITHERSTART;
+  rendersettings.ditherfar = DITHEREND;
+  // rendersettings.flags |= H3DR_TRANSPARENCY;
 
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 
@@ -205,10 +208,10 @@ int main(int argc, char **argv) {
                            objects[i].model->vtexture, face);
         // tempstart = clock();
         // calc dither PRE clipping
-        mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
-        mfloat_t dither = (avg > DITHERSTART)
-                              ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
-                              : 1.0;
+        // mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
+        // mfloat_t dither = (avg > DITHERSTART)
+        //                       ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
+        //                       : 1.0;
         // haloo3d_getdither4x4(dither, rendersettings.dither);
         int tris = haloo3d_facef_clip(face, outfaces);
         // tempend = clock();

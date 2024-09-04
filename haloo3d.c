@@ -184,6 +184,10 @@ void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->texture = NULL;
   // tr->basecolor = 0xFFFF;
   tr->intensity = 1.0;
+  // Dithering is off anyway but just in case...
+  tr->ditherclose = 999999;
+  tr->ditherfar = 999999;
+  tr->pctminsize = 0;
   tr->flags = H3DR_TRANSPARENCY;
   // memcpy(tr->dither, haloo3d_dither4x4[16], 8);
 }
@@ -732,19 +736,6 @@ static inline void haloo3d_fixvertices(haloo3d_facef face,
   haloo3d_vertexf *v2v = face + 2;
   haloo3d_vertexf *tmp;
 
-#ifdef H3D_SANITY_CHECK
-  struct vec2 boundsTLf =
-      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  struct vec2 boundsBRf =
-      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
-      boundsBRf.y < 0 || boundsTLf.x > fb->width || boundsBRf.x > fb->width ||
-      boundsTLf.y > fb->height || boundsBRf.y > fb->height) {
-    dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
-           boundsBRf.y);
-  }
-#endif
-
   // Here, we fix v because it's actually the inverse
   v0v->tex.y = 1 - v0v->tex.y;
   v1v->tex.y = 1 - v1v->tex.y;
@@ -776,6 +767,19 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
                       haloo3d_facef face) {
   haloo3d_vertexf *v0v, *v1v, *v2v;
   haloo3d_fixvertices(face, &v0v, &v1v, &v2v);
+
+#ifdef H3D_SANITY_CHECK
+  struct vec2 boundsTLf =
+      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  struct vec2 boundsBRf =
+      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
+  if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
+      boundsBRf.y < 0 || boundsTLf.x > fb->width || boundsBRf.x > fb->width ||
+      boundsTLf.y > fb->height || boundsBRf.y > fb->height) {
+    dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
+           boundsBRf.y);
+  }
+#endif
 
   // Is this useful? I don't know...
   struct vec2i v0, v1, v2;

@@ -2,13 +2,15 @@
 #include "haloo3d.h"
 #include <string.h>
 
-void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef face,
-                                mfloat_t ditherstart, mfloat_t ditherend) {
-  mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
-  mfloat_t dither =
-      (avg > ditherstart) ? (ditherend - avg) / (ditherend - ditherstart) : 1.0;
-  haloo3d_getdither4x4(dither, settings->dither);
-}
+// void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef
+// face,
+//                                 mfloat_t ditherstart, mfloat_t ditherend) {
+//   mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
+//   mfloat_t dither =
+//       (avg > ditherstart) ? (ditherend - avg) / (ditherend - ditherstart)
+//       : 1.0;
+//   haloo3d_getdither4x4(dither, settings->dither);
+// }
 
 void haloo3d_easystore_init(haloo3d_easystore *s) {
   for (int i = 0; i < H3D_EASYSTORE_MAX; i++) {
@@ -148,23 +150,23 @@ void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
   haloo3d_camera_init(&r->camera);
   haloo3d_print_initdefault(&r->tprint, r->printbuf, sizeof(r->printbuf));
   r->tprint.fb = &r->window;
-  r->trifunc = H3D_EASYRENDER_NORMFUNC;
+  // r->trifunc = H3D_EASYRENDER_NORMFUNC;
 }
 
 void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
   haloo3d_print_refresh(&r->tprint);
-  mfloat_t clearval;
-  switch (r->trifunc) {
-  case H3D_EASYRENDER_FASTFUNC:
-    clearval = H3D_DBUF_FAST;
-    break;
-  case H3D_EASYRENDER_MIDFUNC:
-    clearval = H3D_DBUF_MID;
-    break;
-  default:
-    clearval = H3D_DBUF_NORM;
-  }
-  haloo3d_fb_cleardepth(&r->window, clearval);
+  // mfloat_t clearval;
+  // switch (r->trifunc) {
+  // case H3D_EASYRENDER_FASTFUNC:
+  //   clearval = H3D_DBUF_FAST;
+  //   break;
+  // case H3D_EASYRENDER_MIDFUNC:
+  //   clearval = H3D_DBUF_MID;
+  //   break;
+  // default:
+  //   clearval = H3D_DBUF_NORM;
+  // }
+  haloo3d_fb_cleardepth(&r->window);
   mfloat_t cammatrix[MAT4_SIZE];
   haloo3d_camera_calclook(&r->camera, cammatrix);
   mat4_inverse(cammatrix, cammatrix);
@@ -263,7 +265,7 @@ haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
 
 int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                                   haloo3d_obj_instance *object, int facei,
-                                  mfloat_t ditherstart, mfloat_t ditherend,
+                                  // mfloat_t ditherstart, mfloat_t ditherend,
                                   mfloat_t minlight) {
   int totaldrawn = 0;
   haloo3d_facef face, baseface;
@@ -272,10 +274,10 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                      object->model->vtexture, face);
   int tris = haloo3d_facef_clip(face, r->outfaces);
   if (tris > 0) {
-    if (ditherstart >= 0) {
-      haloo3d_easy_calcdither4x4(&r->rendersettings, face, ditherstart,
-                                 ditherend);
-    }
+    // if (ditherstart >= 0) {
+    //   haloo3d_easy_calcdither4x4(&r->rendersettings, face, ditherstart,
+    //                              ditherend);
+    // }
     r->rendersettings.intensity = 1.0;
     if (object->lighting) {
       haloo3d_obj_facef(object->model, object->model->faces[facei], baseface);
@@ -297,19 +299,20 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
     //   We still have to convert the points into the view
     haloo3d_facef_viewport_into(r->outfaces[ti], r->window.width,
                                 r->window.height);
-    switch (r->trifunc) {
-    case H3D_EASYRENDER_NORMFUNC:
-      haloo3d_texturedtriangle(&r->window, &r->rendersettings, r->outfaces[ti]);
-      break;
-    case H3D_EASYRENDER_FASTFUNC:
-      haloo3d_texturedtriangle_fast(&r->window, &r->rendersettings,
-                                    r->outfaces[ti]);
-      break;
-    case H3D_EASYRENDER_MIDFUNC:
-      haloo3d_texturedtriangle_mid(&r->window, &r->rendersettings,
-                                   r->outfaces[ti]);
-      break;
-    }
+    haloo3d_triangle(&r->window, &r->rendersettings, r->outfaces[ti]);
+    // switch (r->trifunc) {
+    // case H3D_EASYRENDER_NORMFUNC:
+    //   haloo3d_texturedtriangle(&r->window, &r->rendersettings,
+    //   r->outfaces[ti]); break;
+    // case H3D_EASYRENDER_FASTFUNC:
+    //   haloo3d_texturedtriangle_fast(&r->window, &r->rendersettings,
+    //                                 r->outfaces[ti]);
+    //   break;
+    // case H3D_EASYRENDER_MIDFUNC:
+    //   haloo3d_texturedtriangle_mid(&r->window, &r->rendersettings,
+    //                                r->outfaces[ti]);
+    //   break;
+    // }
   }
   return totaldrawn;
 }

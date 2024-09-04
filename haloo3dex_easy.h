@@ -11,9 +11,6 @@
 #define H3D_EASYSTORE_MAXKEY 16
 
 #define H3D_EASYRENDER_MAXOBJS 1024
-#define H3D_EASYRENDER_NORMFUNC 0
-#define H3D_EASYRENDER_FASTFUNC 1
-#define H3D_EASYRENDER_MIDFUNC 2
 
 // A storage container for easy access to models and textures by name.
 // Adds overhead compared to direct access of models and textures.
@@ -71,7 +68,6 @@ typedef struct {
   uint32_t totalfaces;
   uint32_t totalverts;
   uint16_t nextobj;
-  uint8_t trifunc;
   // Whether to automatically move lighting when models have a
   // lookvec. This also normalizes the light
   uint8_t autolightfix;
@@ -104,13 +100,14 @@ haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
 // manually
 int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                                   haloo3d_obj_instance *object, int facei,
-                                  mfloat_t ditherstart, mfloat_t ditherend,
+                                  // mfloat_t ditherstart, mfloat_t ditherend,
                                   mfloat_t minlight);
 
 // Calculate the dither used for a face when your dither distance starts at
 // start and ends at end. Also sets the dither on the render settings.
-void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef face,
-                                mfloat_t ditherstart, mfloat_t ditherend);
+// void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef
+// face,
+//                                 mfloat_t ditherstart, mfloat_t ditherend);
 
 // Creating certain objects is a pain. If you put together a struct like this,
 // you can call functions to easily create object instances where the name
