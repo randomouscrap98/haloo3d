@@ -8,8 +8,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define DOLIGHTING
-// #define FASTTRIS
+// These flags will be REMOVED from the renderer, speeding it up
+// #define NORENDER (H3DR_TRANSPARENCY | H3DR_LIGHTING | H3DR_PCT |
+// H3DR_DITHERPIX | H3DR_DITHERTRI);
+// #define NORENDER (H3DR_PCT)
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -22,9 +24,11 @@
 #define SKYSCALE 30
 #define AVGWEIGHT 0.85
 
-// Dithering disabled by default, fyi
-#define DITHERSTART 5
-#define DITHEREND 30
+// Set these to like 5 and 30 to see dithering
+#define DITHERSTART 10000
+#define DITHEREND 10000
+// #define DITHERSTART 5
+// #define DITHEREND 30
 
 // this is the number of DYNAMIC objects..
 #define NUMOBJECTS 4
@@ -113,10 +117,8 @@ int main(int argc, char **argv) {
     totalfaces += objects[i].model->numfaces;
     totalverts += objects[i].model->numvertices;
   }
-#ifdef DOLIGHTING
   objects[0].lighting = &light;
   objects[2].lighting = &light;
-#endif
   // objects[0].pos.z = 0;
   // objects[0].pos.y = -10;
   // vec3(objects[2].pos.v, 0.5, 0.8, 0.5);
@@ -158,9 +160,12 @@ int main(int argc, char **argv) {
   rendersettings.ditherclose = DITHERSTART;
   rendersettings.ditherfar = DITHEREND;
   rendersettings.pctminsize = 1000;
-  rendersettings.flags &= ~H3DR_TEXTURED;
+#ifdef NORENDER
+  rendersettings.flags &= ~(NORENDER);
+#endif
 
-  eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
+  eprintf("Scene has %d tris, %d verts, rflags: 0x%02x\n", totalfaces,
+          totalverts, rendersettings.flags);
 
   // -----------------------------------
   //     Actual rendering
@@ -208,12 +213,6 @@ int main(int argc, char **argv) {
         haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
                            objects[i].model->vtexture, face);
         // tempstart = clock();
-        // calc dither PRE clipping
-        // mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
-        // mfloat_t dither = (avg > DITHERSTART)
-        //                       ? (DITHEREND - avg) / (DITHEREND - DITHERSTART)
-        //                       : 1.0;
-        // haloo3d_getdither4x4(dither, rendersettings.dither);
         int tris = haloo3d_facef_clip(face, outfaces);
         // tempend = clock();
         // clipend += (tempend - tempstart);

@@ -12,16 +12,6 @@
 // Force system to check uncertain bounds and die if bad
 // #define H3D_SANITY_CHECK
 
-// Performance flags
-// Completely disable "lighting" in fast triangle renderer, even when requested
-// #define H3D_FAST_NO_COLSCALING
-// Completely disable dithering in fast triangle renderer, even when requested.
-// The triangles may still disappear in some circumstances
-// #define H3D_FAST_NO_DITHERING
-// Disable transparency checks in fast triangle renderer. Has no effect on
-// dithering
-// #define H3D_FAST_NO_TRANSPARENCY
-
 // Configure the mathc library before importing
 #define MATHC_USE_UNIONS
 #define MATHC_NO_STRUCT_FUNCTIONS

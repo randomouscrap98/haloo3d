@@ -1,3 +1,8 @@
+#if (_HTF & (H3DR_PCT | H3DR_TEXTURED)) == H3DR_PCT
+dieerr("CAN'T HAVE PCT AND NO TEXTURES!\n");
+#elif (_HTF & (H3DR_TRANSPARENCY | H3DR_TEXTURED)) == H3DR_TRANSPARENCY
+dieerr("CAN'T HAVE TRANSPARENCY AND NO TEXTURES!\n");
+#else
 #undef H3D_DITHER_CHECK
 #undef H3D_DITHERCALC
 #undef H3D_TRANSPARENCY_CHECK
@@ -11,9 +16,9 @@
 #define H3D_DITHERCALC(z)                                                      \
   if (!dithermask) {                                                           \
     dithermask = 1;                                                            \
-    dither = render->ditherpattern[(y & 3) +                                   \
-                                   haloo3d_4x4dither((render->ditherfar - z) * \
-                                                     ditherscale)];            \
+    dither = render->ditherpattern[(y & 3) + haloo3d_4x4dither(                \
+                                                 (render->ditherfar - (z)) *   \
+                                                 ditherscale)];                \
   }
 #else
 #define H3D_DITHER_CHECK(dither) 1
@@ -90,7 +95,7 @@ while (1) {
         }
       }
 #elif _HTF & H3DR_TEXTURED
-      H3D_DITHERCALC(z);
+      H3D_DITHERCALC(z >> 16);
       if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
         if (H3D_TRANSPARENCY_CHECK(c)) {
@@ -99,7 +104,7 @@ while (1) {
         }
       }
 #else
-      H3D_DITHERCALC(z);
+      H3D_DITHERCALC(z >> 16);
       if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         *buf = H3D_SCALE_COL(basecolor, scale);
         *zbuf = z;
@@ -116,7 +121,7 @@ while (1) {
       v += dvxi;
       z += dzxi;
 #endif
-#if _HTF & (H3DR_DITHERTRI)
+#if _HTF & H3DR_DITHERTRI
       dither = (dither >> 1) | (dither << 7);
 #elif _HTF & H3DR_DITHERPIX
       dithermask <<= 1;
@@ -135,3 +140,4 @@ while (1) {
     return;
   }
 }
+#endif
