@@ -61,6 +61,12 @@ $(BUILDD)/$(LIBD)/%.o: $(LIBD)/%.c $(LIBD)/%.h
 	mkdir -p $(BUILDD)/$(LIBD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Rule to build SPECIFICALLY haloo3d.c
+$(BUILDD)/haloo3d.o: haloo3d.c haloo3d.h haloo3d_trimacro.c haloo3d_trimacroswitch.c
+	@echo "Building haloo3d.o special"
+	mkdir -p $(BUILDD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Rule to build .o files in main folder
 $(BUILDD)/%.o: %.c %.h
 	mkdir -p $(BUILDD)

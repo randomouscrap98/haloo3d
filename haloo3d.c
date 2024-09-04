@@ -182,14 +182,13 @@ uint8_t _dither4x4[] = {
 
 void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->texture = NULL;
-  // tr->basecolor = 0xFFFF;
   tr->intensity = 1.0;
   // Dithering is off anyway but just in case...
   tr->ditherclose = 999999;
   tr->ditherfar = 999999;
+  // Forces perspective correct textures
   tr->pctminsize = 0;
-  tr->flags = H3DR_TRANSPARENCY;
-  // memcpy(tr->dither, haloo3d_dither4x4[16], 8);
+  tr->flags = H3DR_TRANSPARENCY | H3DR_LIGHTING | H3DR_TEXTURED;
 }
 
 static inline uint8_t *haloo3d_4x4dither(float dither) {
@@ -727,10 +726,20 @@ static inline int _h3dtriside_next_i(_h3dtriside *s) {
   return 0;
 }
 
-static inline void haloo3d_fixvertices(haloo3d_facef face,
-                                       haloo3d_vertexf **v0vp,
-                                       haloo3d_vertexf **v1vp,
-                                       haloo3d_vertexf **v2vp) {
+// static inline void haloo3d_fixvertices(haloo3d_facef face,
+//                                        haloo3d_vertexf **v0vp,
+//                                        haloo3d_vertexf **v1vp,
+//                                        haloo3d_vertexf **v2vp) {
+//
+//   *v0vp = v0v;
+//   *v1vp = v1v;
+//   *v2vp = v2v;
+// }
+
+void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
+                      haloo3d_facef face) {
+  // haloo3d_vertexf *v0v, *v1v, *v2v;
+  // haloo3d_fixvertices(face, &v0v, &v1v, &v2v);
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
@@ -758,15 +767,7 @@ static inline void haloo3d_fixvertices(haloo3d_facef face,
     v1v = tmp;
   }
 
-  *v0vp = v0v;
-  *v1vp = v1v;
-  *v2vp = v2v;
-}
-
-void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
-                      haloo3d_facef face) {
-  haloo3d_vertexf *v0v, *v1v, *v2v;
-  haloo3d_fixvertices(face, &v0v, &v1v, &v2v);
+  uint8_t rflags = render->flags;
 
 #ifdef H3D_SANITY_CHECK
   struct vec2 boundsTLf =
@@ -800,6 +801,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     return;
   } else if (parea < 0) {
     // The middle point is on the right side, because it's wound clockwise
+    parea = -parea;
     onesec = &left;
     twosec = &right;
   } else {
@@ -814,25 +816,27 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   _h3dtriside_push(onesec, v2v);
   _h3dtriside_push(onesec, v0v);
 
+  uint16_t basecolor = 0;
   if (v0v->tex.x == v1v->tex.x && v0v->tex.x == v2v->tex.x &&
       v0v->tex.y == v1v->tex.y && v0v->tex.y == v2v->tex.y) {
     // This is a single color triangle
     // No perspective or texture OR transparency needed
-    render->flags &= ~H3DR_TEXTURED;
+    rflags &= ~H3DR_TEXTURED;
+    basecolor = haloo3d_fb_getuv(render->texture, v0v->tex.x, v0v->tex.y);
   } else if (parea < render->pctminsize) {
     // This is a small triangle with textures
     // Turn of perspective correct textures
-    render->flags &= ~H3DR_PCT;
+    rflags &= ~H3DR_PCT;
   } else {
     // This is a big triangle with textures
     // Turn ON perspective correct textures
-    render->flags |= H3DR_PCT;
+    rflags |= H3DR_PCT;
   }
 
   // More optimizations. No textures means no need for transparency or
   // perspective
-  if ((render->flags & H3DR_TEXTURED) == 0) {
-    render->flags &= ~(H3DR_TRANSPARENCY | H3DR_PCT);
+  if ((rflags & H3DR_TEXTURED) == 0) {
+    rflags &= ~(H3DR_TRANSPARENCY | H3DR_PCT);
   }
 
   int (*startfunc)(_h3dtriside *);
@@ -862,14 +866,14 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
   uint16_t *tbuf = render->texture->buffer;
 
-  int tvshleft;
-  uint32_t tvshift, txr, tyr;
-  mfloat_t dzx, dux, dvx;
-  int32_t dzxi, duxi, dvxi;
+  int tvshleft = 0;
+  uint32_t tvshift = 0, txr, tyr;
+  mfloat_t dzx = 0, dux = 0, dvx = 0;
+  int32_t dzxi = 0, duxi = 0, dvxi = 0;
 
   // need to calc all the constant horizontal diffs. The strides calculate
   // the vertical diffs.
-  if (render->flags & H3DR_PCT) {
+  if (rflags & H3DR_PCT) {
     // Perspective correct values, which are all floating point and simple
     txr = left.twidth - 1;
     tyr = (left.theight - 1) * left.twidth;
@@ -911,15 +915,18 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   uint8_t *dithbuf;
 
   // TODO: calc average distance of vertices if dither set to tri
-  if (render->flags & H3DR_DITHERTRI) {
+  if (rflags & H3DR_DITHERTRI) {
     mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) / 3;
     dithbuf = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
+  } else {
+    dithbuf = haloo3d_4x4dither(1);
   }
 
-  switch (render->flags) {
+  // eprintf("RFLAGS: %d\n", rflags);
+  switch (rflags) {
 #include "haloo3d_trimacroswitch.c"
   default:
-    dieerr("UNSUPPORTED TRI FLAG: %d", render->flags);
+    dieerr("UNSUPPORTED TRI FLAG: %d", rflags);
   }
 }
 

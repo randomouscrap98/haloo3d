@@ -64,13 +64,18 @@ while (1) {
           *zbuf = pz;
         }
       }
-#else
+#elif _HTF & H3DR_TEXTURED
       if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
         if (H3D_TRANSPARENCY_CHECK(c)) {
           *buf = H3D_SCALE_COL(c, scale);
           *zbuf = z;
         }
+      }
+#else
+      if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
+        *buf = H3D_SCALE_COL(basecolor, scale);
+        *zbuf = z;
       }
 #endif
       buf++;
