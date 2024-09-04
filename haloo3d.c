@@ -188,11 +188,18 @@ void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->ditherfar = 999999;
   // Forces perspective correct textures
   tr->pctminsize = 0;
+  tr->ditherpattern = _dither4x4;
   tr->flags = H3DR_TRANSPARENCY | H3DR_LIGHTING | H3DR_TEXTURED | H3DR_PCT;
 }
 
-static inline uint8_t *haloo3d_4x4dither(float dither) {
-  return _dither4x4 + ((int)round(16 * CLAMP(dither, 0, 1)) << 2);
+static inline int haloo3d_4x4dither(float dither) {
+  if (dither < 0) {
+    return 0;
+  } else if (dither > 1) {
+    return 16 << 2;
+  } else {
+    return ((int)round(16 * dither) << 2);
+  }
 }
 
 // void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
@@ -905,14 +912,13 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   int y = v0.y;
 
   mfloat_t ditherscale = 1 / (render->ditherfar - render->ditherclose);
-  uint8_t *dithbuf;
+  int dithofs = 0;
 
-  // TODO: calc average distance of vertices if dither set to tri
   if (rflags & H3DR_DITHERTRI) {
     mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) / 3;
-    dithbuf = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
+    dithofs = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
   } else {
-    dithbuf = haloo3d_4x4dither(1);
+    dithofs = 0; // haloo3d_4x4dither(1);
   }
 
   // eprintf("RFLAGS: %d\n", rflags);

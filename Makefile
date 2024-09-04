@@ -18,9 +18,6 @@ ifdef MARCH 		# Allows you to define the architecture (usually not required)
 	CFLAGS += -march=$(MARCH)
 	# CLIBFLAGS += -march=$(MARCH)
 endif
-ifdef LOWSPEC  	# Set the build to enable ALL optimization flags. It will look ugly
-	CFLAGS += -DH3D_FAST_NO_TRANSPARENCY -DH3D_FAST_NO_DITHERING -DH3D_FAST_NO_COLSCALING
-endif
 ifndef FORCE 		# Force the build to move past warnings (disable warnings as errors)
 	CFLAGS += -Werror
 endif
@@ -80,8 +77,8 @@ examples/%.exe: examples/%.o $(FULLOUT)
 clean:
 	rm -rf $(BUILDD)
 	find examples/ -name "*.exe" -type f -delete
-	# find . -name "*.o" -type f -delete
-	# find . -name "*.a" -type f -delete
-	# find . -name "a.out" -type f -delete
+	@# find . -name "*.o" -type f -delete
+	@# find . -name "*.a" -type f -delete
+	@# find . -name "a.out" -type f -delete
 
 

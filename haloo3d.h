@@ -567,16 +567,16 @@ typedef struct {
   // 0 to always have perspective correct, and like a billion or something
   // for always perspective incorrect
   int pctminsize;
-  // solid color for triangle. only applies if texture null
-  // uint16_t basecolor;
   // Some flags for rendering. If these aren't set, values in this
   // struct may NOT be used
   uint8_t flags;
-  // 0 = none, 1 = per-triangle dither, 2 = per-pixel dither (slower)
-  // uint8_t dithertype;
+  // The dither pattern, which is assumed to be 4x4 but stored as 8x4 in an
+  // array of 17x4 bytes. Every 4 bytes represents a dither level, where each
+  // byte is 8 bits across and the 4 bytes together make up the 8x4 dither
+  // pattern. 17 levels for 0 through 16, where 0 is full empty and 16 is full
+  // fill. The default when initializing is 4x4 ordered dithering
+  uint8_t *ditherpattern;
 } haloo3d_trirender;
-
-// uint8_t dither[8];  // 8x8 dithering (0 will make it transparent)
 
 // Initialize a triangle render setting with all defaults
 void haloo3d_trirender_init(haloo3d_trirender *tr);
