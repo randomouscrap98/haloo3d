@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   rendersettings.ditherclose = DITHERSTART;
   rendersettings.ditherfar = DITHEREND;
   rendersettings.pctminsize = 1000;
-  // rendersettings.flags |= H3DR_DITHERPIX;
+  rendersettings.flags &= ~H3DR_TEXTURED;
 
   eprintf("Scene has %d tris, %d verts\n", totalfaces, totalverts);
 

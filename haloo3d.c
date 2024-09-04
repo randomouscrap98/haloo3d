@@ -829,7 +829,6 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     // This is a single color triangle
     // No perspective or texture OR transparency needed
     rflags &= ~H3DR_TEXTURED;
-    basecolor = haloo3d_fb_getuv(render->texture, v0v->tex.x, v0v->tex.y);
   } else if (parea < render->pctminsize) {
     // This is a small triangle with textures
     // Turn of perspective correct textures
@@ -837,9 +836,10 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   }
 
   // More optimizations. No textures means no need for transparency or
-  // perspective
+  // perspective (also calculate base uv)
   if ((rflags & H3DR_TEXTURED) == 0) {
     rflags &= ~(H3DR_TRANSPARENCY | H3DR_PCT);
+    basecolor = haloo3d_fb_getuv(render->texture, v0v->tex.x, v0v->tex.y);
   }
 
   int (*startfunc)(_h3dtriside *);
