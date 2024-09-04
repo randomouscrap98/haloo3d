@@ -1,16 +1,23 @@
 #undef H3D_DITHER_CHECK
+#undef H3D_DITHERCALC
 #undef H3D_TRANSPARENCY_CHECK
 #undef H3D_SCALE_COL
 
 #if _HTF & H3DR_DITHERTRI
-#define H3D_DITHER_CHECK(dither, z) (dither & 1)
+#define H3D_DITHER_CHECK(dither) (dither & 1)
+#define H3D_DITHERCALC(z) /* do nothing */
 #elif _HTF & H3DR_DITHERPIX
-#define H3D_DITHER_CHECK(dither, z)                                            \
-  (render->ditherpattern[dithofs + haloo3d_4x4dither((render->ditherfar - z) * \
-                                                     ditherscale)] &           \
-   dither)
+#define H3D_DITHER_CHECK(dither) (dither & dithermask)
+#define H3D_DITHERCALC(z)                                                      \
+  if (!dithermask) {                                                           \
+    dithermask = 1;                                                            \
+    dither = render->ditherpattern[(y & 3) +                                   \
+                                   haloo3d_4x4dither((render->ditherfar - z) * \
+                                                     ditherscale)];            \
+  }
 #else
-#define H3D_DITHER_CHECK(dither, z) 1
+#define H3D_DITHER_CHECK(dither) 1
+#define H3D_DITHERCALC(z) /* do nothing */
 #endif
 
 #if _HTF & H3DR_TRANSPARENCY
@@ -56,27 +63,35 @@ while (1) {
     uint8_t dither = render->ditherpattern[dithofs + (y & 3)];
     dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
 #elif _HTF & (H3DR_DITHERPIX)
-    // This is a DITHER MASK, not the dither itself!
-    uint8_t dither = 1 << (xl & 7);
-    // Reuse dithofs (which is only used for H3DR_DITHERTRI) for y ofs (very
-    // small savings)
-    dithofs = y & 3;
+    uint8_t dithermask = 1 << (xl & 7);
+#if _HTF & H3DR_PCT
+    mfloat_t pz = 1 / ioz;
+#else
+    mfloat_t pz = z >> 16;
+#endif
+    uint8_t dither =
+        render->ditherpattern[(y & 3) +
+                              haloo3d_4x4dither((render->ditherfar - pz) *
+                                                ditherscale)];
 #endif
 
     do {
 #if _HTF & H3DR_PCT
+      // The horrible divide! Per pixel, no less!!
       mfloat_t pz = 1 / ioz;
-      if (pz < *zbuf && H3D_DITHER_CHECK(dither, pz)) {
-        // The horrible divide! Per pixel, no less!!
+      mfloat_t dpz = pz * 65536; // perspective incorrect is x16
+      H3D_DITHERCALC(pz);
+      if (dpz < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
                           (((uint32_t)(voz * pz)) & tyr)];
         if (H3D_TRANSPARENCY_CHECK(c)) {
           *buf = H3D_SCALE_COL(c, scale);
-          *zbuf = pz;
+          *zbuf = dpz;
         }
       }
 #elif _HTF & H3DR_TEXTURED
-      if (z < *zbuf && H3D_DITHER_CHECK(dither, z)) {
+      H3D_DITHERCALC(z);
+      if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
         if (H3D_TRANSPARENCY_CHECK(c)) {
           *buf = H3D_SCALE_COL(c, scale);
@@ -84,7 +99,8 @@ while (1) {
         }
       }
 #else
-      if (z < *zbuf && H3D_DITHER_CHECK(dither, z)) {
+      H3D_DITHERCALC(z);
+      if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         *buf = H3D_SCALE_COL(basecolor, scale);
         *zbuf = z;
       }
@@ -103,7 +119,7 @@ while (1) {
 #if _HTF & (H3DR_DITHERTRI)
       dither = (dither >> 1) | (dither << 7);
 #elif _HTF & H3DR_DITHERPIX
-      dither = (dither << 1) | (dither >> 7);
+      dithermask <<= 1;
 #endif
     } while (buf < bufend);
   }
