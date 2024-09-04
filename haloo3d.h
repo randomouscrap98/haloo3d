@@ -543,9 +543,10 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
 // Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
-void haloo3d_getdither4x4(float dither, uint8_t *buf);
+// void haloo3d_getdither4x4(float dither, uint8_t *buf);
 
 #define H3DR_LIGHTING (1 << 0)
+// This value may be overridden if your texture is single color
 #define H3DR_TRANSPARENCY (1 << 1)
 // DON'T USE THIS! LET THE SYSTEM CALC IT FOR YOU!
 #define H3DR_TEXTURED (1 << 2)
@@ -559,7 +560,8 @@ typedef struct {
   haloo3d_fb *texture;
   // 1 = normal, 0 = black
   mfloat_t intensity;
-  // where dithering starts and becomes full.
+  // where dithering starts and becomes full. There is only 4x4 ordered
+  // dithering available
   mfloat_t ditherclose, ditherfar;
   // What size triangle perspective correct textures kick in. Set to
   // 0 to always have perspective correct, and like a billion or something

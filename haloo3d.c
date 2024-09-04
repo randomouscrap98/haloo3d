@@ -156,26 +156,29 @@ void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta) {
 //  Rendering
 // ----------------------
 
-// 4x4 dither patterns from 0 (no fill) to 16 (high fill).
-uint8_t haloo3d_dither4x4[17][8] = {
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-    {0x88, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00},
-    {0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00},
-    {0xAA, 0x00, 0x22, 0x00, 0xAA, 0x00, 0x22, 0x00},
-    {0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00, 0xAA, 0x00},
-    {0xAA, 0x44, 0xAA, 0x00, 0xAA, 0x44, 0xAA, 0x00},
-    {0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA, 0x11},
-    {0xAA, 0x55, 0xAA, 0x11, 0xAA, 0x55, 0xAA, 0x11},
-    {0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55},
-    {0xEE, 0x55, 0xAA, 0x55, 0xEE, 0x55, 0xAA, 0x55},
-    {0xEE, 0x55, 0xBB, 0x55, 0xEE, 0x55, 0xBB, 0x55},
-    {0xFF, 0x55, 0xBB, 0x55, 0xFF, 0x55, 0xBB, 0x55},
-    {0xFF, 0x55, 0xFF, 0x55, 0xFF, 0x55, 0xFF, 0x55},
-    {0xFF, 0xDD, 0xFF, 0x55, 0xFF, 0xDD, 0xFF, 0x55},
-    {0xFF, 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF, 0x77},
-    {0xFF, 0xFF, 0xFF, 0x77, 0xFF, 0xFF, 0xFF, 0x77},
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+// 4x4 dither patterns from 0 (no fill) to 16 (high fill). The pattern is
+// actually 8x4 to make storage easier (each byte is 8 across)
+// clang-format off
+uint8_t _dither4x4[] = {
+    0x00, 0x00, 0x00, 0x00,
+    0x88, 0x00, 0x00, 0x00,
+    0x88, 0x00, 0x22, 0x00,
+    0xAA, 0x00, 0x22, 0x00,
+    0xAA, 0x00, 0xAA, 0x00,
+    0xAA, 0x44, 0xAA, 0x00,
+    0xAA, 0x44, 0xAA, 0x11,
+    0xAA, 0x55, 0xAA, 0x11,
+    0xAA, 0x55, 0xAA, 0x55,
+    0xEE, 0x55, 0xAA, 0x55,
+    0xEE, 0x55, 0xBB, 0x55,
+    0xFF, 0x55, 0xBB, 0x55,
+    0xFF, 0x55, 0xFF, 0x55,
+    0xFF, 0xDD, 0xFF, 0x55,
+    0xFF, 0xDD, 0xFF, 0x77,
+    0xFF, 0xFF, 0xFF, 0x77,
+    0xFF, 0xFF, 0xFF, 0xFF,
 };
+// clang-format on
 
 void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->texture = NULL;
@@ -185,9 +188,8 @@ void haloo3d_trirender_init(haloo3d_trirender *tr) {
   // memcpy(tr->dither, haloo3d_dither4x4[16], 8);
 }
 
-void haloo3d_getdither4x4(float dither, uint8_t *buffer) {
-  uint8_t ind = round(16 * CLAMP(dither, 0, 1));
-  memcpy(buffer, haloo3d_dither4x4[ind], 8);
+static inline uint8_t *haloo3d_4x4dither(float dither) {
+  return _dither4x4 + ((int)round(16 * CLAMP(dither, 0, 1)) << 2);
 }
 
 // void haloo3d_texturedtriangle(haloo3d_fb *fb, haloo3d_trirender *render,
@@ -721,8 +723,10 @@ static inline int _h3dtriside_next_i(_h3dtriside *s) {
   return 0;
 }
 
-void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
-                      haloo3d_facef face) {
+static inline void haloo3d_fixvertices(haloo3d_facef face,
+                                       haloo3d_vertexf **v0vp,
+                                       haloo3d_vertexf **v1vp,
+                                       haloo3d_vertexf **v2vp) {
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
@@ -741,8 +745,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   }
 #endif
 
-  // NOTE: MAKE SURE YOU CLEAR THE Z-BUFFER TO A LOW VALUE LIKE THE SLOW TRI
-  // FUNC Here, we fix v because it's actually the inverse
+  // Here, we fix v because it's actually the inverse
   v0v->tex.y = 1 - v0v->tex.y;
   v1v->tex.y = 1 - v1v->tex.y;
   v2v->tex.y = 1 - v2v->tex.y;
@@ -763,6 +766,16 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     v0v = v1v;
     v1v = tmp;
   }
+
+  *v0vp = v0v;
+  *v1vp = v1v;
+  *v2vp = v2v;
+}
+
+void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
+                      haloo3d_facef face) {
+  haloo3d_vertexf *v0v, *v1v, *v2v;
+  haloo3d_fixvertices(face, &v0v, &v1v, &v2v);
 
   // Is this useful? I don't know...
   struct vec2i v0, v1, v2;
@@ -797,11 +810,25 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   _h3dtriside_push(onesec, v2v);
   _h3dtriside_push(onesec, v0v);
 
-  // This is a single color triangle
   if (v0v->tex.x == v1v->tex.x && v0v->tex.x == v2v->tex.x &&
       v0v->tex.y == v1v->tex.y && v0v->tex.y == v2v->tex.y) {
+    // This is a single color triangle
+    // No perspective or texture OR transparency needed
+    render->flags &= ~H3DR_TEXTURED;
   } else if (parea < render->pctminsize) {
-    // Eh?
+    // This is a small triangle with textures
+    // Turn of perspective correct textures
+    render->flags &= ~H3DR_PCT;
+  } else {
+    // This is a big triangle with textures
+    // Turn ON perspective correct textures
+    render->flags |= H3DR_PCT;
+  }
+
+  // More optimizations. No textures means no need for transparency or
+  // perspective
+  if ((render->flags & H3DR_TEXTURED) == 0) {
+    render->flags &= ~(H3DR_TRANSPARENCY | H3DR_PCT);
   }
 
   int (*startfunc)(_h3dtriside *);
@@ -831,96 +858,64 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   mfloat_t *zbuf_y = fb->dbuffer + v0.y * fb->width;
   uint16_t *tbuf = render->texture->buffer;
 
-  const uint32_t txr = left.twidth - 1;
-  const uint32_t tyr = (left.theight - 1) * left.twidth;
+  int tvshleft;
+  uint32_t tvshift, txr, tyr;
+  mfloat_t dzx, dux, dvx;
+  int32_t dzxi, duxi, dvxi;
 
   // need to calc all the constant horizontal diffs. The strides calculate
   // the vertical diffs.
-  const mfloat_t v0ioz = 1 / v0v->pos.w;
-  const mfloat_t v1ioz = 1 / v1v->pos.w;
-  const mfloat_t v2ioz = 1 / v2v->pos.w;
-  const mfloat_t dzx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0ioz, v1ioz, v2ioz);
-  const mfloat_t dux = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.x * v0ioz,
-                                      v1v->tex.x * v1ioz, v2v->tex.x * v2ioz) *
-                       left.twidth;
-  const mfloat_t dvx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.y * v0ioz,
-                                      v1v->tex.y * v1ioz, v2v->tex.y * v2ioz) *
-                       left.theight * left.twidth;
+  if (render->flags & H3DR_PCT) {
+    // Perspective correct values, which are all floating point and simple
+    txr = left.twidth - 1;
+    tyr = (left.theight - 1) * left.twidth;
 
-  // TODO: different calcs based on thing
+    const mfloat_t v0ioz = 1 / v0v->pos.w;
+    const mfloat_t v1ioz = 1 / v1v->pos.w;
+    const mfloat_t v2ioz = 1 / v2v->pos.w;
+    dzx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0ioz, v1ioz, v2ioz);
+    dux = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.x * v0ioz, v1v->tex.x * v1ioz,
+                         v2v->tex.x * v2ioz) *
+          left.twidth;
+    dvx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.y * v0ioz, v1v->tex.y * v1ioz,
+                         v2v->tex.y * v2ioz) *
+          left.theight * left.twidth;
+  } else {
+    // NOTE ABOUT HOW THIS WORKS: the u and v are globally tracked with 16 bits.
+    // but when going across spans, they are only tracked with 8 bits. This lets
+    // us premultiply the v by width and have a constant right shift of 8 in the
+    // loop. Apparently on x86, shifting by 8 is more optimized than 16; no idea
+    // why
+    const int twbits = log2(left.twidth);
+    tvshift = abs(8 - twbits);
+    tvshleft = (twbits > 8);
+    txr = left.twidth - 1;
+    tyr = (left.theight - 1) << twbits;
 
-  // NOTE ABOUT HOW THIS WORKS: the u and v are globally tracked with 16 bits.
-  // but when going across spans, they are only tracked with 8 bits. This lets
-  // us premultiply the v by width and have a constant right shift of 8 in the
-  // loop. Apparently on x86, shifting by 8 is more optimized than 16; no idea
-  // why
-  //   const uint16_t twbits = log2(left.twidth);
-  //   const uint16_t tvshift = abs(8 - twbits);
-  //   const int tvshleft = (twbits > 8);
-  //   const uint16_t txr = left.twidth - 1;
-  //   const uint16_t tyr = (left.theight - 1) << twbits;
-  //
-  //   // need to calc all the constant diffs
-  //   const int32_t dzx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
-  //   const int32_t dux =
-  //       H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;
-  //   int32_t dvx = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) *
-  //   left.theight); dvx = tvshleft ? (dvx << tvshift) : (dvx >> tvshift);
+    // need to calc all the constant diffs
+    dzxi = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, pos.w));
+    duxi = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.x) * left.twidth) >> 8;
+    dvxi = H3D_FP16(H3D_TRIDIFF_H(v0v, v1v, v2v, tex.y) * left.theight);
+    dvxi = tvshleft ? (dvxi << tvshift) : (dvxi >> tvshift);
+  }
 
   // TODO: don't bother calcing this if no lighting?
   const uint16_t scale = render->intensity * 256;
   int y = v0.y;
 
+  mfloat_t ditherscale = 1 / (render->ditherfar - render->ditherclose);
+  uint8_t *dithbuf;
+
   // TODO: calc average distance of vertices if dither set to tri
+  if (render->flags & H3DR_DITHERTRI) {
+    mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) / 3;
+    dithbuf = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
+  }
 
-  while (1) {
-    // Supposed to use ceiling but idk, mine works with floor... kinda.
-    // I have holes but with ceil I get actual seams.
-    int xl = left.x;
-    int xr = right.x;
-
-    if (xl < xr) {
-      mfloat_t xofs = xl - left.x;
-      uint16_t *buf = buf_y + xl;
-      uint16_t *bufend = buf_y + xr;
-      mfloat_t *zbuf = (zbuf_y + xl);
-      mfloat_t uoz = left.uoz + xofs * dux;
-      mfloat_t voz = left.voz + xofs * dvx;
-      mfloat_t ioz = left.ioz + xofs * dzx;
-
-      uint8_t dither = render->dither[y & 7];
-      dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
-
-      do {
-        mfloat_t pz = 1 / ioz;
-        if (pz < *zbuf && (dither & 1)) {
-          // The horrible divide! Per pixel, no less!!
-          uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
-                            (((uint32_t)(voz * pz)) & tyr)];
-          if (c & 0xFF00) {
-            *buf = haloo3d_col_scalei(c, scale);
-            *zbuf = pz;
-          }
-        }
-        buf++;
-        zbuf++;
-        ioz += dzx;
-        uoz += dux;
-        voz += dvx;
-        dither = (dither >> 1) | (dither << 7);
-      } while (buf < bufend);
-    }
-
-    buf_y += fb->width;
-    zbuf_y += fb->width;
-    y++;
-
-    if (nextfunc(&left)) {
-      return;
-    }
-    if (nextfunc(&right)) {
-      return;
-    }
+  switch (render->flags) {
+#include "haloo3d_trimacroswitch.c"
+  default:
+    dieerr("UNSUPPORTED TRI FLAG: %d", render->flags);
   }
 }
 
