@@ -204,6 +204,11 @@ static inline int haloo3d_4x4dither(float dither) {
   }
 }
 
+inline void haloo3d_getdither4x4(float dither, uint8_t *buf) {
+  int index = haloo3d_4x4dither(dither);
+  memcpy(buf, _dither4x4 + index, 4);
+}
+
 // Represents tracking information for one side of a triangle.
 // It may not use or calculate all fields; the left sides require
 // the interpolation and the right side only needs x. It uses a

@@ -116,9 +116,9 @@ void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
 
 // Fill rectangle, EXCLUSIVE
 void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
-                            uint8_t dithering[8]) {
+                            uint8_t dithering[4]) {
   for (int y = rect.y1; y < rect.y2; y++) {
-    uint8_t dither = dithering[y & 7];
+    uint8_t dither = dithering[y & 3];
     for (int x = rect.x1; x < rect.x2; x++) {
       if (dither & (1 << (x & 7))) {
         uint16_t basecol = haloo3d_fb_get(fb, x, y);

@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
   // -----------------------------------
 
   // REMEMBER TO CLEAR DEPTH BUFFER
-  haloo3d_fb_cleardepth(&fb, 0);
+  haloo3d_fb_cleardepth(&fb);
 
   // Screen matrix calc. We multiply the modelview matrix with this later
   haloo3d_camera_calclook(&camera, matrixcam);
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
         }
         //   We still have to convert the points into the view
         haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-        haloo3d_texturedtriangle(&fb, &rsettings, outfaces[ti]);
+        haloo3d_triangle(&fb, &rsettings, outfaces[ti]);
       }
     }
   }

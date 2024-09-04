@@ -29,7 +29,7 @@ void haloo3d_apply_rect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
 // Draw a filled rectangle with dithering. The dithering 0 bit is full
 // transparency
 void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
-                            uint8_t dithering[8]);
+                            uint8_t dithering[4]);
 // Create a NEW texture that is entirely a solid color. Underneath, this will
 // use a tiny 1x1 texture, that you'll still unfortunately need to free.
 void haloo3d_gen_solidtex(haloo3d_fb *fb, uint16_t color);

@@ -533,7 +533,7 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
        (v1->pos.x - v2->pos.x) * (v0->pos.y - v2->pos.y))
 
 // Set dither to a 4x4 amount from 0 (no fill) to 1 (full fill).
-// void haloo3d_getdither4x4(float dither, uint8_t *buf);
+void haloo3d_getdither4x4(float dither, uint8_t *buf);
 
 #define H3DR_LIGHTING (1 << 0)
 // This value may be overridden if your texture is single color

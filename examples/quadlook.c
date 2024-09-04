@@ -23,8 +23,7 @@ void renderframe(haloo3d_easyrender *render) {
     haloo3d_easyrender_beginmodel(render, object);
     //  Iterate over object faces
     for (int fi = 0; fi < object->model->numfaces; fi++) {
-      totaldrawn +=
-          haloo3d_easyrender_renderface(render, object, fi, -1, -1, 0);
+      totaldrawn += haloo3d_easyrender_renderface(render, object, fi, 0);
     }
   }
   eprintf("Drew %d triangles this frame\n", totaldrawn);
@@ -37,7 +36,6 @@ int main() {
 
   haloo3d_easyrender render;
   haloo3d_easyrender_init(&render, WIDTH, HEIGHT);
-  render.trifunc = H3D_EASYRENDER_MIDFUNC;
   eprintf("Initialized renderer\n");
 
   haloo3d_obj *obj = haloo3d_easystore_addobj(&storage, "quad");
@@ -48,7 +46,7 @@ int main() {
   haloo3d_gen_quad(obj, tex, center);
 
   // Fill texture with dithered color
-  uint8_t dither[8];
+  uint8_t dither[4];
   haloo3d_recti fill = {0, 0, tex->width, tex->height};
   haloo3d_getdither4x4(0.5, dither);
   haloo3d_apply_fillrect(tex, fill, 0xFF00, dither);

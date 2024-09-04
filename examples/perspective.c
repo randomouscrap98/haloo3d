@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
   // For each face in the model, we draw it with simple orthographic projection
   for (int i = 0; i < ITERATIONS; i++) {
     // REMEMBER TO CLEAR DEPTH BUFFER
-    haloo3d_fb_cleardepth(&fb, 0);
+    haloo3d_fb_cleardepth(&fb);
     // To simulate what would actually happen per frame, let's calc the
     // camera each time
     haloo3d_camera_calclook(&camera, matrixcam);
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 #endif
       //   We still have to convert the points into the view
       haloo3d_facef_viewport_into(face, WIDTH, HEIGHT);
-      haloo3d_texturedtriangle(&fb, &rsettings, face);
+      haloo3d_triangle(&fb, &rsettings, face);
     }
   }
 
