@@ -1,10 +1,21 @@
-#if !(((_HTF & (H3DR_PCT | H3DR_TEXTURED)) == H3DR_PCT) ||                     \
-      (_HTF & (H3DR_TRANSPARENCY | H3DR_TEXTURED)) == H3DR_TRANSPARENCY)
+// Greatly reduce codegen by checking for impossible combinations.
+// NOTE: we DO NOT output any errors if an invalid combination is present,
+// we simply do not render the triangle!!
+#if ((_HTF & (H3DR_PCT | H3DR_TEXTURED)) != H3DR_PCT) &&                       \
+    ((_HTF & (H3DR_TRANSPARENCY | H3DR_TEXTURED)) != H3DR_TRANSPARENCY) &&     \
+    ((_HTF & (H3DR_DITHERTRI | H3DR_DITHERPIX)) !=                             \
+     (H3DR_DITHERTRI | H3DR_DITHERPIX))
+
+// Since we're including this file over and over, we have to undefine the stuff
+// we're about to redefine. We do it like this because they could change based
+// on _HTF, or the triangle flags
 #undef H3D_DITHER_CHECK
 #undef H3D_DITHERCALC
 #undef H3D_TRANSPARENCY_CHECK
 #undef H3D_SCALE_COL
 
+// Dither can be quite expensive (sometimes), so it's a good savings to
+// simply compile that stuff out
 #if _HTF & H3DR_DITHERTRI
 #define H3D_DITHER_CHECK(dither) (dither & 1)
 #define H3D_DITHERCALC(z) /* do nothing */
@@ -13,9 +24,9 @@
 #define H3D_DITHERCALC(z)                                                      \
   if (!dithermask) {                                                           \
     dithermask = 1;                                                            \
-    dither = render->ditherpattern[(y & 3) + haloo3d_4x4dither(                \
-                                                 (render->ditherfar - (z)) *   \
-                                                 ditherscale)];                \
+    /* NOTE: to scale light differently, you could do pow() on this */         \
+    mfloat_t dnorm = (render->ditherfar - (z)) * ditherscale;                  \
+    dither = render->ditherpattern[(y & 3) + haloo3d_4x4dither(dnorm)];        \
   }
 #else
 #define H3D_DITHER_CHECK(dither) 1
@@ -23,9 +34,9 @@
 #endif
 
 #if _HTF & H3DR_TRANSPARENCY
-#define H3D_TRANSPARENCY_CHECK(c) (c & 0xFF00)
+#define H3D_TRANSPARENCY_CHECK(c) if (c & 0xFF00)
 #else
-#define H3D_TRANSPARENCY_CHECK(c) 1
+#define H3D_TRANSPARENCY_CHECK(c)
 #endif
 
 #if _HTF & H3DR_LIGHTING
@@ -56,8 +67,10 @@ while (1) {
     mfloat_t voz = left.voz + xofs * dvx;
     mfloat_t ioz = left.ioz + xofs * dzx;
 #else
+#if _HTF & H3DR_TEXTURED
     int32_t u = left.iu >> 8;
     int32_t v = tvshleft ? (left.iv << tvshift) : (left.iv >> tvshift);
+#endif
     int32_t z = left.iz;
 #endif
 
@@ -65,16 +78,15 @@ while (1) {
     uint8_t dither = render->ditherpattern[dithofs + (y & 3)];
     dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
 #elif _HTF & (H3DR_DITHERPIX)
-    uint8_t dithermask = 1 << (xl & 7);
+    uint8_t dithermask = 0;
+    uint8_t dither;
 #if _HTF & H3DR_PCT
     mfloat_t pz = 1 / ioz;
 #else
     mfloat_t pz = z >> 16;
 #endif
-    uint8_t dither =
-        render->ditherpattern[(y & 3) +
-                              haloo3d_4x4dither((render->ditherfar - pz) *
-                                                ditherscale)];
+    H3D_DITHERCALC(pz);
+    dithermask = 1 << (xl & 7);
 #endif
 
     do {
@@ -86,7 +98,7 @@ while (1) {
       if (dpz < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
                           (((uint32_t)(voz * pz)) & tyr)];
-        if (H3D_TRANSPARENCY_CHECK(c)) {
+        H3D_TRANSPARENCY_CHECK(c) {
           *buf = H3D_SCALE_COL(c, scale);
           *zbuf = dpz;
         }
@@ -95,7 +107,7 @@ while (1) {
       H3D_DITHERCALC(z >> 16);
       if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
-        if (H3D_TRANSPARENCY_CHECK(c)) {
+        H3D_TRANSPARENCY_CHECK(c) {
           *buf = H3D_SCALE_COL(c, scale);
           *zbuf = z;
         }
@@ -114,8 +126,10 @@ while (1) {
       uoz += dux;
       voz += dvx;
 #else
+#if _HTF & H3DR_TEXTURED
       u += duxi;
       v += dvxi;
+#endif
       z += dzxi;
 #endif
 #if _HTF & H3DR_DITHERTRI

@@ -451,7 +451,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     rflags &= ~H3DR_TEXTURED;
   } else if (parea < render->pctminsize) {
     // This is a small triangle with textures
-    // Turn of perspective correct textures
+    // Turn off perspective correct textures
     rflags &= ~H3DR_PCT;
   }
 

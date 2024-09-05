@@ -90,7 +90,8 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
 // Add a new object model instance, returning a pointer to the instance
 haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
                                                      haloo3d_obj *model,
-                                                     haloo3d_fb *texture);
+                                                     haloo3d_fb *texture,
+                                                     uint8_t state);
 // Delete the instance with the given pointer. Will not fail if it's not there.
 void haloo3d_easyrender_deleteinstance(haloo3d_easyrender *r,
                                        haloo3d_obj_instance *in);
@@ -123,6 +124,6 @@ typedef struct {
 
 // Quickly create an instance with texture/obj having the given name
 haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
-                                              const char *name);
+                                              const char *name, uint8_t state);
 
 #endif

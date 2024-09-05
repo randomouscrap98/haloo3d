@@ -212,13 +212,14 @@ void haloo3d_easyrender_beginmodel(haloo3d_easyrender *r,
 
 haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
                                                      haloo3d_obj *model,
-                                                     haloo3d_fb *texture) {
+                                                     haloo3d_fb *texture,
+                                                     uint8_t state) {
   // For loop lets us finish if there's no space for new objects
   for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
     uint16_t thisobj = r->nextobj;
     r->nextobj = (r->nextobj + 1) % H3D_EASYRENDER_MAXOBJS;
     if (r->_objstate[thisobj] == 0) {
-      r->_objstate[thisobj] = 1;
+      r->_objstate[thisobj] = 1 | state;
       r->totalfaces += model->numfaces;
       r->totalverts += model->numvertices;
       haloo3d_objin_init(r->objects + thisobj, model, texture);
@@ -273,6 +274,7 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
   haloo3d_make_facef(object->model->faces[facei], r->precalcs,
                      object->model->vtexture, face);
   int tris = haloo3d_facef_clip(face, r->outfaces);
+  uint8_t oflags = r->rendersettings.flags;
   if (tris > 0) {
     r->rendersettings.intensity = 1.0;
     if (object->lighting) {
@@ -284,6 +286,10 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
         r->rendersettings.intensity =
             haloo3d_calc_light(object->lighting->v, minlight, baseface);
       }
+    }
+    if (object - r->objects < H3D_EASYSTORE_MAX &&
+        (r->_objstate[object - r->objects] & H3D_EASYOBJSTATE_NOTRANS)) {
+      r->rendersettings.flags &= ~H3DR_TRANSPARENCY;
     }
   }
   for (int ti = 0; ti < tris; ti++) {
@@ -297,12 +303,13 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                                 r->window.height);
     haloo3d_triangle(&r->window, &r->rendersettings, r->outfaces[ti]);
   }
+  r->rendersettings.flags = oflags;
   return totaldrawn;
 }
 
 haloo3d_obj_instance *haloo3d_easyinstantiate(haloo3d_easyinstancer *ins,
-                                              const char *name) {
+                                              const char *name, uint8_t state) {
   haloo3d_obj *obj = haloo3d_easystore_getobj(ins->storage, name);
   haloo3d_fb *tex = haloo3d_easystore_gettex(ins->storage, name);
-  return haloo3d_easyrender_addinstance(ins->render, obj, tex);
+  return haloo3d_easyrender_addinstance(ins->render, obj, tex, state);
 }
