@@ -396,17 +396,15 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     v1v = tmp;
   }
 
-#ifdef H3D_SANITY_CHECK
-  struct vec2 boundsTLf =
-      haloo3d_boundingbox_tl(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  struct vec2 boundsBRf =
-      haloo3d_boundingbox_br(v0v->pos.v, v1v->pos.v, v2v->pos.v);
-  if (boundsTLf.x < 0 || boundsBRf.x < 0 || boundsTLf.y < 0 ||
-      boundsBRf.y < 0 || boundsTLf.x > fb->width || boundsBRf.x > fb->width ||
-      boundsTLf.y > fb->height || boundsBRf.y > fb->height) {
-    dieerr("PIXEL OOB: (%f,%f)->(%f,%f)", boundsTLf.x, boundsTLf.y, boundsBRf.x,
-           boundsBRf.y);
-  }
+#ifndef H3D_NOBOUNDSCHECK
+  // We don't QUITE trust the triangles given, even though they should
+  // be clipped. Just be safe and clamp them
+  v0v->pos.x = CLAMP(v0v->pos.x, 0, fb->width - 1);
+  v1v->pos.x = CLAMP(v1v->pos.x, 0, fb->width - 1);
+  v2v->pos.x = CLAMP(v2v->pos.x, 0, fb->width - 1);
+  v0v->pos.y = CLAMP(v0v->pos.y, 0, fb->height - 1);
+  v1v->pos.y = CLAMP(v1v->pos.y, 0, fb->height - 1);
+  v2v->pos.y = CLAMP(v2v->pos.y, 0, fb->height - 1);
 #endif
 
   // Is this useful? I don't know...

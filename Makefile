@@ -11,7 +11,7 @@
 LIBD = lib
 BUILDD = build
 CC = gcc
-DEFINES = -DH3D_SANITY_CHECK
+DEFINES = 
 CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra
 # CLIBFLAGS = -std=c99
 ifdef MARCH 		# Allows you to define the architecture (usually not required)
