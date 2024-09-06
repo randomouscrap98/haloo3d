@@ -39,21 +39,25 @@ void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
   haloo3d_obj_shrinktofit(obj);
 }
 
-void haloo3d_obj_loadstring(haloo3d_obj *obj, char *str) {
+void haloo3d_obj_loadstring(haloo3d_obj *obj, const char *str) {
   haloo3d_obj_resetmax(obj);
   char line[H3D_OBJ_MAXLINESIZE];
   char *endline;
-  while (1) {
+  int running = 1;
+  while (running) {
     endline = strchr(str, '\n');
     if (endline) {
-      strncpy(line, str, MAX(H3D_OBJ_MAXLINESIZE - 1, endline - str));
+      strncpy(line, str, MIN(H3D_OBJ_MAXLINESIZE - 1, endline - str));
+      str = endline + 1;
     } else {
-      strncpy(line, str, MAX(H3D_OBJ_MAXLINESIZE - 1, strlen(str)));
+      strncpy(line, str, MIN(H3D_OBJ_MAXLINESIZE - 1, strlen(str)));
+      running = 0;
     }
     haloo3d_obj_parseline(obj, line);
-    str = endline + 1;
   }
   haloo3d_obj_shrinktofit(obj);
+  eprintf("Read from object string: v=%d, f=%d, t=%d\n", obj->numvertices,
+          obj->numfaces, obj->numvtextures);
 }
 
 void haloo3d_obj_parseline(haloo3d_obj *obj, char *line) {
@@ -190,5 +194,5 @@ void haloo3d_obj_loadfile(haloo3d_obj *obj, char *filename) {
   }
   haloo3d_obj_load(obj, f);
   fclose(f);
-  printf("Read from object file %s\n", filename);
+  eprintf("Read from object file %s\n", filename);
 }
