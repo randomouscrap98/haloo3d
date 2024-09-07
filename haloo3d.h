@@ -461,9 +461,10 @@ static inline void haloo3d_mat4_prescalev(mfloat_t *m, mfloat_t *scale) {
 // This is often the last step of perspective projection (perspective divide)
 static inline void haloo3d_vec4_conventional(struct vec4 *v) {
   if (v->w != 1) {
-    v->x /= v->w;
-    v->y /= v->w;
-    v->z /= v->w;
+    mfloat_t div = 1 / v->w;
+    v->x *= div;
+    v->y *= div;
+    v->z *= div;
   }
 }
 

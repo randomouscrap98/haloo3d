@@ -127,6 +127,8 @@ void haloo3d_easytimer_init(haloo3d_easytimer *t, float avgweight) {
   t->sum = 0;
   t->last = 0;
   t->avgweight = avgweight;
+  t->min = 99999999.0;
+  t->max = 0.0;
 }
 
 void haloo3d_easytimer_start(haloo3d_easytimer *t) { t->start = clock(); }
@@ -137,6 +139,10 @@ void haloo3d_easytimer_end(haloo3d_easytimer *t) {
   if (t->sum == 0)
     t->sum = t->last;
   t->sum = t->avgweight * t->sum + (1 - t->avgweight) * t->last;
+  if (t->sum < t->min)
+    t->min = t->sum;
+  if (t->sum > t->max)
+    t->max = t->sum;
 }
 
 void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
@@ -150,22 +156,22 @@ void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height) {
   haloo3d_camera_init(&r->camera);
   haloo3d_print_initdefault(&r->tprint, r->printbuf, sizeof(r->printbuf));
   r->tprint.fb = &r->window;
-  // r->trifunc = H3D_EASYRENDER_NORMFUNC;
+}
+
+void haloo3d_easyrender_calctotals(haloo3d_easyrender *r) {
+  r->totalfaces = 0;
+  r->totalverts = 0;
+  for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
+    if (r->_objstate[i] | H3D_EASYOBJSTATE_ACTIVE) {
+      eprintf("CHECKING %d\n", i);
+      r->totalfaces += r->objects[i].model->numfaces;
+      r->totalverts += r->objects[i].model->numvertices;
+    }
+  }
 }
 
 void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
   haloo3d_print_refresh(&r->tprint);
-  // mfloat_t clearval;
-  // switch (r->trifunc) {
-  // case H3D_EASYRENDER_FASTFUNC:
-  //   clearval = H3D_DBUF_FAST;
-  //   break;
-  // case H3D_EASYRENDER_MIDFUNC:
-  //   clearval = H3D_DBUF_MID;
-  //   break;
-  // default:
-  //   clearval = H3D_DBUF_NORM;
-  // }
   haloo3d_fb_cleardepth(&r->window);
   mfloat_t cammatrix[MAT4_SIZE];
   haloo3d_camera_calclook(&r->camera, cammatrix);

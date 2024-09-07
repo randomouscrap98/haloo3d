@@ -546,12 +546,14 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     dithofs = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
   }
 
+#ifndef H3DEBUG_SKIPTRIPIX
   // eprintf("RFLAGS: %d\n", rflags);
   switch (rflags) {
 #include "haloo3d_trimacroswitch.c"
   default:
     dieerr("UNSUPPORTED TRI FLAG: %d", rflags);
   }
+#endif
 #endif
 }
 
@@ -571,12 +573,15 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   // w + y (bottom)
   // w - y (top)
 
+  // We start with just the one face at index 0
+  memcpy(out[0], face, sizeof(haloo3d_facef));
+
+#ifdef H3DEBUG_NOCLIPPING
+  return 1;
+#else
   int outers[3];
   int inners[3];
   mfloat_t dist[3];
-
-  // We start with just the one face at index 0
-  memcpy(out[0], face, sizeof(haloo3d_facef));
 
   // this is our "assignment" tracker. Bits are low to high.
   // We start with the first slot filled
@@ -691,6 +696,7 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out) {
   }
 
   return numout;
+#endif
 }
 
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,

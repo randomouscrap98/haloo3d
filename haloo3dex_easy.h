@@ -50,6 +50,8 @@ typedef struct {
   float sum;
   float last;
   float avgweight;
+  float min;
+  float max;
 } haloo3d_easytimer;
 
 void haloo3d_easytimer_init(haloo3d_easytimer *t, float avgweight);
@@ -80,6 +82,9 @@ typedef struct {
 
 // Initialize ALL the values inside of the renderer
 void haloo3d_easyrender_init(haloo3d_easyrender *r, int width, int height);
+// (Re)calc totals, useful if you've changed vertices in some object. You don't
+// need to constantly call this; totals are kept up to date based on inserts
+void haloo3d_easyrender_calctotals(haloo3d_easyrender *r);
 // initialize everything for the start of frame, like recalculating the camera
 // matrix, clearing the depth buffer, and resetting the print cursor
 void haloo3d_easyrender_beginframe(haloo3d_easyrender *r);
