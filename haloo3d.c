@@ -351,8 +351,12 @@ static inline int _h3dtriside_next_i(_h3dtriside *s) {
   return 0;
 }
 
+// Main triangle drawing function
 void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
                       haloo3d_facef face) {
+#ifdef H3DEBUG_SKIPWHOLETRI
+  return;
+#else
   haloo3d_vertexf *v0v = face;
   haloo3d_vertexf *v1v = face + 1;
   haloo3d_vertexf *v2v = face + 2;
@@ -396,7 +400,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
     v1v = tmp;
   }
 
-#ifndef H3D_NOBOUNDSCHECK
+#ifndef H3DEBUG_NOBOUNDSCHECK
   // We don't QUITE trust the triangles given, even though they should
   // be clipped. Just be safe and clamp them
   v0v->pos.x = CLAMP(v0v->pos.x, 0, fb->width - 1);
@@ -548,6 +552,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   default:
     dieerr("UNSUPPORTED TRI FLAG: %d", rflags);
   }
+#endif
 }
 
 int haloo3d_facef_finalize(haloo3d_facef face) {
