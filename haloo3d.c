@@ -27,7 +27,7 @@ mfloat_t haloo3d_calc_light(mfloat_t *light, mfloat_t minlight,
   if (intensity < minlight) {
     return minlight; // Don't just not draw the triangle: it should be black
   } else {
-    return (intensity + minlight) / (1 + minlight);
+    return (intensity + minlight) / (H3DVF(1) + minlight);
   }
 }
 
@@ -133,15 +133,14 @@ void haloo3d_perspective(mfloat_t *m, mfloat_t fov, mfloat_t aspect,
                          mfloat_t near, mfloat_t far) {
   mat4_zero(m);
 
-  fov = fov / 180 * MPI; // math.Pi // Convert to radians
-  mfloat_t e = 1.0 / MTAN(fov * 0.5);
+  fov = fov / H3DVF(180) * H3DVF(MPI); // math.Pi // Convert to radians
+  mfloat_t e = H3DVF(1.0) / MTAN(fov * H3DVF(0.5));
 
   m[0] = e / aspect;
   m[5] = e;
   m[10] = (far + near) / (near - far);
-  m[11] = -1; // the z divide
-  // m[14] = (far * near - near) / (near - far);
-  m[14] = 2 * far * near / (near - far);
+  m[11] = H3DVF(-1); // the z divide
+  m[14] = H3DVF(2) * far * near / (near - far);
 }
 
 void haloo3d_camera_calcmove_yaw(haloo3d_camera *cam, struct vec4 *delta) {
@@ -200,7 +199,7 @@ static inline int haloo3d_4x4dither(float dither) {
   } else if (dither > 1) {
     return 16 << 2;
   } else {
-    return ((int)round(16 * dither) << 2);
+    return ((int)round(H3DVF(16) * dither) << 2);
   }
 }
 
@@ -257,13 +256,13 @@ static inline int _h3dtriside_start_f(_h3dtriside *s) {
   if (height == 0) {
     return 0;
   }
-  const mfloat_t invheight = 1.0 / height;
+  const mfloat_t invheight = H3DVF(1.0) / height;
   s->dx = (v2->pos.x - v1->pos.x) * invheight;
   s->x = v1->pos.x;
   if (s->trackall) {
     const mfloat_t woh = s->twidth * invheight;
-    const mfloat_t v2oz = 1 / v2->pos.w;
-    const mfloat_t v1oz = 1 / v1->pos.w;
+    const mfloat_t v2oz = H3DVF(1) / v2->pos.w;
+    const mfloat_t v1oz = H3DVF(1) / v1->pos.w;
     const mfloat_t v2uoz = v2->tex.x * v2oz;
     const mfloat_t v1uoz = v1->tex.x * v1oz;
     const mfloat_t v2voz = v2->tex.y * v2oz;
@@ -381,9 +380,9 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   }
 
   // Here, we fix v because it's actually the inverse
-  v0v->tex.y = 1 - v0v->tex.y;
-  v1v->tex.y = 1 - v1v->tex.y;
-  v2v->tex.y = 1 - v2v->tex.y;
+  v0v->tex.y = H3DVF(1) - v0v->tex.y;
+  v1v->tex.y = H3DVF(1) - v1v->tex.y;
+  v2v->tex.y = H3DVF(1) - v2v->tex.y;
 
   // Make sure vertices are sorted top to bottom
   if (v0v->pos.y > v1v->pos.y) {
@@ -405,12 +404,12 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
 #ifndef H3DEBUG_NOBOUNDSCHECK
   // We don't QUITE trust the triangles given, even though they should
   // be clipped. Just be safe and clamp them
-  v0v->pos.x = CLAMP(v0v->pos.x, 0, fb->width - 1);
-  v1v->pos.x = CLAMP(v1v->pos.x, 0, fb->width - 1);
-  v2v->pos.x = CLAMP(v2v->pos.x, 0, fb->width - 1);
-  v0v->pos.y = CLAMP(v0v->pos.y, 0, fb->height - 1);
-  v1v->pos.y = CLAMP(v1v->pos.y, 0, fb->height - 1);
-  v2v->pos.y = CLAMP(v2v->pos.y, 0, fb->height - 1);
+  v0v->pos.x = CLAMP(v0v->pos.x, H3DVF(0), fb->width - H3DVF(1));
+  v1v->pos.x = CLAMP(v1v->pos.x, H3DVF(0), fb->width - H3DVF(1));
+  v2v->pos.x = CLAMP(v2v->pos.x, H3DVF(0), fb->width - H3DVF(1));
+  v0v->pos.y = CLAMP(v0v->pos.y, H3DVF(0), fb->height - H3DVF(1));
+  v1v->pos.y = CLAMP(v1v->pos.y, H3DVF(0), fb->height - H3DVF(1));
+  v2v->pos.y = CLAMP(v2v->pos.y, H3DVF(0), fb->height - H3DVF(1));
 #endif
 
   // Is this useful? I don't know...
@@ -505,9 +504,9 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   // the vertical diffs.
   if (rflags & H3DR_PCT) {
     // Perspective correct values, which are all floating point and simple
-    const mfloat_t v0ioz = 1 / v0v->pos.w;
-    const mfloat_t v1ioz = 1 / v1v->pos.w;
-    const mfloat_t v2ioz = 1 / v2v->pos.w;
+    const mfloat_t v0ioz = H3DVF(1) / v0v->pos.w;
+    const mfloat_t v1ioz = H3DVF(1) / v1v->pos.w;
+    const mfloat_t v2ioz = H3DVF(1) / v2v->pos.w;
     // clang-format off
     dzx = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0ioz, v1ioz, v2ioz);
     dux = H3D_TRIDIFF_HG(v0v, v1v, v2v, v0v->tex.x * v0ioz, v1v->tex.x * v1ioz,
@@ -534,17 +533,17 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   int y = v0.y;
 
   uint16_t scale = 0;
-  if (render->intensity >= 1.0) {
+  if (render->intensity >= H3DVF(1.0)) {
     rflags &= ~H3DR_LIGHTING;
   } else {
-    scale = render->intensity * 256;
+    scale = render->intensity * H3DVF(256);
   }
 
-  mfloat_t ditherscale = 1 / (render->ditherfar - render->ditherclose);
+  mfloat_t ditherscale = H3DVF(1) / (render->ditherfar - render->ditherclose);
   int dithofs = 0;
 
   if (rflags & H3DR_DITHERTRI) {
-    mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) * 0.333;
+    mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) * H3DVF(0.333);
     dithofs = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
   }
 
@@ -793,8 +792,8 @@ void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
   }
   int newwidth = scale * src->width;
   int newheight = scale * src->height;
-  int dstofsx = (dst->width - newwidth) / 2;
-  int dstofsy = (dst->height - newheight) / 2;
+  int dstofsx = (dst->width - newwidth) >> 1;
+  int dstofsy = (dst->height - newheight) >> 1;
   // Need a step per y of src and a step per y of dst
   uint16_t *dbuf_y = &dst->buffer[dstofsx + dstofsy * dst->width];
   uint16_t *sbuf_y = src->buffer;

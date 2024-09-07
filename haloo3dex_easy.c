@@ -2,16 +2,6 @@
 #include "haloo3d.h"
 #include <string.h>
 
-// void haloo3d_easy_calcdither4x4(haloo3d_trirender *settings, haloo3d_facef
-// face,
-//                                 mfloat_t ditherstart, mfloat_t ditherend) {
-//   mfloat_t avg = (face[0].pos.w + face[1].pos.w + face[2].pos.w) / 3;
-//   mfloat_t dither =
-//       (avg > ditherstart) ? (ditherend - avg) / (ditherend - ditherstart)
-//       : 1.0;
-//   haloo3d_getdither4x4(dither, settings->dither);
-// }
-
 void haloo3d_easystore_init(haloo3d_easystore *s) {
   for (int i = 0; i < H3D_EASYSTORE_MAX; i++) {
     s->objkeys[i][0] = 0;
@@ -136,9 +126,9 @@ void haloo3d_easytimer_start(haloo3d_easytimer *t) { t->start = clock(); }
 void haloo3d_easytimer_end(haloo3d_easytimer *t) {
   clock_t end = clock();
   t->last = (float)(end - t->start) / CLOCKS_PER_SEC;
-  if (t->sum == 0)
+  if (t->sum == H3DVF(0))
     t->sum = t->last;
-  t->sum = t->avgweight * t->sum + (1 - t->avgweight) * t->last;
+  t->sum = t->avgweight * t->sum + (H3DVF(1) - t->avgweight) * t->last;
   if (t->sum < t->min)
     t->min = t->sum;
   if (t->sum > t->max)
@@ -175,8 +165,8 @@ void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
   haloo3d_print_refresh(&r->tprint);
   haloo3d_fb_cleardepth(&r->window);
   mfloat_t cammatrix[MAT4_SIZE];
-  r->halfwidth = r->window.width * 0.5;
-  r->halfheight = r->window.height * 0.5;
+  r->halfwidth = r->window.width * H3DVF(0.5);
+  r->halfheight = r->window.height * H3DVF(0.5);
   haloo3d_camera_calclook(&r->camera, cammatrix);
   mat4_inverse(cammatrix, cammatrix);
   mat4_multiply(r->screenmatrix, r->perspective, cammatrix);
@@ -291,7 +281,7 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
   int tris = haloo3d_facef_clip(face, r->outfaces);
   uint8_t oflags = r->rendersettings.flags;
   if (tris > 0) {
-    r->rendersettings.intensity = 1.0;
+    r->rendersettings.intensity = H3DVF(1.0);
     if (object->lighting) {
       haloo3d_obj_facef(object->model, object->model->faces[facei], baseface);
       if (r->autolightfix) {

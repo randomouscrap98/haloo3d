@@ -7,6 +7,12 @@
 #ifndef HALOO3D_H
 #define HALOO3D_H
 
+#ifdef H3D_VOLATILE_FLOATS
+#define H3DVF(x) (volatile mfloat_t)(x)
+#else
+#define H3DVF(x) x
+#endif
+
 // Flags to control system at compile time
 
 // Force system to check uncertain bounds and die if bad
@@ -29,7 +35,7 @@
 // however many planes we clip, that's the number we shift
 #define H3D_FACEF_CLIPPLANES 5
 #define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
-#define H3D_FACEF_CLIPLOW 0.0
+#define H3D_FACEF_CLIPLOW H3DVF(0.0)
 
 // #define H3D_DBUF_NORM 0
 // #define H3D_DBUF_MID 0
@@ -133,8 +139,11 @@ static inline void haloo3d_db_set(haloo3d_fb *fb, int x, int y, mfloat_t v) {
 // Get a value based on uv coordinates. Does not perform any smoothing
 static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, mfloat_t u,
                                         mfloat_t v) {
+  // NOTE: Some multiplications here have been changed for systems
+  // where float constants are slow for some reason. For instance, we
+  // multiplied out height with 1 - v
   uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
-  uint16_t y = (uint16_t)(fb->height * (1 - v)) & (fb->height - 1);
+  uint16_t y = (uint16_t)(fb->height - fb->height * v) & (fb->height - 1);
   return fb->buffer[x + y * fb->width];
 }
 
@@ -159,11 +168,9 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 // - Fast triangle function requires something large. An interesting option
 //   is the far clip value
 static inline void haloo3d_fb_cleardepth(haloo3d_fb *fb) {
-  //, const mfloat_t value) {
-  const mfloat_t MAXBUF = 999999999.0;
   const int len = haloo3d_fb_size(fb);
   for (int i = 0; i < len; i++) {
-    fb->dbuffer[i] = MAXBUF;
+    fb->dbuffer[i] = H3DVF(999999999.0);
   }
 }
 
@@ -270,9 +277,9 @@ static inline void haloo3d_make_facef(haloo3d_facei face, struct vec4 *verts,
 // in the triangle renderer, which expects w to be some value relating to
 // perspective. TODO: eventually just fix z so it works!
 static inline void haloo3d_facef_fixw(haloo3d_facef face) {
-  face[0].pos.w = -face[0].pos.z + 1;
-  face[1].pos.w = -face[1].pos.z + 1;
-  face[2].pos.w = -face[2].pos.z + 1;
+  face[0].pos.w = -face[0].pos.z + H3DVF(1);
+  face[1].pos.w = -face[1].pos.z + H3DVF(1);
+  face[2].pos.w = -face[2].pos.z + H3DVF(1);
 }
 
 // ----------------------
@@ -430,6 +437,9 @@ static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
 static inline void haloo3d_facef_viewport_into_fast(haloo3d_facef face,
                                                     mfloat_t halfwidth,
                                                     mfloat_t halfheight) {
+  // NOTE: on PS2, apparently float constants are very slow. This is
+  // why we've multiplied the width and height through instead of adding 1
+  // and doing the normal stuff
   face[0].pos.x = round(face[0].pos.x * halfwidth + halfwidth);
   face[0].pos.y = round(-face[0].pos.y * halfheight + halfheight);
   face[1].pos.x = round(face[1].pos.x * halfwidth + halfwidth);
@@ -473,8 +483,8 @@ static inline void haloo3d_mat4_prescalev(mfloat_t *m, mfloat_t *scale) {
 // Divide x, y, and z by the w value. Preserves the original w value!!
 // This is often the last step of perspective projection (perspective divide)
 static inline void haloo3d_vec4_conventional(struct vec4 *v) {
-  if (v->w != 1) {
-    mfloat_t div = 1 / v->w;
+  if (v->w != H3DVF(1)) {
+    mfloat_t div = H3DVF(1) / v->w;
     v->x *= div;
     v->y *= div;
     v->z *= div;
@@ -510,7 +520,7 @@ static inline void haloo3d_vertexf_lerp_self(haloo3d_vertexf *v,
 
 // calculate the normal for the given face
 static inline void haloo3d_facef_normal(haloo3d_facef face, mfloat_t *normal) {
-  mfloat_t lt[VEC3_SIZE * 2];
+  mfloat_t lt[VEC3_SIZE << 1];
   // struct vec3 l1, l2;
   vec3_subtract(lt, face[2].pos.v, face[0].pos.v);
   vec3_subtract(lt + VEC3_SIZE, face[1].pos.v, face[0].pos.v);
@@ -632,23 +642,6 @@ static inline struct vec2i haloo3d_edgeinci(mint_t *v0, mint_t *v1) {
 
 void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
                       haloo3d_facef face);
-
-// Draw a textured triangle into the given framebuffer using the given face.
-// This function uses an "oldschool" method for drawing triangles and is
-// inherently single-threaded. It is also perspective-incorrect (like psx)
-// and will not have any new features added to it. As such, it is a
-// stable implementation that will most likely never change and always
-// be as fast as possible.
-// void haloo3d_texturedtriangle_fast(haloo3d_fb *fb, haloo3d_trirender *render,
-// haloo3d_facef face);
-
-// Draw a textured triangle into the given framebuffer using the given face.
-// This function uses an "oldschool" method for drawing triangles and is
-// inherently single-threaded. However, it is slower than the fast function
-// because it uses floats and is perspective correct. Like the fast render
-// function, it will most likely not have new features added to it
-// void haloo3d_texturedtriangle_mid(haloo3d_fb *fb, haloo3d_trirender *render,
-// haloo3d_facef face);
 
 // Finalize a face, fixing xyz/w for all vertices and returning
 // whether or not the triangle will be drawn.
