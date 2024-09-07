@@ -162,7 +162,7 @@ void haloo3d_easyrender_calctotals(haloo3d_easyrender *r) {
   r->totalfaces = 0;
   r->totalverts = 0;
   for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
-    if (r->_objstate[i] | H3D_EASYOBJSTATE_ACTIVE) {
+    if (r->_objstate[i] & H3D_EASYOBJSTATE_ACTIVE) {
       eprintf("CHECKING %d\n", i);
       r->totalfaces += r->objects[i].model->numfaces;
       r->totalverts += r->objects[i].model->numvertices;
@@ -257,6 +257,7 @@ void haloo3d_easyrender_deleteinstance(haloo3d_easyrender *r,
   r->_objstate[offset] = 0;
   r->totalfaces -= r->objects[offset].model->numfaces;
   r->totalverts -= r->objects[offset].model->numvertices;
+  eprintf("Deleted easyrender instance %d\n", offset);
 }
 
 haloo3d_obj_instance *
