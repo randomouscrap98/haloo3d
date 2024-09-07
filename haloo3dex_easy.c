@@ -163,17 +163,20 @@ void haloo3d_easyrender_calctotals(haloo3d_easyrender *r) {
   r->totalverts = 0;
   for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
     if (r->_objstate[i] & H3D_EASYOBJSTATE_ACTIVE) {
-      eprintf("CHECKING %d\n", i);
       r->totalfaces += r->objects[i].model->numfaces;
       r->totalverts += r->objects[i].model->numvertices;
     }
   }
+  eprintf("Recalculated easyrender totals: %d faces, %d verts\n", r->totalfaces,
+          r->totalverts);
 }
 
 void haloo3d_easyrender_beginframe(haloo3d_easyrender *r) {
   haloo3d_print_refresh(&r->tprint);
   haloo3d_fb_cleardepth(&r->window);
   mfloat_t cammatrix[MAT4_SIZE];
+  r->halfwidth = r->window.width * 0.5;
+  r->halfheight = r->window.height * 0.5;
   haloo3d_camera_calclook(&r->camera, cammatrix);
   mat4_inverse(cammatrix, cammatrix);
   mat4_multiply(r->screenmatrix, r->perspective, cammatrix);
@@ -279,7 +282,6 @@ haloo3d_easyrender_nextinstance(haloo3d_easyrender *r,
 
 int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
                                   haloo3d_obj_instance *object, int facei,
-                                  // mfloat_t ditherstart, mfloat_t ditherend,
                                   mfloat_t minlight) {
   int totaldrawn = 0;
   haloo3d_facef face, baseface;
@@ -312,8 +314,8 @@ int haloo3d_easyrender_renderface(haloo3d_easyrender *r,
     }
     totaldrawn++;
     //   We still have to convert the points into the view
-    haloo3d_facef_viewport_into(r->outfaces[ti], r->window.width,
-                                r->window.height);
+    haloo3d_facef_viewport_into_fast(r->outfaces[ti], r->halfwidth,
+                                     r->halfheight);
     haloo3d_triangle(&r->window, &r->rendersettings, r->outfaces[ti]);
   }
   r->rendersettings.flags = oflags;

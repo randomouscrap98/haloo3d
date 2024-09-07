@@ -74,6 +74,8 @@ typedef struct {
   uint32_t totalfaces;
   uint32_t totalverts;
   uint16_t nextobj;
+  mfloat_t halfwidth;  // Optimization for reducing calcs per tri
+  mfloat_t halfheight; // Optimization for reducing calcs per tri
   // Whether to automatically move lighting when models have a
   // lookvec. This also normalizes the light
   uint8_t autolightfix;

@@ -411,8 +411,8 @@ static inline struct vec2i haloo3d_recti_dims(haloo3d_recti *bounds) {
 // Convert the given point to be rendered inside the given viewport.
 static inline void haloo3d_viewport_into(mfloat_t *v, int width, int height) {
   // SOMETIMES we need -1, but it's because of bad programming maybe? IDK
-  v[0] = round((v[0] + 1.0) / 2.0 * (width - 0));
-  v[1] = round((1.0 - ((v[1] + 1.0) / 2.0)) * (height - 0));
+  v[0] = round((v[0] + 1.0) * 0.5 * width);
+  v[1] = round((1.0 - ((v[1] + 1.0) * 0.5)) * height);
   //  Don't touch Z or whatever
 }
 
@@ -423,6 +423,19 @@ static inline void haloo3d_facef_viewport_into(haloo3d_facef face, int width,
   haloo3d_viewport_into(face[0].pos.v, width, height);
   haloo3d_viewport_into(face[1].pos.v, width, height);
   haloo3d_viewport_into(face[2].pos.v, width, height);
+}
+
+// On some systems. floats are so slow that doing simple calcs is expensive.
+// On those systems, call this with precalculated half-width and half-height
+static inline void haloo3d_facef_viewport_into_fast(haloo3d_facef face,
+                                                    mfloat_t halfwidth,
+                                                    mfloat_t halfheight) {
+  face[0].pos.x = round(face[0].pos.x * halfwidth + halfwidth);
+  face[0].pos.y = round(-face[0].pos.y * halfheight + halfheight);
+  face[1].pos.x = round(face[1].pos.x * halfwidth + halfwidth);
+  face[1].pos.y = round(-face[1].pos.y * halfheight + halfheight);
+  face[2].pos.x = round(face[2].pos.x * halfwidth + halfwidth);
+  face[2].pos.y = round(-face[2].pos.y * halfheight + halfheight);
 }
 
 // Apply a simple scaling (this PROBABLY isn't what you want)
