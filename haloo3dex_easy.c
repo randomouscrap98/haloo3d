@@ -234,6 +234,7 @@ haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
       r->totalfaces += model->numfaces;
       r->totalverts += model->numvertices;
       haloo3d_objin_init(r->objects + thisobj, model, texture);
+      eprintf("Added easyrender instance %d\n", thisobj);
       return r->objects + thisobj;
     }
   }
