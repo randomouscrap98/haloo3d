@@ -257,20 +257,22 @@ static inline int _h3dtriside_start_f(_h3dtriside *s) {
   if (height == 0) {
     return 0;
   }
-  s->dx = (v2->pos.x - v1->pos.x) / height;
+  const mfloat_t invheight = 1.0 / height;
+  s->dx = (v2->pos.x - v1->pos.x) * invheight;
   s->x = v1->pos.x;
   if (s->trackall) {
-    mfloat_t v2oz = 1 / v2->pos.w;
-    mfloat_t v1oz = 1 / v1->pos.w;
-    mfloat_t v2uoz = v2->tex.x * v2oz;
-    mfloat_t v1uoz = v1->tex.x * v1oz;
-    mfloat_t v2voz = v2->tex.y * v2oz;
-    mfloat_t v1voz = v1->tex.y * v1oz;
-    s->duoz = ((v2uoz - v1uoz) * s->twidth) / height;
+    const mfloat_t woh = s->twidth * invheight;
+    const mfloat_t v2oz = 1 / v2->pos.w;
+    const mfloat_t v1oz = 1 / v1->pos.w;
+    const mfloat_t v2uoz = v2->tex.x * v2oz;
+    const mfloat_t v1uoz = v1->tex.x * v1oz;
+    const mfloat_t v2voz = v2->tex.y * v2oz;
+    const mfloat_t v1voz = v1->tex.y * v1oz;
+    s->duoz = (v2uoz - v1uoz) * woh;
     s->uoz = v1uoz * s->twidth;
-    s->dvoz = ((v2voz - v1voz) * s->theight * s->twidth) / height;
+    s->dvoz = (v2voz - v1voz) * s->theight * woh;
     s->voz = v1voz * s->theight * s->twidth;
-    s->dioz = (v2oz - v1oz) / height;
+    s->dioz = (v2oz - v1oz) * invheight;
     s->ioz = v1oz;
   }
   s->sectionheight = height;
@@ -542,7 +544,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   int dithofs = 0;
 
   if (rflags & H3DR_DITHERTRI) {
-    mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) / 3;
+    mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) * 0.333;
     dithofs = haloo3d_4x4dither((render->ditherfar - avg) * ditherscale);
   }
 
