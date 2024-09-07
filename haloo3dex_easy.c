@@ -220,6 +220,11 @@ haloo3d_obj_instance *haloo3d_easyrender_addinstance(haloo3d_easyrender *r,
                                                      haloo3d_obj *model,
                                                      haloo3d_fb *texture,
                                                      uint8_t state) {
+  if (model == NULL) {
+    dieerr("MUST PROVIDE MODEL FOR INSTANCE IN EASYRENDER!\n");
+  } else if (texture == NULL) {
+    dieerr("MUST PROVIDE TEXTURE FOR INSTANCE IN EASYRENDER!\n");
+  }
   // For loop lets us finish if there's no space for new objects
   for (int i = 0; i < H3D_EASYRENDER_MAXOBJS; i++) {
     uint16_t thisobj = r->nextobj;
