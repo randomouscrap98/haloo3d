@@ -135,6 +135,13 @@ void haloo3d_gen_solidtex(haloo3d_fb *fb, uint16_t color) {
   haloo3d_fb_set(fb, 0, 0, color);
 }
 
+void haloo3d_gen_palettetex(haloo3d_fb *fb) {
+  haloo3d_fb_init_tex(fb, 64, 64);
+  for (int i = 0; i < 64 * 64; i++) {
+    fb->buffer[i] = 0xF000 | i;
+  }
+}
+
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
                               uint16_t numvtex, uint16_t numfaces) {
   obj->numvertices = numverts;

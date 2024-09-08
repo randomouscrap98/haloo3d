@@ -34,6 +34,11 @@ void haloo3d_apply_fillrect(haloo3d_fb *fb, haloo3d_recti rect, uint16_t color,
 // use a tiny 1x1 texture, that you'll still unfortunately need to free.
 void haloo3d_gen_solidtex(haloo3d_fb *fb, uint16_t color);
 
+// Generate a 64x64 texture where each pixel index represents the color
+// 0xF000 | index. This essentially creates an easily indexable palette
+// of colors for use as a master texture for games with single-color tris
+void haloo3d_gen_palettetex(haloo3d_fb *fb);
+
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
