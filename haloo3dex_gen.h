@@ -39,6 +39,10 @@ void haloo3d_gen_solidtex(haloo3d_fb *fb, uint16_t color);
 // of colors for use as a master texture for games with single-color tris
 void haloo3d_gen_palettetex(haloo3d_fb *fb);
 
+// Get the UV index into the palette texture for the given color (alpha is
+// ignored)
+void haloo3d_gen_paletteuv(uint16_t col, struct vec2 *uvout);
+
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,

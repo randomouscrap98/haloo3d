@@ -658,6 +658,20 @@ int haloo3d_facef_clip(haloo3d_facef face, haloo3d_facef *out);
 
 // Clip a face ONLY against the z-near plane
 // int haloo3d_facef_clipmin(haloo3d_facef face, haloo3d_facef *out);
+typedef struct {
+  int32_t stepx, stepy, texx, texy;
+  struct vec2i texdim, outdim;
+  haloo3d_fb *fb;
+} haloo3d_presprite;
+
+// Precalculate some items, useful for doing the same kind of sprite draw
+// over and over (such as with tiling)
+haloo3d_presprite haloo3d_sprite_precalc(haloo3d_fb *fb, haloo3d_recti texrect,
+                                         haloo3d_recti outrect);
+// Draw a sprite with precalculated sprite info. You don't have to do this
+// two step process, just call haloo3d_sprite if you don't need the optimization
+void haloo3d_sprite_withprecalc(haloo3d_fb *sprite, haloo3d_presprite *pre,
+                                haloo3d_recti outrect);
 
 // Draw a sprite with no depth value directly into the buffer. Very fast.
 void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,

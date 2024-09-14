@@ -142,6 +142,11 @@ void haloo3d_gen_palettetex(haloo3d_fb *fb) {
   }
 }
 
+void haloo3d_gen_paletteuv(uint16_t col, struct vec2 *uvout) {
+  uvout->x = 1.0 / 128 + (col & 63);
+  uvout->y = 1.0 / 128 + ((col & 0xFFF) >> 6);
+}
+
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,
                               uint16_t numvtex, uint16_t numfaces) {
   obj->numvertices = numverts;

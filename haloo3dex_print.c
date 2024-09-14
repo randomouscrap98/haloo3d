@@ -291,13 +291,19 @@ void haloo3d_print(haloo3d_print_tracker *t, const char *fmt, ...) {
     eprintf("%s", t->buffer);
   }
   haloo3d_fb tex;
-  uint16_t buffer[H3D_PRINT_CHW * H3D_PRINT_CHH];
+  uint8_t prerendered[256] = {0};
+  //   32k on the stack! is this ok??
+  uint16_t buffer[H3D_PRINT_CHW * H3D_PRINT_CHH * 256];
   tex.buffer = buffer;
   tex.width = H3D_PRINT_CHW;
   tex.height = H3D_PRINT_CHH;
-  haloo3d_recti srect;
+  haloo3d_recti srect = {.x1 = 0,
+                         .y1 = 0,
+                         .x2 = t->scale * H3D_PRINT_CHW,
+                         .y2 = t->scale * H3D_PRINT_CHH};
   haloo3d_recti trect = {
       .x1 = 0, .y1 = 0, .x2 = H3D_PRINT_CHW, .y2 = H3D_PRINT_CHH};
+  haloo3d_presprite presprite = haloo3d_sprite_precalc(t->fb, trect, srect);
   const int len = strlen(t->buffer);
   for (int i = 0; i < len; i++) {
     if (t->buffer[i] == '\n') {
@@ -306,13 +312,18 @@ void haloo3d_print(haloo3d_print_tracker *t, const char *fmt, ...) {
       continue;
     }
     // We don't support word wrap btw
-    haloo3d_print_convertglyph(t->glyphs[(int)t->buffer[i]], t->bcolor,
-                               t->fcolor, &tex);
+    int glyph = t->buffer[i];
+    tex.buffer = buffer + glyph * H3D_PRINT_CHW * H3D_PRINT_CHH;
+    if (!prerendered[glyph]) {
+      haloo3d_print_convertglyph(t->glyphs[glyph], t->bcolor, t->fcolor, &tex);
+      prerendered[glyph] = 1;
+    }
     srect.x1 = t->x;
     srect.y1 = t->y;
     srect.x2 = srect.x1 + t->scale * H3D_PRINT_CHW;
     srect.y2 = srect.y1 + t->scale * H3D_PRINT_CHH;
-    haloo3d_sprite(t->fb, &tex, trect, srect);
+    // haloo3d_sprite(t->fb, &tex, trect, srect);
+    haloo3d_sprite_withprecalc(&tex, &presprite, srect);
     t->x += t->scale * H3D_PRINT_CHW;
   }
 }
