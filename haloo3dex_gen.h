@@ -41,7 +41,7 @@ void haloo3d_gen_palettetex(haloo3d_fb *fb);
 
 // Get the UV index into the palette texture for the given color (alpha is
 // ignored)
-void haloo3d_gen_paletteuv(uint16_t col, struct vec2 *uvout);
+struct vec3 haloo3d_gen_paletteuv(uint16_t col); //, mfloat_t *uvout);
 
 // If you know the amount of vertices, textures, and faces ahead of time, you
 // can call this function to easily set all the counters and malloc

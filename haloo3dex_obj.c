@@ -6,9 +6,27 @@
 
 #define H3D_OBJ_MAXLINESIZE 1024
 
+int haloo3d_obj_addvertex(haloo3d_obj *obj, struct vec4 vertex) {
+  int vi = obj->numvertices++;
+  obj->vertices[vi] = vertex;
+  return vi;
+}
+
+int haloo3d_obj_addvtexture(haloo3d_obj *obj, struct vec3 vtexture) {
+  int vti = obj->numvtextures++;
+  obj->vtexture[vti] = vtexture;
+  return vti;
+}
+
+int haloo3d_obj_addface(haloo3d_obj *obj, haloo3d_facei face) {
+  int fi = obj->numfaces++;
+  memcpy(&obj->faces[fi], face, sizeof(haloo3d_facei));
+  return fi;
+}
+
 // Initialize an object with all 0 amounts BUT allocate all arrays to
 // max size. This makes it ready for loading
-static inline void haloo3d_obj_resetmax(haloo3d_obj *obj) {
+void haloo3d_obj_resetfixed(haloo3d_obj *obj, int faces, int vertices) {
   obj->numfaces = 0;
   obj->numvertices = 0;
   obj->numvtextures = 0;
@@ -16,14 +34,18 @@ static inline void haloo3d_obj_resetmax(haloo3d_obj *obj) {
 
   // NOTE: to make life easier. this allocates a LOT of memory
   // to start with! It then frees it after so the obj is as small as possible.
-  mallocordie(obj->faces, sizeof(haloo3d_facei) * H3D_OBJ_MAXFACES);
-  mallocordie(obj->vertices, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
-  mallocordie(obj->vtexture, sizeof(struct vec3) * H3D_OBJ_MAXVERTICES);
+  mallocordie(obj->faces, sizeof(haloo3d_facei) * faces);
+  mallocordie(obj->vertices, sizeof(struct vec4) * vertices);
+  mallocordie(obj->vtexture, sizeof(struct vec3) * vertices);
+}
+
+static inline void haloo3d_obj_resetmax(haloo3d_obj *obj) {
+  haloo3d_obj_resetfixed(obj, H3D_OBJ_MAXFACES, H3D_OBJ_MAXVERTICES);
 }
 
 // Resize all arrays so they're exactly the size needed for the numbers
 // in the given obj
-static inline void haloo3d_obj_shrinktofit(haloo3d_obj *obj) {
+void haloo3d_obj_shrinktofit(haloo3d_obj *obj) {
   reallocordie(obj->faces, sizeof(haloo3d_facei) * MAX(1, obj->numfaces));
   reallocordie(obj->vertices, sizeof(struct vec4) * MAX(1, obj->numvertices));
   reallocordie(obj->vtexture, sizeof(struct vec3) * MAX(1, obj->numvtextures));

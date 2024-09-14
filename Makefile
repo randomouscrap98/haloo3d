@@ -12,7 +12,7 @@ LIBD = lib
 BUILDD = build
 CC = gcc
 DEFINES = 
-CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra
+CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra # -DH3DEBUG_SKIPWHOLETRI
 # CLIBFLAGS = -std=c99
 ifdef MARCH 		# Allows you to define the architecture (usually not required)
 	CFLAGS += -march=$(MARCH)

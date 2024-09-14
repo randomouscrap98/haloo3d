@@ -142,9 +142,11 @@ void haloo3d_gen_palettetex(haloo3d_fb *fb) {
   }
 }
 
-void haloo3d_gen_paletteuv(uint16_t col, struct vec2 *uvout) {
-  uvout->x = 1.0 / 128 + (col & 63);
-  uvout->y = 1.0 / 128 + ((col & 0xFFF) >> 6);
+struct vec3 haloo3d_gen_paletteuv(uint16_t col) { //, mfloat_t *uvout) {
+  struct vec3 result;
+  vec3(result.v, (0.5 + (col & 63)) / 64, (0.5 + ((col & 0xFFF) >> 6)) / 64,
+       1.0);
+  return result;
 }
 
 void haloo3d_gen_obj_prealloc(haloo3d_obj *obj, uint16_t numverts,

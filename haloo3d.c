@@ -405,10 +405,10 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   // We don't QUITE trust the triangles given, even though they should
   // be clipped. Just be safe and clamp them
   v0v->pos.x = CLAMP(v0v->pos.x, H3DVF(0), fb->width - H3DVF(1));
-  v1v->pos.x = CLAMP(v1v->pos.x, H3DVF(0), fb->width - H3DVF(1));
-  v2v->pos.x = CLAMP(v2v->pos.x, H3DVF(0), fb->width - H3DVF(1));
   v0v->pos.y = CLAMP(v0v->pos.y, H3DVF(0), fb->height - H3DVF(1));
+  v1v->pos.x = CLAMP(v1v->pos.x, H3DVF(0), fb->width - H3DVF(1));
   v1v->pos.y = CLAMP(v1v->pos.y, H3DVF(0), fb->height - H3DVF(1));
+  v2v->pos.x = CLAMP(v2v->pos.x, H3DVF(0), fb->width - H3DVF(1));
   v2v->pos.y = CLAMP(v2v->pos.y, H3DVF(0), fb->height - H3DVF(1));
 #endif
 
