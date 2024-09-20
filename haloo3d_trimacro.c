@@ -1,8 +1,7 @@
 // Greatly reduce codegen by checking for impossible combinations.
 // NOTE: we DO NOT output any errors if an invalid combination is present,
 // we simply do not render the triangle!!
-#if ((_HTF & (H3DR_PCT | H3DR_TEXTURED)) != H3DR_PCT) &&                       \
-    ((_HTF & (H3DR_TRANSPARENCY | H3DR_TEXTURED)) != H3DR_TRANSPARENCY) &&     \
+#if ((_HTF & (H3DR_TRANSPARENCY | H3DR_TEXTURED)) != H3DR_TRANSPARENCY) &&     \
     ((_HTF & (H3DR_DITHERTRI | H3DR_DITHERPIX)) !=                             \
      (H3DR_DITHERTRI | H3DR_DITHERPIX))
 
@@ -63,15 +62,17 @@ while (1) {
 
 #if _HTF & H3DR_PCT
     mfloat_t xofs = xl - left.x;
+    mfloat_t ioz = left.ioz + xofs * dzx;
+#if _HTF & H3DR_TEXTURED
     mfloat_t uoz = left.uoz + xofs * dux;
     mfloat_t voz = left.voz + xofs * dvx;
-    mfloat_t ioz = left.ioz + xofs * dzx;
+#endif
 #else
+    int32_t z = left.iz;
 #if _HTF & H3DR_TEXTURED
     int32_t u = left.iu >> 8;
     int32_t v = tvshleft ? (left.iv << tvshift) : (left.iv >> tvshift);
 #endif
-    int32_t z = left.iz;
 #endif
 
 #if _HTF & (H3DR_DITHERTRI)
@@ -81,11 +82,11 @@ while (1) {
     uint8_t dithermask = 0;
     uint8_t dither;
 #if _HTF & H3DR_PCT
-    mfloat_t pz = 1 / ioz;
+    H3D_DITHERCALC(1 / ioz);
 #else
-    mfloat_t pz = z >> 16;
+    H3D_DITHERCALC(z >> 16);
 #endif
-    H3D_DITHERCALC(pz);
+    // MUST do this AFTER dithercalc since dithercalc sets dithermask
     dithermask = 1 << (xl & 7);
 #endif
 
@@ -96,41 +97,45 @@ while (1) {
       mfloat_t dpz = pz * 65536; // perspective incorrect is x16
       H3D_DITHERCALC(pz);
       if (dpz < *zbuf && H3D_DITHER_CHECK(dither)) {
+#if _HTF & H3DR_TEXTURED
         uint16_t c = tbuf[(((uint32_t)(uoz * pz)) & txr) +
                           (((uint32_t)(voz * pz)) & tyr)];
+#else
+        uint16_t c = basecolor;
+#endif
         H3D_TRANSPARENCY_CHECK(c) {
           *buf = H3D_SCALE_COL(c, scale);
           *zbuf = dpz;
         }
       }
-#elif _HTF & H3DR_TEXTURED
+#else
       H3D_DITHERCALC(z >> 16);
       if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
+#if _HTF & H3DR_TEXTURED
         uint16_t c = tbuf[((u >> 8) & txr) + ((v >> 8) & tyr)];
+#else
+        uint16_t c = basecolor;
+#endif
         H3D_TRANSPARENCY_CHECK(c) {
           *buf = H3D_SCALE_COL(c, scale);
           *zbuf = z;
         }
-      }
-#else
-      H3D_DITHERCALC(z >> 16);
-      if (z < *zbuf && H3D_DITHER_CHECK(dither)) {
-        *buf = H3D_SCALE_COL(basecolor, scale);
-        *zbuf = z;
       }
 #endif
       buf++;
       zbuf++;
 #if _HTF & H3DR_PCT
       ioz += dzx;
+#if _HTF & H3DR_TEXTURED
       uoz += dux;
       voz += dvx;
+#endif
 #else
+      z += dzxi;
 #if _HTF & H3DR_TEXTURED
       u += duxi;
       v += dvxi;
 #endif
-      z += dzxi;
 #endif
 #if _HTF & H3DR_DITHERTRI
       dither = (dither >> 1) | (dither << 7);

@@ -14,9 +14,8 @@
 #endif
 
 // Flags to control system at compile time
-
-// Force system to check uncertain bounds and die if bad
-// #define H3D_SANITY_CHECK
+// #define H3D_OPTIMIZATION_UNTEXTURED_PCT
+// #define H3D_OPTIMIZATION_AUTO_UNTEXTURED // This may not be implemented
 
 // Configure the mathc library before importing
 #define MATHC_USE_UNIONS

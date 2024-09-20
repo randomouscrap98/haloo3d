@@ -446,22 +446,30 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
   _h3dtriside_push(onesec, v2v);
   _h3dtriside_push(onesec, v0v);
 
-  uint16_t basecolor = 0;
+  // #ifdef H3D_OPTIMIZATION_UNTEXTURED_PCT
   if (v0v->tex.x == v1v->tex.x && v0v->tex.x == v2v->tex.x &&
       v0v->tex.y == v1v->tex.y && v0v->tex.y == v2v->tex.y) {
     // This is a single color triangle
-    // No perspective or texture OR transparency needed
     rflags &= ~H3DR_TEXTURED;
-  } else if (parea < render->pctminsize) {
+  }
+  // #endif
+  if (parea < render->pctminsize) {
     // This is a small triangle with textures
     // Turn off perspective correct textures
     rflags &= ~H3DR_PCT;
   }
 
+  // NOTE: this is used in the macro!!
+  uint16_t basecolor = 0;
+
   // More optimizations. No textures means no need for transparency or
   // perspective (also calculate base uv)
   if ((rflags & H3DR_TEXTURED) == 0) {
+#ifdef H3D_OPTIMIZATION_UNTEXTURED_PCT
     rflags &= ~(H3DR_TRANSPARENCY | H3DR_PCT);
+#else
+    rflags &= ~H3DR_TRANSPARENCY;
+#endif
     basecolor = haloo3d_fb_getuv(render->texture, v0v->tex.x, v0v->tex.y);
   }
 

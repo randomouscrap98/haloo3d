@@ -25,7 +25,7 @@ int haloo3d_obj_addface(haloo3d_obj *obj, haloo3d_facei face) {
 }
 
 // Initialize an object with all 0 amounts BUT allocate all arrays to
-// max size. This makes it ready for loading
+// the indicated size. This makes it ready for loading
 void haloo3d_obj_resetfixed(haloo3d_obj *obj, int faces, int vertices) {
   obj->numfaces = 0;
   obj->numvertices = 0;
