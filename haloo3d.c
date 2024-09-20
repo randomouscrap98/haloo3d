@@ -182,6 +182,7 @@ uint8_t _dither4x4[] = {
 void haloo3d_trirender_init(haloo3d_trirender *tr) {
   tr->texture = NULL;
   tr->intensity = 1.0;
+  tr->ditherflat = 1.0;
   // Dithering is off anyway but just in case...
   tr->ditherclose = 999999;
   tr->ditherfar = 999999;
@@ -372,7 +373,7 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
       return;
     }
     if (v0v->pos.w < render->ditherclose && v1v->pos.w < render->ditherclose &&
-        v2v->pos.w < render->ditherclose) {
+        v2v->pos.w < render->ditherclose && render->ditherflat >= 1.0) {
       // Trivially remove expensive dithering for triangles that are fully
       // inside the dither start radius
       rflags &= ~(H3DR_DITHERPIX | H3DR_DITHERTRI);
@@ -549,6 +550,8 @@ void haloo3d_triangle(haloo3d_fb *fb, haloo3d_trirender *render,
 
   mfloat_t ditherscale = H3DVF(1) / (render->ditherfar - render->ditherclose);
   int dithofs = 0;
+  // Used in flat dither calcs (only if dithertri or pix)
+  int basedithofs = haloo3d_4x4dither(render->ditherflat);
 
   if (rflags & H3DR_DITHERTRI) {
     mfloat_t avg = (v0v->pos.w + v1v->pos.w + v2v->pos.w) * H3DVF(0.333);

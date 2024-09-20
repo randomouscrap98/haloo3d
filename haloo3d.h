@@ -576,6 +576,8 @@ typedef struct {
   // where dithering starts and becomes full. There is only 4x4 ordered
   // dithering available
   mfloat_t ditherclose, ditherfar;
+  // An additional dither application on top of existing dithering.
+  mfloat_t ditherflat;
   // What size triangle perspective correct textures kick in. Set to
   // 0 to always have perspective correct, and like a billion or something
   // for always perspective incorrect

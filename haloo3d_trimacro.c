@@ -25,7 +25,8 @@
     dithermask = 1;                                                            \
     /* NOTE: to scale light differently, you could do pow() on this */         \
     mfloat_t dnorm = (render->ditherfar - (z)) * ditherscale;                  \
-    dither = render->ditherpattern[(y & 3) + haloo3d_4x4dither(dnorm)];        \
+    dither = render->ditherpattern[(y & 3) + haloo3d_4x4dither(dnorm)] &       \
+             basedither;                                                       \
   }
 #else
 #define H3D_DITHER_CHECK(dither) 1
@@ -76,9 +77,11 @@ while (1) {
 #endif
 
 #if _HTF & (H3DR_DITHERTRI)
-    uint8_t dither = render->ditherpattern[dithofs + (y & 3)];
+    uint8_t dither = render->ditherpattern[dithofs + (y & 3)] &
+                     render->ditherpattern[basedithofs + (y & 3)];
     dither = (dither >> (xl & 7)) | (dither << (8 - (xl & 7)));
 #elif _HTF & (H3DR_DITHERPIX)
+    uint8_t basedither = render->ditherpattern[basedithofs + (y & 3)];
     uint8_t dithermask = 0;
     uint8_t dither;
 #if _HTF & H3DR_PCT
