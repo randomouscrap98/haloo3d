@@ -229,16 +229,16 @@ void haloo3d_obj_addobj(haloo3d_obj *dest, haloo3d_obj *src, struct vec3 pos,
                         struct vec3 scale) {
   mfloat_t tmp[VEC4_SIZE];
   mfloat_t modelm[MAT4_SIZE];
-  struct vec4 precalc_verts[H3D_OBJ_MAXVERTICES];
+  // struct vec4 precalc_verts[H3D_OBJ_MAXVERTICES];
   vec3_add(tmp, pos.v, lookvec.v);
   haloo3d_my_lookat(modelm, pos.v, tmp, up.v);
   // Apply scale such that it looks like it was applied first (this prevents
   // scaling applying skew to a rotated object)
   haloo3d_mat4_prescalev(modelm, scale.v);
-  haloo3d_precalc_verts(src, modelm, precalc_verts);
+  haloo3d_precalc_verts(src, modelm, dest->vertices + dest->numvertices);
   // now that all verts have been translated, we can insert them
-  memcpy(dest->vertices + dest->numvertices, src->vertices,
-         sizeof(struct vec4) * src->numvertices);
+  // memcpy(dest->vertices + dest->numvertices, src->vertices,
+  //        sizeof(struct vec4) * src->numvertices);
   memcpy(dest->vtexture + dest->numvtextures, src->vtexture,
          sizeof(struct vec3) * src->numvtextures);
   memcpy(dest->vnormals + dest->numvnormals, src->vnormals,
