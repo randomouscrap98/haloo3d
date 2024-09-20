@@ -29,4 +29,8 @@ void haloo3d_obj_resetfixed(haloo3d_obj *obj, int faces, int vertices);
 // You should only do this once your model is set in stone.
 void haloo3d_obj_shrinktofit(haloo3d_obj *obj);
 
+// Add an object to another object. The src object is not modified.
+// IT IS UP TO YOU TO MAKE SURE THERE'S ENOUGH SPACE FOR THE SRC IN DEST!
+void haloo3d_obj_addobj(haloo3d_obj *dest, haloo3d_obj *src, struct vec3 pos,
+                        struct vec3 lookvec, struct vec3 up, struct vec3 scale);
 #endif

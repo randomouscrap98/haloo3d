@@ -37,6 +37,7 @@ void haloo3d_obj_resetfixed(haloo3d_obj *obj, int faces, int vertices) {
   mallocordie(obj->faces, sizeof(haloo3d_facei) * faces);
   mallocordie(obj->vertices, sizeof(struct vec4) * vertices);
   mallocordie(obj->vtexture, sizeof(struct vec3) * vertices);
+  mallocordie(obj->vnormals, sizeof(struct vec3) * vertices);
 }
 
 static inline void haloo3d_obj_resetmax(haloo3d_obj *obj) {
@@ -49,6 +50,7 @@ void haloo3d_obj_shrinktofit(haloo3d_obj *obj) {
   reallocordie(obj->faces, sizeof(haloo3d_facei) * MAX(1, obj->numfaces));
   reallocordie(obj->vertices, sizeof(struct vec4) * MAX(1, obj->numvertices));
   reallocordie(obj->vtexture, sizeof(struct vec3) * MAX(1, obj->numvtextures));
+  reallocordie(obj->vnormals, sizeof(struct vec3) * MAX(1, obj->numvnormals));
 }
 
 void haloo3d_obj_load(haloo3d_obj *obj, FILE *f) {
@@ -125,13 +127,13 @@ void haloo3d_obj_parseline(haloo3d_obj *obj, char *line) {
       return;
     }
     // vn must have 3 floats
-    // vec3f *v = obj->vtexture + obj->numvtextures;
-    // scanned = sscanf(next, "%f %f %f", (*v), (*v) + 1, (*v) + 2);
-    // if (scanned < 3) {
-    //   eprintf("Vertex normal %d did not have enough arguments",
-    //   obj->numnormals); continue;
-    // }
-    // For now, only track them. I don't want to waste memory
+    struct vec3 *v = obj->vnormals + obj->numvnormals;
+    scanned = sscanf(next, "%f %f %f", (*v).v, (*v).v + 1, (*v).v + 2);
+    if (scanned < 3) {
+      eprintf("Vertex normal %d did not have enough arguments",
+              obj->numvnormals);
+      return;
+    }
     obj->numvnormals++;
   } else if (strcmp(tmp, "f") == 0) {
     if (obj->numfaces >= H3D_OBJ_MAXFACES) {
@@ -206,6 +208,7 @@ void haloo3d_obj_free(haloo3d_obj *obj) {
   free(obj->faces);
   free(obj->vertices);
   free(obj->vtexture);
+  free(obj->vnormals);
 }
 
 void haloo3d_obj_loadfile(haloo3d_obj *obj, char *filename) {
@@ -217,4 +220,41 @@ void haloo3d_obj_loadfile(haloo3d_obj *obj, char *filename) {
   haloo3d_obj_load(obj, f);
   fclose(f);
   eprintf("Read from object file %s\n", filename);
+}
+
+// Insert the entirety of an object into another. IT'S UP TO YOU TO KNOW
+// IF THE DEST OBJECT HAS ENOUGH SPACE!
+void haloo3d_obj_addobj(haloo3d_obj *dest, haloo3d_obj *src, struct vec3 pos,
+                        struct vec3 lookvec, struct vec3 up,
+                        struct vec3 scale) {
+  mfloat_t tmp[VEC4_SIZE];
+  mfloat_t modelm[MAT4_SIZE];
+  struct vec4 precalc_verts[H3D_OBJ_MAXVERTICES];
+  vec3_add(tmp, pos.v, lookvec.v);
+  haloo3d_my_lookat(modelm, pos.v, tmp, up.v);
+  // Apply scale such that it looks like it was applied first (this prevents
+  // scaling applying skew to a rotated object)
+  haloo3d_mat4_prescalev(modelm, scale.v);
+  haloo3d_precalc_verts(src, modelm, precalc_verts);
+  // now that all verts have been translated, we can insert them
+  memcpy(dest->vertices + dest->numvertices, src->vertices,
+         sizeof(struct vec4) * src->numvertices);
+  memcpy(dest->vtexture + dest->numvtextures, src->vtexture,
+         sizeof(struct vec3) * src->numvtextures);
+  memcpy(dest->vnormals + dest->numvnormals, src->vnormals,
+         sizeof(struct vec3) * src->numvnormals);
+  for (int i = 0; i < src->numfaces; i++) {
+    for (int vi = 0; vi < 3; vi++) {
+      dest->faces[dest->numfaces][vi].posi =
+          src->faces[i][vi].posi + dest->numvertices;
+      dest->faces[dest->numfaces][vi].texi =
+          src->faces[i][vi].texi + dest->numvtextures;
+      dest->faces[dest->numfaces][vi].normi =
+          src->faces[i][vi].normi + dest->numvnormals;
+    }
+    dest->numfaces++;
+  }
+  dest->numvertices += src->numvertices;
+  dest->numvtextures += src->numvtextures;
+  dest->numvnormals += src->numvnormals;
 }

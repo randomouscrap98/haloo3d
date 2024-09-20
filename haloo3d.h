@@ -210,6 +210,7 @@ typedef struct {
   uint16_t numvnormals;
   struct vec4 *vertices;
   struct vec3 *vtexture;
+  struct vec3 *vnormals;
   // vec3f *vnormal;
   haloo3d_facei *faces;
 } haloo3d_obj;
