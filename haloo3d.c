@@ -857,17 +857,36 @@ void haloo3d_sprite_old(haloo3d_fb *fb, haloo3d_fb *sprite,
     sbuf++;                                                                    \
   }
 
-void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
+void haloo3d_fb_fill_raw(haloo3d_fb *dst, haloo3d_fb *src, uint8_t centered) {
   int scalex = dst->width / src->width;
   int scaley = dst->height / src->height;
   int scale = scalex < scaley ? scalex : scaley;
   if (scale == 0) {
-    return;
+    scale = 1;
   }
   int newwidth = scale * src->width;
   int newheight = scale * src->height;
-  int dstofsx = (dst->width - newwidth) >> 1;
-  int dstofsy = (dst->height - newheight) >> 1;
+  int dstofsx = centered ? (dst->width - newwidth) >> 1 : 0;
+  int dstofsy = centered ? (dst->height - newheight) >> 1 : 0;
+  // Special very fast case of scale 1 (this also fixes things which are too
+  // small)
+  if (scale == 1) {
+    const int width = sizeof(uint16_t) * MIN(src->width, dst->width);
+    uint16_t *dbuf =
+        dst->buffer + MAX(0, dstofsx) + dst->width * MAX(0, dstofsy);
+    uint16_t *sbuf =
+        src->buffer + MAX(0, -dstofsx) + src->width * MAX(0, -dstofsy);
+    uint16_t *dbuf_e = dst->buffer + dst->width * dst->height;
+    if (dstofsy > 0) {
+      dbuf_e -= dstofsy * dst->width;
+    }
+    while (dbuf < dbuf_e) {
+      memcpy(dbuf, sbuf, width);
+      sbuf += src->width;
+      dbuf += dst->width;
+    }
+    return;
+  }
   // Need a step per y of src and a step per y of dst
   uint16_t *dbuf_y = &dst->buffer[dstofsx + dstofsy * dst->width];
   uint16_t *sbuf_y = src->buffer;
@@ -877,7 +896,7 @@ void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
     for (int sy = 0; sy < scale; sy++) {
       uint16_t *sbuf = sbuf_y;
       uint16_t *sbufe = sbuf_y + src->width;
-      uint16_t *dbuf = dbuf_y + dstofsx;
+      uint16_t *dbuf = dbuf_y;
       switch (scale) {
       case 1:
         _H3D_FBF_ROW1(dbuf, sbuf, sbufe);
@@ -898,4 +917,8 @@ void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
     }
     sbuf_y += src->width;
   }
+}
+
+void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src) {
+  haloo3d_fb_fill_raw(dst, src, 1);
 }

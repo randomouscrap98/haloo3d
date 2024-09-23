@@ -684,5 +684,6 @@ void haloo3d_sprite(haloo3d_fb *fb, haloo3d_fb *sprite, haloo3d_recti texrect,
 // into another. Scale is determined by the largest whole number which will fit
 // each dimension. Image is centered and aspect ratio is preserved
 void haloo3d_fb_fill(haloo3d_fb *dst, haloo3d_fb *src);
+void haloo3d_fb_fill_raw(haloo3d_fb *dst, haloo3d_fb *src, uint8_t centered);
 
 #endif
