@@ -10,7 +10,7 @@
 #ifdef H3D_VOLATILE_FLOATS
 #define H3DVF(x) (volatile mfloat_t)(x)
 #else
-#define H3DVF(x) x
+#define H3DVF(x) (x)
 #endif
 
 // Flags to control system at compile time
