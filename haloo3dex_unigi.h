@@ -152,17 +152,17 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
 // ===========================================
 
 // Writes a P6 binary ppm from the framebuffer
-void haloo3d_image_writeppm(haloo3d_fb *fb, FILE *f);
+void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f);
 // Loads a P6 binary ppm into a framebuffer
-void haloo3d_image_loadppm(FILE *f, haloo3d_fb *fb);
+void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb);
 
 // Convert given color to transparent in framebuffer
-void haloo3d_image_totransparent(haloo3d_fb *fb, uint16_t col);
+void haloo3d_img_totransparent(haloo3d_fb *fb, uint16_t col);
 
 // Write a P6 binary ppm to a file. Kills whole program if it can't
-void haloo3d_image_writeppmfile(haloo3d_fb *fb, char *filename);
+void haloo3d_img_writeppmfile(haloo3d_fb *fb, char *filename);
 // Load a P6 binary ppm into the given texture. Kills whole program
 // if it can't.
-void haloo3d_image_loadppmfile(haloo3d_fb *tex, char *filename);
+void haloo3d_img_loadppmfile(haloo3d_fb *tex, char *filename);
 
 #endif

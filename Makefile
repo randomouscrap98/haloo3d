@@ -29,12 +29,13 @@ endif
 # Define the object files for the static library
 FULLOBJS = $(BUILDD)/haloo3dex_unigi.o 
 FULLOUT = $(BUILDD)/haloo3d.a
+CORE = haloo3d.h
 
 .PHONY: clean
 
 # Build the main lib. Since this is first, this is what the makefile will
 # do by default. We create a static archive with all deps added
-$(FULLOUT): $(FULLOBJS)
+$(FULLOUT): $(FULLOBJS) $(CORE)
 	ar -cvr $@ $(FULLOBJS)
 
 # Rule to build lib .o files
@@ -43,7 +44,7 @@ $(BUILDD)/$(LIBD)/%.o: $(LIBD)/%.c $(LIBD)/%.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Rule to build .o files in main folder
-$(BUILDD)/%.o: %.c %.h
+$(BUILDD)/%.o: %.c %.h $(CORE)
 	mkdir -p $(BUILDD)
 	$(CC) $(CFLAGS) -c $< -o $@
 

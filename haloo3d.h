@@ -2,6 +2,7 @@
 #define __HALOO3D_HEADER
 
 // I don't know, for now I'm going to use this.
+// #include "haloo3dex_helper.h"
 #include <stdint.h>
 
 typedef float float_t;
@@ -67,9 +68,10 @@ typedef struct {
 } _h3dtriside;
 
 // Initialize h3dtriside struct for tracking variables along edge of tri
-static inline void _h3dtriside_init(_h3dtriside *s) {
+static inline void _h3dtriside_init(_h3dtriside *s, uint8_t num_interpolants) {
   s->top = 0;
   s->sectionheight = 0;
+  s->num_interpolants = num_interpolants;
 }
 
 // Push a raster vector onto the vector stack. Remember it is a stack,
@@ -93,6 +95,7 @@ static inline int _h3dtriside_start(_h3dtriside *s) {
   const float_t invheight = H3DVF(1.0) / height;
   s->x_dy = (v2->pos[H3DX] - v1->pos[H3DX]) * invheight;
   s->x = v1->pos[H3DX];
+  // eprintf("X and x_dy: %f %f\n", s->x, s->x_dy);
   // Copy interpolants from v1, the top of the stack (and current line)
   for (int i = 0; i < s->num_interpolants; i++) {
     s->interpolants[i] = v1->interpolants[i];
@@ -171,7 +174,10 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     sv[0] = sv[1];                                                             \
     sv[1] = tmp;                                                               \
   }                                                                            \
-  int16_t parea = H3D_EDGEFUNC(sv[0]->pos, sv[1]->pos, sv[2]->pos);
+  int32_t parea = H3D_EDGEFUNC(sv[0]->pos, sv[1]->pos, sv[2]->pos);
+
+// eprintf("order: (%d,%d) (%d,%d) (%d,%d)\n", sv[0]->pos[0], sv[0]->pos[1],
+//         sv[1]->pos[0], sv[1]->pos[1], sv[2]->pos[0], sv[2]->pos[1]);
 
 // Helper macro for beginning the triangle loop. After this, create your
 // "shader" (inner loop)
@@ -185,8 +191,8 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 #define H3DTRI_SCAN_BEGIN(sv, parea, linit, numlinit, bw, bh, bufi)            \
   /* Tracking info for left and right side. Only tracks vertical strides */    \
   _h3dtriside _right, _left;                                                   \
-  _h3dtriside_init(&_right);                                                   \
-  _h3dtriside_init(&_left);                                                    \
+  _h3dtriside_init(&_right, numlinit);                                         \
+  _h3dtriside_init(&_left, numlinit);                                          \
   { /* Scoped pointers */                                                      \
     _h3dtriside *onesec, *twosec;                                              \
     if (parea == 0) {                                                          \
@@ -226,7 +232,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
                         sv[1]->interpolants[_i], sv[2]->interpolants[_i]);     \
   }                                                                            \
   uint16_t _y = sv[0]->pos[H3DY];                                              \
-  uint16_t _bufstart = (uint32_t)_y * bw;                                      \
+  uint32_t _bufstart = (uint32_t)_y * bw;                                      \
   while (1) {                                                                  \
     /* Supposed to use ceiling but idk, mine works with floor... kinda. */     \
     /* I have holes but with ceil I get actual seams. */                       \
@@ -234,12 +240,13 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     uint16_t _xr = _right.x;                                                   \
     if (_xl < _xr) {                                                           \
       float_t xofs = _xl - _left.x;                                            \
-      uint32_t bufi = (uint32_t)_y * bw + _xl;                                 \
       /* Setup interpolants for inner loop, shifting by appropriate amount*/   \
       for (int _i = 0; _i < numlinit; _i++) {                                  \
         linit[_i] = _left.interpolants[_i] + xofs * _dx[_i];                   \
       }                                                                        \
       for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
+
+// eprintf("xl: %d xr: %d\n", _xl, _xr);
 
 // Optimized macros you need to call in your inner loop (shader) to update
 // the linear values
@@ -259,6 +266,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 
 // end the loop created by H3D_SCAN_BEGIN
 #define H3DTRI_SCAN_END()                                                      \
+  }                                                                            \
   _y++;                                                                        \
   _bufstart += bw;                                                             \
   if (_h3dtriside_next(&_left)) {                                              \
