@@ -4,7 +4,7 @@
 # - This makefile is designed to work on linux
 # - By default it builds a static library haloo3d.a with everything you need
 # - You can build individual examples with this makefile too
-# - The library doesn't have to be built in the way specified here
+# - The library doens't have to be built in the way specified here
 # --------------------------------------------------
 
 # Compiler and other things
@@ -13,14 +13,17 @@ BUILDD = build
 CC = gcc
 DEFINES = 
 CFLAGS = $(DEFINES) -std=c99 -Wall -Wextra # -DH3DEBUG_SKIPWHOLETRI
+# CLIBFLAGS = -std=c99
 ifdef MARCH 		# Allows you to define the architecture (usually not required)
 	CFLAGS += -march=$(MARCH)
+	# CLIBFLAGS += -march=$(MARCH)
 endif
 ifndef FORCE 		# Force the build to move past warnings (disable warnings as errors)
 	CFLAGS += -Werror
 endif
 ifdef DEBUG 		# Build in debug mode, usable in gdb/valgrind/etc
 	CFLAGS += -O2 -g
+	# CLIBFLAGS += -O2 -g
 else
 	CFLAGS += -O3 -flto
 endif
@@ -55,6 +58,12 @@ $(BUILDD)/$(LIBD)/%.o: $(LIBD)/%.c $(LIBD)/%.h
 	mkdir -p $(BUILDD)/$(LIBD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Rule to build SPECIFICALLY haloo3d.c
+$(BUILDD)/haloo3d.o: haloo3d.c haloo3d.h haloo3d_trimacro.c haloo3d_trimacroswitch.c
+	@echo "Building haloo3d.o special"
+	mkdir -p $(BUILDD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Rule to build .o files in main folder
 $(BUILDD)/%.o: %.c %.h
 	mkdir -p $(BUILDD)
@@ -64,13 +73,12 @@ $(BUILDD)/%.o: %.c %.h
 examples/%.exe: examples/%.o $(FULLOUT)
 	$(CC) $(CFLAGS) $< $(FULLOUT) -o $@ -lm
 
-# Rule to build any example file. We ALWAYS need math so... link it
-tests/%.exe: tests/%.o $(FULLOUT)
-	$(CC) $(CFLAGS) $< $(FULLOUT) -o $@ -lm
-
 # Rule to clean the build files
 clean:
 	rm -rf $(BUILDD)
 	find examples/ -name "*.exe" -type f -delete
-	find tests/ -name "*.exe" -type f -delete
+	@# find . -name "*.o" -type f -delete
+	@# find . -name "*.a" -type f -delete
+	@# find . -name "a.out" -type f -delete
+
 
