@@ -183,16 +183,16 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // "shader" (inner loop)
 // - sv = sorted vertex pointer array
 // - parea = parea calculated in H3DTRI_BEGIN
-// - linit = name of the linear array (you will use this in shader)
-// - numlinit = number of linear values
+// - linpol = name of the linear array (you will use this in shader)
+// - numlinpol = number of linear values
 // - bw = buffer width
 // - bh = buffer height
 // - bufi = name of buffer index variable (you will use this in shder)
-#define H3DTRI_SCAN_BEGIN(sv, parea, linit, numlinit, bw, bh, bufi)            \
+#define H3DTRI_SCAN_BEGIN(sv, parea, linpol, numlinpol, bw, bh, bufi)          \
   /* Tracking info for left and right side. Only tracks vertical strides */    \
   _h3dtriside _right, _left;                                                   \
-  _h3dtriside_init(&_right, numlinit);                                         \
-  _h3dtriside_init(&_left, numlinit);                                          \
+  _h3dtriside_init(&_right, numlinpol);                                        \
+  _h3dtriside_init(&_left, numlinpol);                                         \
   { /* Scoped pointers */                                                      \
     _h3dtriside *onesec, *twosec;                                              \
     if (parea == 0) {                                                          \
@@ -226,8 +226,10 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   }                                                                            \
   /* need to calc all the constant horizontal diffs. */                        \
   float_t _dx[H3D_MAXINTERPOLANTS];                                            \
-  float_t linit[H3D_MAXINTERPOLANTS];                                          \
-  for (int _i = 0; _i < numlinit; _i++) {                                      \
+  float_t linpol[H3D_MAXINTERPOLANTS];                                         \
+  /* If linear interpolation is not used, the compiler will warn */            \
+  (void)linpol;                                                                \
+  for (int _i = 0; _i < numlinpol; _i++) {                                     \
     _dx[_i] = H3D_HLERP(sv[0], sv[1], sv[2], sv[0]->interpolants[_i],          \
                         sv[1]->interpolants[_i], sv[2]->interpolants[_i]);     \
   }                                                                            \
@@ -241,8 +243,8 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     if (_xl < _xr) {                                                           \
       float_t xofs = _xl - _left.x;                                            \
       /* Setup interpolants for inner loop, shifting by appropriate amount*/   \
-      for (int _i = 0; _i < numlinit; _i++) {                                  \
-        linit[_i] = _left.interpolants[_i] + xofs * _dx[_i];                   \
+      for (int _i = 0; _i < numlinpol; _i++) {                                 \
+        linpol[_i] = _left.interpolants[_i] + xofs * _dx[_i];                  \
       }                                                                        \
       for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
 
@@ -250,19 +252,19 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 
 // Optimized macros you need to call in your inner loop (shader) to update
 // the linear values
-#define H3DTRI_LINIT1(linit) linit[0] += _dx[0];
-#define H3DTRI_LINIT2(linit)                                                   \
-  linit[0] += _dx[0];                                                          \
-  linit[1] += _dx[1];
-#define H3DTRI_LINIT3(linit)                                                   \
-  linit[0] += _dx[0];                                                          \
-  linit[1] += _dx[1];                                                          \
-  linit[2] += _dx[2];
-#define H3DTRI_LINIT4(linit)                                                   \
-  linit[0] += _dx[0];                                                          \
-  linit[1] += _dx[1];                                                          \
-  linit[2] += _dx[2];                                                          \
-  linit[3] += _dx[3];
+#define H3DTRI_LINPOL1(linpol) linpol[0] += _dx[0];
+#define H3DTRI_LINPOL2(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];
+#define H3DTRI_LINPOL3(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];
+#define H3DTRI_LINPOL4(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];                                                         \
+  linpol[3] += _dx[3];
 
 // end the loop created by H3D_SCAN_BEGIN
 #define H3DTRI_SCAN_END()                                                      \
@@ -276,5 +278,13 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     return;                                                                    \
   }                                                                            \
   }
+
+// If your needs are small, this wrapper macro makes shader setup slightly
+// easier by choosing some default names and assuming you need clamping and
+// don't need to use parea for anything.
+#define H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, numlinpol, bufi)                 \
+  H3DTRI_CLAMP(rv, bw, bh);                                                    \
+  H3DTRI_BEGIN(rv, sv, parea);                                                 \
+  H3DTRI_SCAN_BEGIN(sv, parea, linpol, numlinpol, bw, bh, bufi)
 
 #endif

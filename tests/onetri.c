@@ -1,31 +1,21 @@
 #include "../haloo3dex_helper.h"
 #include "../haloo3dex_unigi.h"
 
-// void raster_triangle(h3d_rastervertex *vertices, uint8_t num_interpolants,
-//  uint16_t bwidth, uint16_t bheight) {}
+// Simple solid triangle
 void triangle(h3d_rastervertex *rv, haloo3d_fb *buf, uint16_t bw, uint16_t bh) {
-  H3DTRI_CLAMP(rv, bw, bh);
-  H3DTRI_BEGIN(rv, sv, parea);
-  eprintf("TRIANGLE READY: %d\n", parea);
-  // Do calculations
-  H3DTRI_SCAN_BEGIN(sv, parea, linit, 0, bw, bh, bufi) {
-    buf->buffer[bufi] = 0xFF00;
-    // Don't need to call interpolants here, doing solid tri
-    (void)linit;
-  }
+  // This is a wrapper macro around several other macros. use it if you have
+  // simple needs for your shader
+  H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 0, bufi) { buf->buffer[bufi] = 0xFF00; }
   H3DTRI_SCAN_END();
 }
 
 void triangle_vcol(h3d_rastervertex *rv, haloo3d_fb *buf, uint16_t bw,
                    uint16_t bh) {
-  H3DTRI_CLAMP(rv, bw, bh);
-  H3DTRI_BEGIN(rv, sv, parea);
-  // Do calculations
-  H3DTRI_SCAN_BEGIN(sv, parea, linit, 3, bw, bh, bufi) {
+  H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 3, bufi) {
     buf->buffer[bufi] =
-        H3DC_ARGB(15, (uint16_t)(15 * linit[0]), (uint16_t)(15 * linit[1]),
-                  (uint16_t)(15 * linit[2]));
-    H3DTRI_LINIT3(linit);
+        H3DC_ARGB(15, (uint16_t)(15 * linpol[0]), (uint16_t)(15 * linpol[1]),
+                  (uint16_t)(15 * linpol[2]));
+    H3DTRI_LINPOL3(linpol);
   }
   H3DTRI_SCAN_END();
 }
