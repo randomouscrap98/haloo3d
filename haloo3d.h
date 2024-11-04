@@ -27,6 +27,10 @@ typedef float float_t;
 // |                  MATH                        |
 // ================================================
 
+typedef float_t vec3[3];
+typedef float_t vec4[4];
+typedef float_t mat4[16];
+
 // Edge function for a point being on one side or another of a line given by
 // v0 and v1. We use counter-clockwise winding. Technically returns 2 * area
 // of triangle created by v0, v1, and p.
