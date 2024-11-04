@@ -27,28 +27,15 @@ endif
 
 
 # Define the object files for the static library
-STATICOBJS = $(BUILDD)/haloo3d.o $(BUILDD)/$(LIBD)/mathc.o
-FULLOBJS = $(BUILDD)/haloo3dex_img.o $(BUILDD)/haloo3dex_obj.o \
-					 $(BUILDD)/haloo3dex_gen.o $(BUILDD)/haloo3dex_print.o \
-					 $(BUILDD)/haloo3dex_easy.o $(BUILDD)/$(LIBD)/FastNoiseLite.o \
-					 $(BUILDD)/haloo3dex_console.o
-BASEOUT = $(BUILDD)/haloo3d.a
-FULLOUT = $(BUILDD)/haloo3d_full.a
+FULLOBJS = $(BUILDD)/haloo3dex_unigi.o 
+FULLOUT = $(BUILDD)/haloo3d.a
 
 .PHONY: clean
-.PHONY: full
 
 # Build the main lib. Since this is first, this is what the makefile will
 # do by default. We create a static archive with all deps added
-$(BASEOUT): $(STATICOBJS)
-	ar -cvr $@ $(STATICOBJS)
-
-full: $(FULLOUT) ;
-
-# To make life simpler, you can also include all the various extras in one lib
-$(FULLOUT): $(BASEOUT) $(FULLOBJS)
-	cp $< $@
-	ar -vr $@ $(FULLOBJS)
+$(FULLOUT): $(FULLOBJS)
+	ar -cvr $@ $(FULLOBJS)
 
 # Rule to build lib .o files
 $(BUILDD)/$(LIBD)/%.o: $(LIBD)/%.c $(LIBD)/%.h

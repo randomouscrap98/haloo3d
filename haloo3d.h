@@ -132,14 +132,16 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // TODO: remember to make textures wrap to prevent buffer overflow
 // TODO: dithering, scaled intensity per tri, etc.
 
+#define _H3D_CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
+
 // Clamp the values. This may be wasteful but it's safer...
 // - rv = rasterize vertex
 // - bw = buffer width
 // - bh = buffer height
 #define H3DTRI_CLAMP(rv, bw, bh)                                               \
   for (int _i = 0; _i < 3; _i++) {                                             \
-    rv[_i].pos[H3DX] = CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw - H3DVF(1));       \
-    rv[_i].pos[H3DY] = CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh - H3DVF(1));       \
+    rv[_i].pos[H3DX] = _H3D_CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw - H3DVF(1));  \
+    rv[_i].pos[H3DY] = _H3D_CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh - H3DVF(1));  \
   }
 
 // Helper function for initializing triangle functions. This enables
@@ -154,17 +156,17 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     sv[_i] = &rv[_i];                                                          \
   }                                                                            \
   /* Make sure vertices are sorted top to bottom */                            \
-  if (sv[0]->pos.y > sv[1]->pos.y) {                                           \
+  if (sv[0]->pos[H3DY] > sv[1]->pos[H3DY]) {                                   \
     h3d_rastervertex *tmp = sv[0];                                             \
     sv[0] = sv[1];                                                             \
     sv[1] = tmp;                                                               \
   }                                                                            \
-  if (sv[1]->pos.y > sv[2]->pos.y) {                                           \
+  if (sv[1]->pos[H3DY] > sv[2]->pos[H3DY]) {                                   \
     h3d_rastervertex *tmp = sv[1];                                             \
     sv[1] = sv[2];                                                             \
     sv[2] = tmp;                                                               \
   }                                                                            \
-  if (sv[0]->pos.y > sv[1]->pos.y) {                                           \
+  if (sv[0]->pos[H3DY] > sv[1]->pos[H3DY]) {                                   \
     h3d_rastervertex *tmp = sv[0];                                             \
     sv[0] = sv[1];                                                             \
     sv[1] = tmp;                                                               \
@@ -192,12 +194,12 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     } else if (parea < 0) {                                                    \
       /* The middle point is on the right side, because it's wound clockwise*/ \
       parea = -parea;                                                          \
-      onesec = &left;                                                          \
-      twosec = &right;                                                         \
+      onesec = &_left;                                                         \
+      twosec = &_right;                                                        \
     } else {                                                                   \
       /* The middle point is on the left side, as expected for our winding */  \
-      onesec = &right;                                                         \
-      twosec = &left;                                                          \
+      onesec = &_right;                                                        \
+      twosec = &_left;                                                         \
     }                                                                          \
     _h3dtriside_push(twosec, sv[2]);                                           \
     _h3dtriside_push(twosec, sv[1]);                                           \
@@ -234,7 +236,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
       float_t xofs = _xl - _left.x;                                            \
       uint32_t bufi = (uint32_t)_y * bw + _xl;                                 \
       /* Setup interpolants for inner loop, shifting by appropriate amount*/   \
-      for (int _i = 0; i < numlinit; +i++) {                                   \
+      for (int _i = 0; _i < numlinit; _i++) {                                  \
         linit[_i] = _left.interpolants[_i] + xofs * _dx[_i];                   \
       }                                                                        \
       for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
@@ -262,11 +264,9 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   if (_h3dtriside_next(&_left)) {                                              \
     return;                                                                    \
   }                                                                            \
-  if (_h3dtriside_next(&right)) {                                              \
+  if (_h3dtriside_next(&_right)) {                                             \
     return;                                                                    \
+  }                                                                            \
   }
-
-// void raster_triangle(h3d_rastervertex *vertices, uint8_t num_interpolants,
-//  uint16_t bwidth, uint16_t bheight) {}
 
 #endif
