@@ -27,7 +27,7 @@ endif
 
 
 # Define the object files for the static library
-FULLOBJS = $(BUILDD)/haloo3dex_unigi.o $(BUILDD)/haloo3dex_obj.o
+FULLOBJS = $(BUILDD)/haloo3d_unigi.o $(BUILDD)/haloo3d_obj.o
 FULLOUT = $(BUILDD)/haloo3d.a
 CORE = haloo3d.h
 
@@ -59,6 +59,6 @@ tests/%.exe: tests/%.o $(FULLOUT)
 # Rule to clean the build files
 clean:
 	rm -rf $(BUILDD)
-	find examples/ -name "*.exe" -type f -delete
 	find tests/ -name "*.exe" -type f -delete
+	# test -d examples/ && find examples/ -name "*.exe" -type f -delete
 

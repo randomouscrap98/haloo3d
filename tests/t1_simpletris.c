@@ -1,5 +1,5 @@
-#include "../haloo3dex_helper.h"
-#include "../haloo3dex_unigi.h"
+#include "../haloo3d_helper.h"
+#include "../haloo3d_unigi.h"
 
 // Simple solid triangle
 void triangle(h3d_rastervertex *rv, h3d_fb *buf, uint16_t bw, uint16_t bh) {

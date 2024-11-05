@@ -1,5 +1,5 @@
-#include "haloo3dex_unigi.h"
-#include "haloo3dex_helper.h"
+#include "haloo3d_unigi.h"
+#include "haloo3d_helper.h"
 
 #include <stdio.h>
 #include <string.h>

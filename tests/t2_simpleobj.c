@@ -1,10 +1,10 @@
-#include "../haloo3dex_helper.h"
-#include "../haloo3dex_obj.h"
-#include "../haloo3dex_unigi.h"
+#include "../haloo3d_helper.h"
+#include "../haloo3d_obj.h"
+#include "../haloo3d_unigi.h"
 
 #include <math.h>
 
-// simple afine texture mapped triangle with depth buffer
+// simple affine texture mapped triangle with depth buffer
 void triangle(h3d_rastervertex *rv, h3d_fb *buf, h3d_fb *tex, uint16_t bw,
               uint16_t bh) {
   H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 3, bufi) {
