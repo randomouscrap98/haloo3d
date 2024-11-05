@@ -1,8 +1,6 @@
 #ifndef __HALOO3D_HEADER
 #define __HALOO3D_HEADER
 
-// I don't know, for now I'm going to use this.
-// #include "haloo3dex_helper.h"
 #include <stdint.h>
 
 typedef float float_t;
@@ -252,10 +250,35 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
       }                                                                        \
       for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
 
-// eprintf("xl: %d xr: %d\n", _xl, _xr);
+// A generic linear interpolants update you may need to call in your inner loop
+// (shader) to update linear values. You should ALWAYS prefer the static count
+// macros such as H3DTRI_LINPOL3, as they should be faster.
+// clang-format off
+#define H3DTRI_LINPOL(linpol, n) \
+      switch(H3D_MAXINTERPOLANTS - n) { \
+        case 0: linpol[7] += _dx[7]; \
+                /* fall through */   \
+        case 1: linpol[6] += _dx[6]; \
+                /* fall through */   \
+        case 2: linpol[5] += _dx[5]; \
+                /* fall through */   \
+        case 3: linpol[4] += _dx[4]; \
+                /* fall through */   \
+        case 4: linpol[3] += _dx[3]; \
+                /* fall through */   \
+        case 5: linpol[2] += _dx[2]; \
+                /* fall through */   \
+        case 6: linpol[1] += _dx[1]; \
+                /* fall through */   \
+        case 7: linpol[0] += _dx[0]; \
+      }
+// clang-format on
 
 // Optimized macros you need to call in your inner loop (shader) to update
-// the linear values
+// the linear values. Spreading them out like this makes it easier for
+// compilers to auto-vectorize (just in case your version of gcc
+// or whatever is bad at auto-vectorizing loops). Plus, for compilers that
+// DON'T auto-vectorize, not looping is still faster.
 #define H3DTRI_LINPOL1(linpol) linpol[0] += _dx[0];
 #define H3DTRI_LINPOL2(linpol)                                                 \
   linpol[0] += _dx[0];                                                         \
@@ -269,6 +292,36 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   linpol[1] += _dx[1];                                                         \
   linpol[2] += _dx[2];                                                         \
   linpol[3] += _dx[3];
+#define H3DTRI_LINPOL5(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];                                                         \
+  linpol[3] += _dx[3];                                                         \
+  linpol[4] += _dx[4];
+#define H3DTRI_LINPOL6(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];                                                         \
+  linpol[3] += _dx[3];                                                         \
+  linpol[4] += _dx[4];                                                         \
+  linpol[5] += _dx[5];
+#define H3DTRI_LINPOL7(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];                                                         \
+  linpol[3] += _dx[3];                                                         \
+  linpol[4] += _dx[4];                                                         \
+  linpol[5] += _dx[5];                                                         \
+  linpol[6] += _dx[6];
+#define H3DTRI_LINPOL8(linpol)                                                 \
+  linpol[0] += _dx[0];                                                         \
+  linpol[1] += _dx[1];                                                         \
+  linpol[2] += _dx[2];                                                         \
+  linpol[3] += _dx[3];                                                         \
+  linpol[4] += _dx[4];                                                         \
+  linpol[5] += _dx[5];                                                         \
+  linpol[6] += _dx[6];                                                         \
+  linpol[7] += _dx[7];
 
 // end the loop created by H3D_SCAN_BEGIN
 #define H3DTRI_SCAN_END()                                                      \
