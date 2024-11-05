@@ -8,14 +8,14 @@
 // |            FRAMEBUFFER               |
 // ========================================
 
-void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height) {
+void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height) {
   fb->width = width;
   fb->height = height;
-  mallocordie(fb->buffer, sizeof(uint16_t) * haloo3d_fb_size(fb));
-  mallocordie(fb->dbuffer, sizeof(float_t) * haloo3d_fb_size(fb));
+  mallocordie(fb->buffer, sizeof(uint16_t) * h3d_fb_size(fb));
+  mallocordie(fb->dbuffer, sizeof(float_t) * h3d_fb_size(fb));
 }
 
-void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height) {
+void h3d_fb_init_tex(h3d_fb *fb, uint16_t width, uint16_t height) {
   if (!IS2POW(width) || !IS2POW(height)) {
     dieerr("Texture width and height must be power of 2: %dX%d\n", width,
            height);
@@ -23,10 +23,10 @@ void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height) {
   fb->width = width;
   fb->height = height;
   fb->dbuffer = NULL;
-  mallocordie(fb->buffer, sizeof(uint16_t) * haloo3d_fb_size(fb));
+  mallocordie(fb->buffer, sizeof(uint16_t) * h3d_fb_size(fb));
 }
 
-void haloo3d_fb_free(haloo3d_fb *fb) {
+void h3d_fb_free(h3d_fb *fb) {
   free(fb->buffer);
   if (fb->dbuffer != NULL) {
     free(fb->dbuffer);
@@ -37,10 +37,10 @@ void haloo3d_fb_free(haloo3d_fb *fb) {
 // |                 IMAGE                   |
 // ===========================================
 
-void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f) {
+void h3d_img_writeppm(h3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
-  for (int i = 0; i < haloo3d_fb_size(fb); i++) {
+  for (int i = 0; i < h3d_fb_size(fb); i++) {
     uint16_t bc = fb->buffer[i];
     color[0] = (bc >> 8) & 0xF; // H3DC_R(bc);
     color[1] = (bc >> 4) & 0xf; // H3DC_G(bc);
@@ -49,7 +49,7 @@ void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f) {
   }
 }
 
-void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
+void h3d_img_loadppm(FILE *f, h3d_fb *fb) {
   char tmp[4096];
   // Must ALWAYS start with "P6"
   int scanned = fscanf(f, "%4095s", tmp);
@@ -77,9 +77,9 @@ void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
   fb->width = vals[0];
   fb->height = vals[1];
   int depth = vals[2];
-  haloo3d_fb_init_tex(fb, fb->width, fb->height);
+  h3d_fb_init_tex(fb, fb->width, fb->height);
   // Must set everything to 0
-  memset(fb->buffer, 0, haloo3d_fb_size(fb));
+  memset(fb->buffer, 0, h3d_fb_size(fb));
   // Now let's just read until the end!
   int b = 0;
   int i = 0;
@@ -95,32 +95,32 @@ void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb) {
   }
 }
 
-void haloo3d_img_totransparent(haloo3d_fb *fb, uint16_t col) {
-  const int size = haloo3d_fb_size(fb);
+void h3d_img_totransparent(h3d_fb *fb, uint16_t col) {
+  const int size = h3d_fb_size(fb);
   for (int i = 0; i < size; i++) {
     if (fb->buffer[i] == col)
       fb->buffer[i] = 0;
   }
 }
 
-void haloo3d_img_writeppmfile(haloo3d_fb *fb, char *filename) {
+void h3d_img_writeppmfile(h3d_fb *fb, char *filename) {
   // And now we should be able to save the framebuffer
   FILE *f = fopen(filename, "w");
   if (f == NULL) {
     dieerr("Can't open %s for writing ppm image\n", filename);
   }
-  haloo3d_img_writeppm(fb, f);
+  h3d_img_writeppm(fb, f);
   fclose(f);
   eprintf("Wrote ppm image to %s\n", filename);
 }
 
-void haloo3d_img_loadppmfile(haloo3d_fb *tex, char *filename) {
+void h3d_img_loadppmfile(h3d_fb *tex, char *filename) {
   // Open a simple file and read the ppm from it
   FILE *f = fopen(filename, "r");
   if (f == NULL) {
     dieerr("Can't open %s for ppm image reading\n", filename);
   }
-  haloo3d_img_loadppm(f, tex); // This also calls init so you have to free
+  h3d_img_loadppm(f, tex); // This also calls init so you have to free
   fclose(f);
   eprintf("Read ppm image from %s\n", filename);
 }

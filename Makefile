@@ -27,7 +27,7 @@ endif
 
 
 # Define the object files for the static library
-FULLOBJS = $(BUILDD)/haloo3dex_unigi.o $(BUILD)/haloo3dex_obj.o
+FULLOBJS = $(BUILDD)/haloo3dex_unigi.o $(BUILDD)/haloo3dex_obj.o
 FULLOUT = $(BUILDD)/haloo3d.a
 CORE = haloo3d.h
 

@@ -9,7 +9,7 @@
 
 // A vertex which is made up of indexes into the obj
 typedef struct {
-  uint16_t posi;
+  uint16_t verti;
   uint16_t texi;
   uint16_t normi;
 } h3d_objvert;

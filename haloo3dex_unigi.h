@@ -27,7 +27,7 @@
   ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
 // "scale" a color by a given intensity. it WILL clip...
-static inline uint16_t haloo3d_col_scale(uint16_t col, float_t scale) {
+static inline uint16_t h3d_col_scale(uint16_t col, float_t scale) {
   uint16_t r = H3DC_R4(col) * scale;
   uint16_t g = H3DC_G4(col) * scale;
   uint16_t b = H3DC_B4(col) * scale;
@@ -35,7 +35,7 @@ static inline uint16_t haloo3d_col_scale(uint16_t col, float_t scale) {
 }
 
 // "scale" a color by a discrete intensity from 0 to 256. 256 is 1.0
-static inline uint16_t haloo3d_col_scalei(uint16_t col, uint16_t scale) {
+static inline uint16_t h3d_col_scalei(uint16_t col, uint16_t scale) {
   if (scale == 256) {
     return col;
   }
@@ -46,8 +46,7 @@ static inline uint16_t haloo3d_col_scalei(uint16_t col, uint16_t scale) {
 }
 
 // linear interpolate between two colors
-static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
-                                        float_t t) {
+static inline uint16_t h3d_col_lerp(uint16_t col1, uint16_t col2, float_t t) {
   uint16_t r1 = H3DC_R4(col1);
   uint16_t g1 = H3DC_G4(col1);
   uint16_t b1 = H3DC_B4(col1);
@@ -64,7 +63,7 @@ static inline uint16_t haloo3d_col_lerp(uint16_t col1, uint16_t col2,
 
 // Blend src onto dest. Doesn't use floats, so may not be very accurate.
 // Remember, src goes on top of dst.
-static inline uint16_t haloo3d_col_blend(uint16_t src, uint16_t dst) {
+static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
   if ((src & 0xF000) == 0xF000) { // The basic cases, since there's only 4 bits
     return src;
   } else if ((src & 0xF000) == 0) {
@@ -101,30 +100,30 @@ typedef struct {
   float_t *dbuffer; // Depth buffer, probably using w value instead of z
   uint16_t width;   // width of the framebuffer
   uint16_t height;  // height of the framebuffer
-} haloo3d_fb;
+} h3d_fb;
 
 // Get a value from the framebuffer at the given location
-static inline uint16_t haloo3d_fb_get(haloo3d_fb *fb, int x, int y) {
+static inline uint16_t h3d_fb_get(h3d_fb *fb, int x, int y) {
   return fb->buffer[x + y * fb->width];
 }
 
 // Get a value from the depth buffer at a given location
-static inline float_t haloo3d_db_get(haloo3d_fb *fb, int x, int y) {
+static inline float_t h3d_db_get(h3d_fb *fb, int x, int y) {
   return fb->dbuffer[x + y * fb->width];
 }
 
 // Set a value in the framebuffer at the given location
-static inline void haloo3d_fb_set(haloo3d_fb *fb, int x, int y, uint16_t v) {
+static inline void h3d_fb_set(h3d_fb *fb, int x, int y, uint16_t v) {
   fb->buffer[x + y * fb->width] = v;
 }
 
 // Set a value in the depth buffer at the given location
-static inline void haloo3d_db_set(haloo3d_fb *fb, int x, int y, float_t v) {
+static inline void h3d_db_set(h3d_fb *fb, int x, int y, float_t v) {
   fb->dbuffer[x + y * fb->width] = v;
 }
 
 // Get a value based on uv coordinates. Does not perform any smoothing
-static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, float_t u, float_t v) {
+static inline uint16_t h3d_fb_getuv(h3d_fb *fb, float_t u, float_t v) {
   // NOTE: Some multiplications here have been changed for systems
   // where float constants are slow for some reason. For instance, we
   // multiplied out height with 1 - v
@@ -135,34 +134,32 @@ static inline uint16_t haloo3d_fb_getuv(haloo3d_fb *fb, float_t u, float_t v) {
 
 // Get the total size in elements of any buffer inside (framebuffer or
 // otherwise)
-static inline int haloo3d_fb_size(haloo3d_fb *fb) {
-  return fb->width * fb->height;
-}
+static inline int h3d_fb_size(h3d_fb *fb) { return fb->width * fb->height; }
 
 // Initialize a framebuffer with a symmetric data buffer and depth buffer
-void haloo3d_fb_init(haloo3d_fb *fb, uint16_t width, uint16_t height);
+void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
 // Free all the buffers created etc
-void haloo3d_fb_free(haloo3d_fb *fb);
+void h3d_fb_free(h3d_fb *fb);
 // Initialize a framebuffer for use as a texture. This makes the zbuffer null,
 // but you can otherwise use it as normal
-void haloo3d_fb_init_tex(haloo3d_fb *fb, uint16_t width, uint16_t height);
+void h3d_fb_init_tex(h3d_fb *fb, uint16_t width, uint16_t height);
 
 // ===========================================
 // |                 IMAGE                   |
 // ===========================================
 
 // Writes a P6 binary ppm from the framebuffer
-void haloo3d_img_writeppm(haloo3d_fb *fb, FILE *f);
+void h3d_img_writeppm(h3d_fb *fb, FILE *f);
 // Loads a P6 binary ppm into a framebuffer
-void haloo3d_img_loadppm(FILE *f, haloo3d_fb *fb);
+void h3d_img_loadppm(FILE *f, h3d_fb *fb);
 
 // Convert given color to transparent in framebuffer
-void haloo3d_img_totransparent(haloo3d_fb *fb, uint16_t col);
+void h3d_img_totransparent(h3d_fb *fb, uint16_t col);
 
 // Write a P6 binary ppm to a file. Kills whole program if it can't
-void haloo3d_img_writeppmfile(haloo3d_fb *fb, char *filename);
+void h3d_img_writeppmfile(h3d_fb *fb, char *filename);
 // Load a P6 binary ppm into the given texture. Kills whole program
 // if it can't.
-void haloo3d_img_loadppmfile(haloo3d_fb *tex, char *filename);
+void h3d_img_loadppmfile(h3d_fb *tex, char *filename);
 
 #endif

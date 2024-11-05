@@ -191,7 +191,7 @@ void h3d_obj_parseline(h3d_obj *obj, char *line) {
         break;
       }
       // Now we can assign the values
-      f[i].posi = vi;
+      f[i].verti = vi;
       f[i].texi = ti;
       f[i].normi = ni;
       next = strstr(next, tmp) + strlen(tmp);
