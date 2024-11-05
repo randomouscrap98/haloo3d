@@ -4,7 +4,7 @@
 
 #include <math.h>
 
-// simple afine texture mapped triangle
+// simple afine texture mapped triangle with depth buffer
 void triangle(h3d_rastervertex *rv, h3d_fb *buf, h3d_fb *tex, uint16_t bw,
               uint16_t bh) {
   H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 3, bufi) {
