@@ -1,5 +1,5 @@
-#ifndef HALOO3D_OBJ_H
-#define HALOO3D_OBJ_H
+#ifndef __HALOO3D_OBJ_H
+#define __HALOO3D_OBJ_H
 
 #include "haloo3d.h"
 #include <stdio.h>
@@ -29,9 +29,9 @@ typedef struct {
   h3d_objface *faces;
 } h3d_obj;
 
-int h3d_obj_addvertex(h3d_obj *obj, float_t *vertex);
-int h3d_obj_addvtexture(h3d_obj *obj, float_t *vtexture);
-int h3d_obj_addface(h3d_obj *obj, h3d_objvert *face);
+int h3d_obj_addvertex(h3d_obj *obj, vec4 vertex);
+int h3d_obj_addvtexture(h3d_obj *obj, vec3 vtexture);
+int h3d_obj_addface(h3d_obj *obj, h3d_objface face);
 
 // Parse a single obj file into the given obj object.
 // Make sure obj is not currently in use (memory leaks).
@@ -54,9 +54,4 @@ void h3d_obj_resetfixed(h3d_obj *obj, int faces, int vertices);
 // You should only do this once your model is set in stone.
 void h3d_obj_shrinktofit(h3d_obj *obj);
 
-// Add an object to another object. The src object is not modified.
-// IT IS UP TO YOU TO MAKE SURE THERE'S ENOUGH SPACE FOR THE SRC IN DEST!
-// void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, float_t *pos, float_t
-// *lookvec,
-//                     float_t *up, float_t *scale);
 #endif

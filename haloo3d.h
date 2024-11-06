@@ -29,6 +29,17 @@ typedef float_t vec3[3];
 typedef float_t vec4[4];
 typedef float_t mat4[16];
 
+#define VEC3(v, x, y, z)                                                       \
+  v[H3DX] = x;                                                                 \
+  v[H3DY] = y;                                                                 \
+  v[H3DZ] = z;
+
+#define VEC4(v, x, y, z, w)                                                    \
+  v[H3DX] = x;                                                                 \
+  v[H3DY] = y;                                                                 \
+  v[H3DZ] = z;                                                                 \
+  v[H3DW] = w;
+
 // Edge function for a point being on one side or another of a line given by
 // v0 and v1. We use counter-clockwise winding. Technically returns 2 * area
 // of triangle created by v0, v1, and p.

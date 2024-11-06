@@ -6,20 +6,19 @@
 
 #define H3D_OBJ_MAXLINESIZE 1024
 
-int h3d_obj_addvertex(h3d_obj *obj, float_t *vertex) {
+int h3d_obj_addvertex(h3d_obj *obj, vec4 vertex) {
   int vi = obj->numvertices++;
   memcpy(obj->vertices[vi], vertex, sizeof(vec4));
-  // obj->vertices[vi] = vertex;
   return vi;
 }
 
-int h3d_obj_addvtexture(h3d_obj *obj, float *vtexture) {
+int h3d_obj_addvtexture(h3d_obj *obj, vec3 vtexture) {
   int vti = obj->numvtextures++;
   memcpy(obj->vtexture[vti], vtexture, sizeof(vec3));
   return vti;
 }
 
-int h3d_obj_addface(h3d_obj *obj, h3d_objvert *face) {
+int h3d_obj_addface(h3d_obj *obj, h3d_objface face) {
   int fi = obj->numfaces++;
   // WARN: THIS WAS AN ADDRESS BEFORE (&)
   memcpy(obj->faces[fi], face, sizeof(h3d_objface));
@@ -222,40 +221,3 @@ void h3d_obj_loadfile(h3d_obj *obj, char *filename) {
   fclose(f);
   eprintf("Read from object file %s\n", filename);
 }
-
-// // Insert the entirety of an object into another. IT'S UP TO YOU TO KNOW
-// // IF THE DEST OBJECT HAS ENOUGH SPACE!
-// void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, float_t * pos,
-//                         float_t * lookvec, float_t * up,
-//                         float_t * scale) {
-//   mfloat_t tmp[VEC4_SIZE];
-//   mfloat_t modelm[MAT4_SIZE];
-//   // struct vec4 precalc_verts[H3D_OBJ_MAXVERTICES];
-//   vec3_add(tmp, pos.v, lookvec.v);
-//   haloo3d_my_lookat(modelm, pos.v, tmp, up.v);
-//   // Apply scale such that it looks like it was applied first (this prevents
-//   // scaling applying skew to a rotated object)
-//   haloo3d_mat4_prescalev(modelm, scale.v);
-//   haloo3d_precalc_verts(src, modelm, dest->vertices + dest->numvertices);
-//   // now that all verts have been translated, we can insert them
-//   // memcpy(dest->vertices + dest->numvertices, src->vertices,
-//   //        sizeof(struct vec4) * src->numvertices);
-//   memcpy(dest->vtexture + dest->numvtextures, src->vtexture,
-//          sizeof(struct vec3) * src->numvtextures);
-//   memcpy(dest->vnormals + dest->numvnormals, src->vnormals,
-//          sizeof(struct vec3) * src->numvnormals);
-//   for (int i = 0; i < src->numfaces; i++) {
-//     for (int vi = 0; vi < 3; vi++) {
-//       dest->faces[dest->numfaces][vi].posi =
-//           src->faces[i][vi].posi + dest->numvertices;
-//       dest->faces[dest->numfaces][vi].texi =
-//           src->faces[i][vi].texi + dest->numvtextures;
-//       dest->faces[dest->numfaces][vi].normi =
-//           src->faces[i][vi].normi + dest->numvnormals;
-//     }
-//     dest->numfaces++;
-//   }
-//   dest->numvertices += src->numvertices;
-//   dest->numvtextures += src->numvtextures;
-//   dest->numvnormals += src->numvnormals;
-// }
