@@ -5,16 +5,15 @@
 #include <math.h>
 
 // simple affine texture mapped triangle with depth buffer
-void triangle(h3d_rastervertex *rv, h3d_fb *buf, h3d_fb *tex, uint16_t bw,
-              uint16_t bh) {
-  H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 3, bufi) {
+void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
+  H3DTRI_EASY_BEGIN(rv, buf->width, buf->height, linpol, 3, bufi) {
     if (linpol[2] < buf->dbuffer[bufi]) {
       buf->dbuffer[bufi] = linpol[2];
       buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0], linpol[1]);
     }
     H3DTRI_LINPOL3(linpol);
   }
-  H3DTRI_SCAN_END();
+  H3DTRI_SCAN_END(buf->width);
 }
 
 #define WIDTH 320
@@ -45,7 +44,7 @@ int main(int argc, char **argv) {
   h3d_img_loadppmfile(&tex, argv[2]);
   eprintf("Texture is %dx%d\n", tex.width, tex.height);
 
-  h3d_rastervertex rv[3];
+  h3d_rasterface rv;
 
   // Iterate over all triangles
   for (int i = 0; i < model.numfaces; i++) {
@@ -60,7 +59,7 @@ int main(int argc, char **argv) {
           1 / (3 + model.vertices[model.faces[i][v].verti][H3DZ]);
       // 3 is just an arbitrary number to make sure z is never 0
     }
-    triangle(rv, &screen, &tex, WIDTH, HEIGHT);
+    triangle(rv, &screen, &tex);
   }
   eprintf("Drew object\n");
 
