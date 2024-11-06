@@ -6,4 +6,6 @@
 void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
                     vec3 up, vec3 scale);
 
+int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out);
+
 #endif

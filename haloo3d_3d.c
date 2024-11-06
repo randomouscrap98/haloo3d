@@ -2,43 +2,51 @@
 
 #include <string.h>
 
-// ----------------------
-//   Camera
-// ----------------------
-
-void h3d_camera_init(h3d_camera *cam) {
-  // Initialize the camera to look in a safe direction with
-  // reasonable up/etc. You spawn at the origin
-  VEC3(cam->up, 0.0, 1.0, 0.0);
-  VEC3(cam->pos, 0.0, 0.0, 0.0);
-  cam->yaw = 0;
-  cam->pitch = MPI / 2;
-}
-
-void h3d_camera_calclook(h3d_camera *cam, mat4 view, vec3 lookvec) {
-  vec3 lookat;
-  vec3 tmp;
-  if (lookvec == NULL)
-    lookvec = tmp;
-  // Use sphere equation to compute lookat vector through the two
-  // player-controled angles (pitch and yaw)
-  YAWP2VEC(cam->yaw, cam->pitch, lookvec);
-  vec3_add(cam->pos, lookvec, lookat);
-  h3d_my_lookat(cam->pos, lookat, cam->up, view);
-}
-
-void h3d_camera_calcmove_yaw(h3d_camera *cam, vec4 delta) {
-  mat4 rot;
-  mat4_zero(rot);
-  mat4_rotation_y(-cam->yaw, rot);
-  vec4 tmp;
-  memcpy(tmp, delta, sizeof(vec4));
-  h3d_vec4_mult_mat4(tmp, rot, delta);
-}
+// // ----------------------
+// //   Camera
+// // ----------------------
+//
+// void h3d_camera_init(h3d_camera *cam) {
+//   // Initialize the camera to look in a safe direction with
+//   // reasonable up/etc. You spawn at the origin
+//   VEC3(cam->up, 0.0, 1.0, 0.0);
+//   VEC3(cam->pos, 0.0, 0.0, 0.0);
+//   cam->yaw = 0;
+//   cam->pitch = MPI / 2;
+// }
+//
+// void h3d_camera_calclook(h3d_camera *cam, mat4 view, vec3 lookvec) {
+//   vec3 lookat;
+//   vec3 tmp;
+//   if (lookvec == NULL)
+//     lookvec = tmp;
+//   // Use sphere equation to compute lookat vector through the two
+//   // player-controled angles (pitch and yaw)
+//   YAWP2VEC(cam->yaw, cam->pitch, lookvec);
+//   vec3_add(cam->pos, lookvec, lookat);
+//   h3d_my_lookat(cam->pos, lookat, cam->up, view);
+// }
+//
+// void h3d_camera_calcmove_yaw(h3d_camera *cam, vec4 delta) {
+//   mat4 rot;
+//   mat4_zero(rot);
+//   mat4_rotation_y(-cam->yaw, rot);
+//   vec4 tmp;
+//   memcpy(tmp, delta, sizeof(vec4));
+//   h3d_vec4_mult_mat4(tmp, rot, delta);
+// }
 
 // ----------------------
 //   3d rendering
 // ----------------------
+
+void h3d_3dvert_lerp_self(h3d_3dvert *v, h3d_3dvert *v2, int numinterpolants,
+                          float_t t) {
+  vec4_lerp(v->pos, v2->pos, t, v->pos);
+  for (int i = 0; i < numinterpolants; i++) {
+    v->interpolants[i] = LERP(v->interpolants[i], v2->interpolants[i], t);
+  }
+}
 
 void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view) {
   vec3 forward;
@@ -83,7 +91,7 @@ void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
   m[14] = H3DVF(2) * far * near / (near - far);
 }
 
-int h3d_facef_clip(h3d_face face, h3d_face *out) {
+int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
   // w + z (back)
   // w - z (front)
   // w + x (left)
@@ -92,7 +100,7 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
   // w - y (top)
 
   // We start with just the one face at index 0
-  memcpy(out[0], face, sizeof(h3d_face));
+  memcpy(out[0], face, sizeof(h3d_3dface));
 
 #ifdef H3DEBUG_NOCLIPPING
   return 1;
@@ -120,27 +128,27 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
       if (tricheck & 1) { // Only do tris that are set
         int numinners = 0;
         int numouters = 0;
-        vec4 *f = out[t];
+        h3d_3dvert *f = out[t];
         // Figure out how many are in or out of this plane
         for (int i = 0; i < 3; i++) {
           switch (p) {
           case 0: // z-near
-            dist[i] = f[i][H3DW] + f[i][H3DZ];
+            dist[i] = f[i].pos[H3DW] + f[i].pos[H3DZ];
             break;
           // case 1: // z-far
           //   dist[i] = f[i].pos.w - f[i].pos.z;
           //   break;
           case 1: // x-left
-            dist[i] = f[i][H3DW] + f[i][H3DX];
+            dist[i] = f[i].pos[H3DW] + f[i].pos[H3DX];
             break;
           case 2: // x-right
-            dist[i] = f[i][H3DW] - f[i][H3DX];
+            dist[i] = f[i].pos[H3DW] - f[i].pos[H3DX];
             break;
           case 3: // y-bottom
-            dist[i] = f[i][H3DW] + f[i][H3DY];
+            dist[i] = f[i].pos[H3DW] + f[i].pos[H3DY];
             break;
           case 4: // t-top
-            dist[i] = f[i][H3DW] - f[i][H3DY];
+            dist[i] = f[i].pos[H3DW] - f[i].pos[H3DY];
             break;
           }
           if (dist[i] < H3D_FACEF_CLIPLOW) {
@@ -164,8 +172,8 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
           float_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_FACEF_CLIPLOW;
           float_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_FACEF_CLIPLOW;
           // The two points that aren't 'a' need to be the interpolated values
-          haloo3d_vertexf_lerp_self(f + bi, f + ai, tba);
-          haloo3d_vertexf_lerp_self(f + ci, f + ai, tca);
+          h3d_3dvert_lerp_self(f + bi, f + ai, numinterpolants, tba);
+          h3d_3dvert_lerp_self(f + ci, f + ai, numinterpolants, tca);
           // Don't do anything with assign, it's already set for this tri
         } else if (numouters == 1) { // The two triangle thing
           // For this one, we need to mutate the original AND produce a new
@@ -174,19 +182,17 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
           int ci = inners[1];
           float_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_FACEF_CLIPLOW;
           float_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_FACEF_CLIPLOW;
-          haloo3d_vertexf *f2 = out[t + tris];
+          h3d_3dvert *f2 = out[t + tris];
           // BEFORE modification, we copy the existing triangle to the final
           // outer place
-          memcpy(f2, f, sizeof(haloo3d_facef));
+          memcpy(f2, f, sizeof(h3d_3dface));
           assign |= (1L << (t + tris));
           // Fix existing triangle by replacing the bad outer point a
           // with an interpolated one to b
-          haloo3d_vertexf_lerp_self(f + ai, f + bi, tab);
-          haloo3d_vertexf olda = f[ai];
+          h3d_3dvert_lerp_self(f + ai, f + bi, numinterpolants, tab);
+          f2[bi] = f[ai]; // Swap the old a point to b
           // And once again replace the a point but interpolating with c
-          haloo3d_vertexf_lerp_self(f2 + ai, f2 + ci, tac);
-          // But the B point needs to actually be the interpolated A point
-          f2[bi] = olda;
+          h3d_3dvert_lerp_self(f2 + ai, f2 + ci, numinterpolants, tac);
         }
         // Don't need to check for trivial accept, it's already where it needs
         // to be
@@ -201,11 +207,12 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
   int index = 0;
 
   // Though this could be expensive, generally speaking, there won't be
-  // many triangles here. It doesn't scale well though
+  // many triangles here. It doesn't scale well though. This condenses the
+  // triangles assigned to specific slots back into sequential order
   while (assign) {
     if (assign & 1) {
       if (index != numout) {
-        memcpy(out + numout, out + index, sizeof(h3d_face));
+        memcpy(out + numout, out + index, sizeof(h3d_3dface));
       }
       numout++;
     }
@@ -215,4 +222,13 @@ int h3d_facef_clip(h3d_face face, h3d_face *out) {
 
   return numout;
 #endif
+}
+
+void h3d_model_matrix(vec3 pos, vec3 lookvec, vec3 up, vec3 scale, mat4 out) {
+  vec4 tmp;
+  vec3_add(pos, lookvec, tmp);
+  h3d_my_lookat(pos, tmp, up, out);
+  // Apply scale such that it looks like it was applied first (this prevents
+  // scaling applying skew to a rotated object)
+  h3d_mat4_prescale_self(out, scale);
 }

@@ -2,12 +2,12 @@
 #include "../haloo3d_3d.h"
 #include "../haloo3d_helper.h"
 #include "../haloo3d_obj.h"
+#include "../haloo3d_special.h"
 #include "../haloo3d_unigi.h"
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <stdlib.h>
-
-#define DOLIGHTING
+#include <string.h>
 
 // This is expected to run for multiple frames so
 // make the default smaller. I don't feel like allowing inputs
@@ -20,18 +20,20 @@
 #define LIGHTANG -MPI / 4.0
 #define MINLIGHT 0.5
 #define OUTFILE "t4_modelview.ppm"
+#define NUMINTERPOLANTS 3
 
-// simple affine texture mapped triangle with depth buffer
-void triangle(h3d_rastervertex *rv, h3d_fb *buf, h3d_fb *tex, uint16_t bw,
-              uint16_t bh) {
-  H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, 3, bufi) {
+// simple perspective-correct texture mapped triangle with depth buffer
+void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
+  H3DTRI_EASY_BEGIN(rv, buf->width, buf->height, linpol, 3, bufi) {
     if (linpol[2] < buf->dbuffer[bufi]) {
       buf->dbuffer[bufi] = linpol[2];
-      buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0], linpol[1]);
+      float_t z =
+          1 / linpol[2]; // 1/z is linear across triangle, need z for next
+      buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0] * z, linpol[1] * z);
     }
     H3DTRI_LINPOL3(linpol);
   }
-  H3DTRI_SCAN_END();
+  H3DTRI_SCAN_END(buf->width);
 }
 
 int main(int argc, char **argv) {
@@ -47,42 +49,29 @@ int main(int argc, char **argv) {
   h3d_fb _tex;
   h3d_img_loadppmfile(&_tex, argv[2]);
 
-  // Create the camera matrix, which DOES change
-  h3d_camera camera;
-  h3d_camera_init(&camera);
+  // Create a framebuffer to draw the triangle into
+  h3d_fb fb;
+  h3d_fb_init(&fb, WIDTH, HEIGHT);
 
   // Create the perspective matrix, which doesn't change
   mat4 perspective;
   h3d_perspective(FOV, ASPECT, NEARCLIP, FARCLIP, perspective);
 
-  // Lighting. Note that for performance, the lighting is always calculated
-  // against the base model, and is thus not realistic if the object rotates in
-  // the world. This can be fixed easily, since each object gets its own
-  // lighting vector, which can easily be rotated in the opposite direction of
-  // the model
-  vec3 light;
-  VEC3(light, 0, -cosf(LIGHTANG), sinf(LIGHTANG));
-
-  // #ifdef DOLIGHTING
-  //   objects[0].lighting = &light;
-  // #endif
-
-  // Move the model based on user input
+  // Figure out model params for translation
   vec3 pos;
   VEC3(pos, atof(argv[3]), atof(argv[4]), atof(argv[5]));
-
   vec3 lookvec;
   float_t yaw = atof(argv[6]);
   VEC3(lookvec, sinf(yaw), 0, -cosf(yaw));
-
-  // Now we create a framebuffer to draw the triangle into
-  h3d_fb fb;
-  h3d_fb_init(&fb, WIDTH, HEIGHT);
+  vec3 up;
+  VEC3(up, 0, 1, 0);
+  vec3 scale;
+  VEC3(scale, 1, 1, 1);
 
   // Storage stuff
-  mat4 matrix3d, matrixcam, matrixscreen, matrixmodel;
+  // mat4 matrix3d, /*matrixscreen,*/ matrixmodel;
   // haloo3d_facef outfaces[H3D_FACEF_MAXCLIP];
-  vec3 tmp1;
+  // vec3 tmp1;
   // haloo3d_facef face, baseface;
   //  vec4 *vert_precalc;
   //  mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
@@ -98,46 +87,64 @@ int main(int argc, char **argv) {
     fb.dbuffer[i] = H3DVF(999999);
   }
 
-  // Screen matrix calc. We multiply the modelview matrix with this later
-  h3d_camera_calclook(&camera, matrixcam, NULL);
-  mat4_inverse(matrixcam, matrixcam);
-  mat4_multiply(perspective, matrixcam, matrixscreen);
+  // NOTE: we do not change the camera in this one, only the model!
+  mat4 modelmatrix;
+  h3d_model_matrix(pos, lookvec, up, scale, modelmatrix);
+  mat4 finalmatrix;
+  mat4_multiply(perspective, modelmatrix, finalmatrix);
 
-  // Setup final model matrix and the precalced vertices
-  vec3_add(pos, lookvec, tmp1);
-  h3d_my_lookat(pos, tmp1, camera.up, matrixmodel);
-  // mat4_multiply_f(matrixmodel, matrixmodel, objects[i].scale);
-  mat4_multiply(matrix3d, matrixscreen, matrixmodel);
-  haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
+  vec4 verttrans[H3D_OBJ_MAXVERTICES];
+  h3d_obj_batchtranslate(&_obj, finalmatrix, verttrans);
+
+  h3d_3dface clipfaces[H3D_FACEF_MAXCLIP];
+  // Screen matrix calc. We multiply the modelview matrix with this later
+  // h3d_camera_calclook(&camera, matrixcam, NULL);
+  // mat4_inverse(matrixcam, matrixcam);
+  // mat4_multiply(perspective, matrixcam, matrixscreen);
+  // haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
+
   // Iterate over object faces
   for (int fi = 0; fi < _obj.numfaces; fi++) {
+    h3d_3dface face;
+    for (int v = 0; v < 3; v++) {
+      memcpy(face[v].pos, verttrans[_obj.faces[fi][v].verti], sizeof(vec4));
+      // For our perspective-correct textures, our interpolants are u/z, v/z,
+      // and 1/z
+      float_t invz = 1 / face[v].pos[H3DZ];
+      face[v].interpolants[0] =
+          _obj.vtexture[_obj.faces[fi][v].texi][H3DX] * invz;
+      face[v].interpolants[1] =
+          _obj.vtexture[_obj.faces[fi][v].texi][H3DY] * invz;
+      face[v].interpolants[2] = invz;
+    }
+
     // Copy face values out of precalc array and clip them
-    haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
-                       objects[i].model->vtexture, face);
-    int tris = haloo3d_facef_clip(face, outfaces);
-    rsettings.texture = objects[i].texture;
+    // haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
+    //                    objects[i].model->vtexture, face);
+    int tris = h3d_3dface_clip(face, clipfaces, NUMINTERPOLANTS);
+    h3d_rasterface rface;
+    // rsettings.texture = objects[i].texture;
     for (int ti = 0; ti < tris; ti++) {
       // You (perhaps unfortunately) still need to finalize the face. This
       // lets you ignore backface culling if you want (we turn it on here)
-      if (!haloo3d_facef_finalize(outfaces[tris])) {
+      if (!h3d_3dface_normalize(clipfaces[ti])) {
         continue;
       }
-      // rsettings.intensity = 1.0;
-      // if (objects[i].lighting) {
-      //   haloo3d_obj_facef(objects[i].model, objects[i].model->faces[fi],
-      //                     baseface);
-      //   rsettings.intensity =
-      //       haloo3d_calc_light(objects[i].lighting->v, MINLIGHT, baseface);
-      // }
+      for (int v = 0; v < 3; v++) {
+        memcpy(rface[v].interpolants, clipfaces[ti][v].interpolants,
+               sizeof(float_t) * NUMINTERPOLANTS);
+        h3d_viewport(clipfaces[ti][v].pos, WIDTH, HEIGHT, rface[v].pos);
+      }
       //   We still have to convert the points into the view
-      haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
-      haloo3d_triangle(&fb, &rsettings, outfaces[ti]);
+      // haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
+      triangle(rface, &fb, &_tex);
+      // haloo3d_triangle(&fb, &rsettings, outfaces[ti]);
     }
   }
 
-  write_framebuffer(&fb, OUTFILE);
+  h3d_img_writeppmfile(&fb, OUTFILE);
 
-  haloo3d_obj_free(&_obj);
-  haloo3d_fb_free(&_tex);
-  haloo3d_fb_free(&fb);
+  h3d_obj_free(&_obj);
+  h3d_fb_free(&_tex);
+  h3d_fb_free(&fb);
 }

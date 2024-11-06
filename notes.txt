@@ -15,3 +15,42 @@
   that matrices are also passed as just float blobs, faces would probably work
   similarly. But then anything that uses them as groups would need to KNOW
   when we have 3 vs 4 values etc.
+
+- triangle clipping function does clipping in clip space (so homogenous coords)
+  BUT we need to clip the interpolated values too. maybe instead of doing the 
+  uint16s, we should do the full value? i don't want to mess up the types but i also
+  don't want to have to copy data in and out of things for every triangle. 
+  though, it might not matter in the grand scheme of things.
+
+
+Steps in terrain renderer:
+---------------------------
+** Initial load (before objects)
+- clear depth buffer + buffer
+- calc perspective array (does NOT use the h3d_camera! might remove?)
+- calc lookat, use for my_lookat (not a camera function)
+- invert camera + multiply with perspective matrix
+** Per-object **
+- Translate hte object to world coordinates using my_lookat and object vector
+- prescale the coords based on scale (extra processing!)
+- do a lot of work for lighting (best to just look at the code; might not use it with new shaders)
+- loop over every translated face/vertices pair. note that the translated vertices
+  are ONLY the vertices; we "create" face values afterwards to save processing
+  (far more face vertices than model vertices)
+- clip the face. this would also clip any interpolants!!
+- calculate lighting based on normal of all new triangles from clipping (1 -> 2 or more)
+- "finalize" the face, is that the final perspective divide?
+- cull backfaces
+- translate points to viewport
+- draw triangle
+
+Some important things to note:
+- The clipping NEEDS the interpolants and operates on world-space coordinates.
+- The triangles sent to clip are clip space coordinates? that's JUST before we do
+  the final divide to make them normalized coordinates.
+- So the triangles going in and out of the clip function do NOT change space!! you
+  can get the same triangles out as you put in
+- you MUST translate from clip -> normal with a divide before doing view translation
+- triangle function takes only fully finalized points, after view translation
+- interpolants have to "travel through" all this stuff. maybe just a pointer
+  rather than real storage? 

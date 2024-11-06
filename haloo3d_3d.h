@@ -6,11 +6,6 @@
 
 #define MPI 3.1415926536f
 
-// NOTE: pitch = 0 means pointing straight up, this is to prevent gimbal
-// lock!
-#define YAWP2VEC(yaw, pitch, out)                                              \
-  VEC3(out, sinf(pitch) * sinf(yaw), cosf(pitch), -sinf(pitch) * cosf(yaw));
-
 // The maximum amount of faces produced by clipping,
 // though realistically this is never reached (also I don't
 // even know if that's correct). It should(?) be that for
@@ -20,7 +15,13 @@
 #define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
 #define H3D_FACEF_CLIPLOW H3DVF(0.0)
 
-typedef vec4 h3d_face[3];
+#define LERP(a, b, t) ((a) + ((b) - (a)) * (t))
+// NOTE: pitch = 0 means pointing straight up, this is to prevent gimbal
+// lock!
+#define YAWP2VEC(yaw, pitch, out)                                              \
+  VEC3(out, sinf(pitch) * sinf(yaw), cosf(pitch), -sinf(pitch) * cosf(yaw));
+
+// typedef vec4 h3d_face[3];
 
 // ----------------------
 //   Math
@@ -56,6 +57,23 @@ static inline void vec3_cross(vec3 v0, vec3 v1, vec3 out) {
   out[0] = v0[1] * v1[2] - v0[2] * v1[1];
   out[1] = v0[2] * v1[0] - v0[0] * v1[2];
   out[2] = v0[0] * v1[1] - v0[1] * v1[0];
+}
+
+// Linear interpolate all values between v0 and v1 based on t. Result
+// can safely be either v1 or v0
+static inline void vec3_lerp(vec3 v0, vec3 v1, float_t t, vec3 result) {
+  result[0] = LERP(v0[0], v1[0], t);
+  result[1] = LERP(v0[1], v1[1], t);
+  result[2] = LERP(v0[2], v1[2], t);
+}
+
+// Linear interpolate all values between v0 and v1 based on t. Result
+// can safely be either v1 or v0
+static inline void vec4_lerp(vec4 v0, vec4 v1, float_t t, vec4 result) {
+  result[0] = LERP(v0[0], v1[0], t);
+  result[1] = LERP(v0[1], v1[1], t);
+  result[2] = LERP(v0[2], v1[2], t);
+  result[3] = LERP(v0[3], v1[3], t);
 }
 
 // Zero out entire mat4 matrix
@@ -297,33 +315,48 @@ static inline void h3d_vec4_homogenous(vec4 v) {
   }
 }
 
-// ----------------------
-//   Camera
-// ----------------------
-
-// Describes a camera which can rotate in two directions only (no rolling)
-typedef struct {
-  vec3 pos;
-  vec3 up;
-  float_t pitch;
-  float_t yaw;
-} h3d_camera;
-
-// Initialize the camera to look in a safe direction with
-// reasonable up/etc. You spawn at the origin
-void h3d_camera_init(h3d_camera *cam);
-
-// Calculate the look vector (last param), using it to set the given matrix view
-// to the "look_at" matrix
-void h3d_camera_calclook(h3d_camera *cam, mat4 view, vec3 lookvec);
-
-// Transform given vector by yaw rotation indicated in camera.
-// TODO: this function might be unnecessary bloat
-void h3d_camera_calcmove_yaw(h3d_camera *cam, vec4 delta);
+// // ----------------------
+// //   Camera
+// // ----------------------
+//
+// // Describes a camera which can rotate in two directions only (no rolling)
+// typedef struct {
+//   vec3 pos;
+//   vec3 up;
+//   float_t pitch;
+//   float_t yaw;
+// } h3d_camera;
+//
+// // Initialize the camera to look in a safe direction with
+// // reasonable up/etc. You spawn at the origin
+// void h3d_camera_init(h3d_camera *cam);
+//
+// // Calculate the look vector (last param), using it to set the given matrix
+// view
+// // to the "look_at" matrix
+// void h3d_camera_calclook(h3d_camera *cam, mat4 view, vec3 lookvec);
+//
+// // Transform given vector by yaw rotation indicated in camera.
+// // TODO: this function might be unnecessary bloat
+// void h3d_camera_calcmove_yaw(h3d_camera *cam, vec4 delta);
 
 // ----------------------
 //   3d rendering
 // ----------------------
+
+// All the data associated with a single 3d vertex. It will/can be used in
+// various processing.
+typedef struct {
+  vec4 pos;
+  float_t interpolants[H3D_MAXINTERPOLANTS];
+} h3d_3dvert;
+
+typedef h3d_3dvert h3d_3dface[3];
+
+// Linear interpolate between v and v2, storing result back into v. Also
+// lerps the interpolants.
+void h3d_3dvert_lerp_self(h3d_3dvert *v, h3d_3dvert *v2, int numinterpolants,
+                          float_t t);
 
 // My personal lookat function, which does not perform the inverse or anything.
 // Because of this, you can use it to orient models too
@@ -336,7 +369,7 @@ void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
 
 // Calculate triangle viewport pixel coordinates from normalized coordinates
 static inline void h3d_viewport(float_t *v, int width, int height,
-                                uint16_t *out) {
+                                int16_t *out) {
   // I'm honestly not sure if round, ceil, or floor is more appropriate.
   // I've read those articles from Chris Hecker indicating that ceil
   // should be used, but it didn't seem to produce the right results.
@@ -344,6 +377,23 @@ static inline void h3d_viewport(float_t *v, int width, int height,
   out[H3DY] = round((H3DVF(1.0) - v[H3DY]) * 0.5 * height);
 }
 
-int h3d_facef_clip(h3d_face face, h3d_face *out);
+// Take a translated, potentially clipped single face and fix all the points
+// to be normalized to w = 1 again. Returns whether the triangle is facing
+// the camera (?)
+static inline int h3d_3dface_normalize(h3d_3dface face) {
+  // We HAVE to divide points first BEFORE checking the edge function
+  h3d_vec4_homogenous(face[0].pos);
+  h3d_vec4_homogenous(face[1].pos);
+  h3d_vec4_homogenous(face[2].pos);
+  return H3D_EDGEFUNC(face[0].pos, face[1].pos, face[2].pos) <= 0;
+}
+
+// Clip a single face into 0-2^CLIPPLANES (currently 32) new faces. Make sure
+// the out array has enough space (H3D_FACEF_MAXCLIP)
+int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants);
+
+// Create model matrix from simple position, lookvector (vector describing
+// facing direction in world), up vector, and scale
+void h3d_model_matrix(vec3 pos, vec3 lookvec, vec3 up, vec3 scale, mat4 out);
 
 #endif

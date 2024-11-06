@@ -7,23 +7,19 @@
 // IF THE DEST OBJECT HAS ENOUGH SPACE!
 void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
                     vec3 up, vec3 scale) {
-  vec4 tmp;
+  // Create model matrix
   mat4 modelm;
-  vec3_add(pos, lookvec, tmp);
-  h3d_my_lookat(pos, tmp, up, modelm);
-  // Apply scale such that it looks like it was applied first (this prevents
-  // scaling applying skew to a rotated object)
-  h3d_mat4_prescale_self(modelm, scale);
+  h3d_model_matrix(pos, lookvec, up, scale, modelm);
   // Put all the vertices from the src into the destination after
   // applying transformations to it
-  for (int i = 0; i < src->numvertices; i++) {
-    h3d_vec4_mult_mat4(src->vertices[i], modelm,
-                       dest->vertices[dest->numvertices + i]);
-  }
+  h3d_obj_batchtranslate(src, modelm, dest->vertices + dest->numvertices);
+  // Copy over textures + normals
   memcpy(dest->vtexture + dest->numvtextures, src->vtexture,
          sizeof(vec3) * src->numvtextures);
   memcpy(dest->vnormals + dest->numvnormals, src->vnormals,
          sizeof(vec3) * src->numvnormals);
+  // Create new faces by assigning indices to the newly copied verts, textures,
+  // and normals
   for (int i = 0; i < src->numfaces; i++) {
     for (int vi = 0; vi < 3; vi++) {
       dest->faces[dest->numfaces][vi].verti =
@@ -38,4 +34,18 @@ void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
   dest->numvertices += src->numvertices;
   dest->numvtextures += src->numvtextures;
   dest->numvnormals += src->numvnormals;
+}
+
+// Batch convert all vertices in an object into translated homogenous vertices.
+// This is a very common operation done for triangle rendering
+int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out) {
+  for (int i = 0; i < object->numvertices; i++) {
+    // This is SLOW but safe. If you want a faster translation, you may
+    // want to skip the homogenous conversion
+    vec4 tmp;
+    memcpy(tmp, object->vertices[i], sizeof(vec4));
+    h3d_vec4_homogenous(tmp);
+    h3d_vec4_mult_mat4(tmp, matrix, out[i]);
+  }
+  return object->numvertices;
 }

@@ -19,6 +19,9 @@ typedef float float_t;
 #define H3DZ 2
 #define H3DW 3
 
+// We NEED to put a limit on max interpolants so we don't need to malloc
+// inside the triangle function! the triangle function tracks interpolants
+// per "side", and thus may need more than one copy
 #define H3D_MAXINTERPOLANTS 8
 
 // ================================================
@@ -63,7 +66,9 @@ typedef float_t mat4[16];
 typedef struct {
   int16_t pos[2];
   float_t interpolants[H3D_MAXINTERPOLANTS];
-} h3d_rastervertex;
+} h3d_rastervert;
+
+typedef h3d_rastervert h3d_rasterface[3];
 
 // Represents tracking information for one side of a triangle.
 // It may not use or calculate all fields; the left sides require
@@ -71,7 +76,7 @@ typedef struct {
 // stack of vectors setup by determining the "direction" of the
 // scanline; the "stack" is popped when a vector section is complete
 typedef struct {
-  h3d_rastervertex *stack[3]; // Vertex order
+  h3d_rastervert *stack[3]; // Vertex order
   int top;
   int sectionheight; // Tracking for how much is left in the current section
   float_t x, x_dy;   // Tracking for specifically the x coordinate.
@@ -89,7 +94,7 @@ static inline void _h3dtriside_init(_h3dtriside *s, uint8_t num_interpolants) {
 
 // Push a raster vector onto the vector stack. Remember it is a stack,
 // so the ones you want on top should go last
-static inline int _h3dtriside_push(_h3dtriside *s, h3d_rastervertex *v) {
+static inline int _h3dtriside_push(_h3dtriside *s, h3d_rastervert *v) {
   s->stack[s->top] = v;
   return ++s->top;
 }
@@ -99,8 +104,8 @@ static inline int _h3dtriside_pop(_h3dtriside *s) { return --s->top; }
 
 // Calculate all deltas and return the height of this section.
 static inline int _h3dtriside_start(_h3dtriside *s) {
-  const h3d_rastervertex *const v1 = s->stack[s->top - 1];
-  const h3d_rastervertex *const v2 = s->stack[s->top - 2];
+  const h3d_rastervert *const v1 = s->stack[s->top - 1];
+  const h3d_rastervert *const v2 = s->stack[s->top - 2];
   const int height = v2->pos[H3DY] - v1->pos[H3DY];
   if (height == 0) {
     return 0;
@@ -167,23 +172,23 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // - parea = how to name variable for calculating the edge-function 2xarea
 //   of the tri (useful for backface culling)
 #define H3DTRI_BEGIN(rv, sv, parea)                                            \
-  h3d_rastervertex *sv[3];                                                     \
+  h3d_rastervert *sv[3];                                                       \
   for (int _i = 0; _i < 3; _i++) {                                             \
     sv[_i] = &rv[_i];                                                          \
   }                                                                            \
   /* Make sure vertices are sorted top to bottom */                            \
   if (sv[0]->pos[H3DY] > sv[1]->pos[H3DY]) {                                   \
-    h3d_rastervertex *tmp = sv[0];                                             \
+    h3d_rastervert *tmp = sv[0];                                               \
     sv[0] = sv[1];                                                             \
     sv[1] = tmp;                                                               \
   }                                                                            \
   if (sv[1]->pos[H3DY] > sv[2]->pos[H3DY]) {                                   \
-    h3d_rastervertex *tmp = sv[1];                                             \
+    h3d_rastervert *tmp = sv[1];                                               \
     sv[1] = sv[2];                                                             \
     sv[2] = tmp;                                                               \
   }                                                                            \
   if (sv[0]->pos[H3DY] > sv[1]->pos[H3DY]) {                                   \
-    h3d_rastervertex *tmp = sv[0];                                             \
+    h3d_rastervert *tmp = sv[0];                                               \
     sv[0] = sv[1];                                                             \
     sv[1] = tmp;                                                               \
   }                                                                            \
@@ -335,7 +340,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   linpol[7] += _dx[7];
 
 // end the loop created by H3D_SCAN_BEGIN
-#define H3DTRI_SCAN_END()                                                      \
+#define H3DTRI_SCAN_END(bw)                                                    \
   }                                                                            \
   _y++;                                                                        \
   _bufstart += bw;                                                             \
