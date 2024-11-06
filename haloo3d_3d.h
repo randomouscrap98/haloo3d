@@ -11,6 +11,17 @@
 #define YAWP2VEC(yaw, pitch, out)                                              \
   VEC3(out, sinf(pitch) * sinf(yaw), cosf(pitch), -sinf(pitch) * cosf(yaw));
 
+// The maximum amount of faces produced by clipping,
+// though realistically this is never reached (also I don't
+// even know if that's correct). It should(?) be that for
+// each plane we clip against, we multiply by two. So
+// however many planes we clip, that's the number we shift
+#define H3D_FACEF_CLIPPLANES 5
+#define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
+#define H3D_FACEF_CLIPLOW H3DVF(0.0)
+
+typedef vec4 h3d_face[3];
+
 // ----------------------
 //   Math
 // ----------------------
@@ -85,6 +96,135 @@ static inline void mat4_identity(mat4 result) {
   result[13] = H3DVF(0.0);
   result[14] = H3DVF(0.0);
   result[15] = H3DVF(1.0);
+}
+
+// Multiply m0 by m1, storing the result in result. Result can be either of the
+// inputs safely. The row/column order technically doesn't matter, because it
+// matters how you put the numbers into memory. For what it's worth, it does
+// columns on m0 multiplied by rows on m1
+static inline void mat4_multiply(mat4 m0, mat4 m1, mat4 result) {
+  mat4 multiplied;
+  multiplied[0] =
+      m0[0] * m1[0] + m0[4] * m1[1] + m0[8] * m1[2] + m0[12] * m1[3];
+  multiplied[1] =
+      m0[1] * m1[0] + m0[5] * m1[1] + m0[9] * m1[2] + m0[13] * m1[3];
+  multiplied[2] =
+      m0[2] * m1[0] + m0[6] * m1[1] + m0[10] * m1[2] + m0[14] * m1[3];
+  multiplied[3] =
+      m0[3] * m1[0] + m0[7] * m1[1] + m0[11] * m1[2] + m0[15] * m1[3];
+  multiplied[4] =
+      m0[0] * m1[4] + m0[4] * m1[5] + m0[8] * m1[6] + m0[12] * m1[7];
+  multiplied[5] =
+      m0[1] * m1[4] + m0[5] * m1[5] + m0[9] * m1[6] + m0[13] * m1[7];
+  multiplied[6] =
+      m0[2] * m1[4] + m0[6] * m1[5] + m0[10] * m1[6] + m0[14] * m1[7];
+  multiplied[7] =
+      m0[3] * m1[4] + m0[7] * m1[5] + m0[11] * m1[6] + m0[15] * m1[7];
+  multiplied[8] =
+      m0[0] * m1[8] + m0[4] * m1[9] + m0[8] * m1[10] + m0[12] * m1[11];
+  multiplied[9] =
+      m0[1] * m1[8] + m0[5] * m1[9] + m0[9] * m1[10] + m0[13] * m1[11];
+  multiplied[10] =
+      m0[2] * m1[8] + m0[6] * m1[9] + m0[10] * m1[10] + m0[14] * m1[11];
+  multiplied[11] =
+      m0[3] * m1[8] + m0[7] * m1[9] + m0[11] * m1[10] + m0[15] * m1[11];
+  multiplied[12] =
+      m0[0] * m1[12] + m0[4] * m1[13] + m0[8] * m1[14] + m0[12] * m1[15];
+  multiplied[13] =
+      m0[1] * m1[12] + m0[5] * m1[13] + m0[9] * m1[14] + m0[13] * m1[15];
+  multiplied[14] =
+      m0[2] * m1[12] + m0[6] * m1[13] + m0[10] * m1[14] + m0[14] * m1[15];
+  multiplied[15] =
+      m0[3] * m1[12] + m0[7] * m1[13] + m0[11] * m1[14] + m0[15] * m1[15];
+  result[0] = multiplied[0];
+  result[1] = multiplied[1];
+  result[2] = multiplied[2];
+  result[3] = multiplied[3];
+  result[4] = multiplied[4];
+  result[5] = multiplied[5];
+  result[6] = multiplied[6];
+  result[7] = multiplied[7];
+  result[8] = multiplied[8];
+  result[9] = multiplied[9];
+  result[10] = multiplied[10];
+  result[11] = multiplied[11];
+  result[12] = multiplied[12];
+  result[13] = multiplied[13];
+  result[14] = multiplied[14];
+  result[15] = multiplied[15];
+}
+
+// Calculate the inverse of m0 and put result in result. They can be
+// the same variable
+static inline void mat4_inverse(mat4 m0, mat4 result) {
+  mat4 inverse;
+  float_t inverted_determinant;
+  float_t m11 = m0[0];
+  float_t m21 = m0[1];
+  float_t m31 = m0[2];
+  float_t m41 = m0[3];
+  float_t m12 = m0[4];
+  float_t m22 = m0[5];
+  float_t m32 = m0[6];
+  float_t m42 = m0[7];
+  float_t m13 = m0[8];
+  float_t m23 = m0[9];
+  float_t m33 = m0[10];
+  float_t m43 = m0[11];
+  float_t m14 = m0[12];
+  float_t m24 = m0[13];
+  float_t m34 = m0[14];
+  float_t m44 = m0[15];
+  inverse[0] = m22 * m33 * m44 - m22 * m43 * m34 - m23 * m32 * m44 +
+               m23 * m42 * m34 + m24 * m32 * m43 - m24 * m42 * m33;
+  inverse[4] = -m12 * m33 * m44 + m12 * m43 * m34 + m13 * m32 * m44 -
+               m13 * m42 * m34 - m14 * m32 * m43 + m14 * m42 * m33;
+  inverse[8] = m12 * m23 * m44 - m12 * m43 * m24 - m13 * m22 * m44 +
+               m13 * m42 * m24 + m14 * m22 * m43 - m14 * m42 * m23;
+  inverse[12] = -m12 * m23 * m34 + m12 * m33 * m24 + m13 * m22 * m34 -
+                m13 * m32 * m24 - m14 * m22 * m33 + m14 * m32 * m23;
+  inverse[1] = -m21 * m33 * m44 + m21 * m43 * m34 + m23 * m31 * m44 -
+               m23 * m41 * m34 - m24 * m31 * m43 + m24 * m41 * m33;
+  inverse[5] = m11 * m33 * m44 - m11 * m43 * m34 - m13 * m31 * m44 +
+               m13 * m41 * m34 + m14 * m31 * m43 - m14 * m41 * m33;
+  inverse[9] = -m11 * m23 * m44 + m11 * m43 * m24 + m13 * m21 * m44 -
+               m13 * m41 * m24 - m14 * m21 * m43 + m14 * m41 * m23;
+  inverse[13] = m11 * m23 * m34 - m11 * m33 * m24 - m13 * m21 * m34 +
+                m13 * m31 * m24 + m14 * m21 * m33 - m14 * m31 * m23;
+  inverse[2] = m21 * m32 * m44 - m21 * m42 * m34 - m22 * m31 * m44 +
+               m22 * m41 * m34 + m24 * m31 * m42 - m24 * m41 * m32;
+  inverse[6] = -m11 * m32 * m44 + m11 * m42 * m34 + m12 * m31 * m44 -
+               m12 * m41 * m34 - m14 * m31 * m42 + m14 * m41 * m32;
+  inverse[10] = m11 * m22 * m44 - m11 * m42 * m24 - m12 * m21 * m44 +
+                m12 * m41 * m24 + m14 * m21 * m42 - m14 * m41 * m22;
+  inverse[14] = -m11 * m22 * m34 + m11 * m32 * m24 + m12 * m21 * m34 -
+                m12 * m31 * m24 - m14 * m21 * m32 + m14 * m31 * m22;
+  inverse[3] = -m21 * m32 * m43 + m21 * m42 * m33 + m22 * m31 * m43 -
+               m22 * m41 * m33 - m23 * m31 * m42 + m23 * m41 * m32;
+  inverse[7] = m11 * m32 * m43 - m11 * m42 * m33 - m12 * m31 * m43 +
+               m12 * m41 * m33 + m13 * m31 * m42 - m13 * m41 * m32;
+  inverse[11] = -m11 * m22 * m43 + m11 * m42 * m23 + m12 * m21 * m43 -
+                m12 * m41 * m23 - m13 * m21 * m42 + m13 * m41 * m22;
+  inverse[15] = m11 * m22 * m33 - m11 * m32 * m23 - m12 * m21 * m33 +
+                m12 * m31 * m23 + m13 * m21 * m32 - m13 * m31 * m22;
+  inverted_determinant = H3DVF(1.0) / (m11 * inverse[0] + m21 * inverse[4] +
+                                       m31 * inverse[8] + m41 * inverse[12]);
+  result[0] = inverse[0] * inverted_determinant;
+  result[1] = inverse[1] * inverted_determinant;
+  result[2] = inverse[2] * inverted_determinant;
+  result[3] = inverse[3] * inverted_determinant;
+  result[4] = inverse[4] * inverted_determinant;
+  result[5] = inverse[5] * inverted_determinant;
+  result[6] = inverse[6] * inverted_determinant;
+  result[7] = inverse[7] * inverted_determinant;
+  result[8] = inverse[8] * inverted_determinant;
+  result[9] = inverse[9] * inverted_determinant;
+  result[10] = inverse[10] * inverted_determinant;
+  result[11] = inverse[11] * inverted_determinant;
+  result[12] = inverse[12] * inverted_determinant;
+  result[13] = inverse[13] * inverted_determinant;
+  result[14] = inverse[14] * inverted_determinant;
+  result[15] = inverse[15] * inverted_determinant;
 }
 
 // Assign x rotation directly to result
@@ -192,7 +332,7 @@ void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view);
 // My personal perspective projection function. For some reason, it produces
 // different results than the mathc libary's
 void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
-                     float_t *m);
+                     mat4 m);
 
 // Calculate triangle viewport pixel coordinates from normalized coordinates
 static inline void h3d_viewport(float_t *v, int width, int height,
@@ -203,5 +343,7 @@ static inline void h3d_viewport(float_t *v, int width, int height,
   out[H3DX] = round((v[H3DX] + H3DVF(1.0)) * 0.5 * width);
   out[H3DY] = round((H3DVF(1.0) - v[H3DY]) * 0.5 * height);
 }
+
+int h3d_facef_clip(h3d_face face, h3d_face *out);
 
 #endif

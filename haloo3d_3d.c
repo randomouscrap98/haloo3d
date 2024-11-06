@@ -17,6 +17,9 @@ void h3d_camera_init(h3d_camera *cam) {
 
 void h3d_camera_calclook(h3d_camera *cam, mat4 view, vec3 lookvec) {
   vec3 lookat;
+  vec3 tmp;
+  if (lookvec == NULL)
+    lookvec = tmp;
   // Use sphere equation to compute lookat vector through the two
   // player-controled angles (pitch and yaw)
   YAWP2VEC(cam->yaw, cam->pitch, lookvec);
@@ -78,4 +81,138 @@ void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
   m[10] = (far + near) / (near - far);
   m[11] = H3DVF(-1); // the z divide
   m[14] = H3DVF(2) * far * near / (near - far);
+}
+
+int h3d_facef_clip(h3d_face face, h3d_face *out) {
+  // w + z (back)
+  // w - z (front)
+  // w + x (left)
+  // w - x (right)
+  // w + y (bottom)
+  // w - y (top)
+
+  // We start with just the one face at index 0
+  memcpy(out[0], face, sizeof(h3d_face));
+
+#ifdef H3DEBUG_NOCLIPPING
+  return 1;
+#else
+  int outers[3];
+  int inners[3];
+  vec3 dist;
+
+  // this is our "assignment" tracker. Bits are low to high.
+  // We start with the first slot filled
+  uint64_t assign = 1;
+
+  // Do for each plane
+  for (int p = 0; p < H3D_FACEF_CLIPPLANES; p++) {
+    if (!assign) { // There's no triangles left
+      break;
+    }
+    // How far to move to store triangle 2, also how many tris
+    int tris = (1 << p);
+    uint64_t tricheck = assign; // local tracker for assign that gets shifted
+    for (int t = 0; t < tris; t++) {
+      if (!tricheck) { // There's no triangles left
+        break;
+      }
+      if (tricheck & 1) { // Only do tris that are set
+        int numinners = 0;
+        int numouters = 0;
+        vec4 *f = out[t];
+        // Figure out how many are in or out of this plane
+        for (int i = 0; i < 3; i++) {
+          switch (p) {
+          case 0: // z-near
+            dist[i] = f[i][H3DW] + f[i][H3DZ];
+            break;
+          // case 1: // z-far
+          //   dist[i] = f[i].pos.w - f[i].pos.z;
+          //   break;
+          case 1: // x-left
+            dist[i] = f[i][H3DW] + f[i][H3DX];
+            break;
+          case 2: // x-right
+            dist[i] = f[i][H3DW] - f[i][H3DX];
+            break;
+          case 3: // y-bottom
+            dist[i] = f[i][H3DW] + f[i][H3DY];
+            break;
+          case 4: // t-top
+            dist[i] = f[i][H3DW] - f[i][H3DY];
+            break;
+          }
+          if (dist[i] < H3D_FACEF_CLIPLOW) {
+            outers[numouters++] = i;
+          } else {
+            inners[numinners++] = i;
+          }
+        }
+        // Now we know how many points are inside or out against this one plane
+        if (numouters == 3) { // This is rejected fully, clear the assign
+          assign &= ~(1L << t);
+        } else if (numouters == 2) { // The one triangle thing
+          // two points are outside; the point as stored is fine, but we need to
+          // fix a couple things.
+          int ai = inners[0];
+          int bi = outers[0];
+          int ci = outers[1];
+          // Calc how far along we are on each of these lines. These are the new
+          // points
+          // NOTE: we nudge it a little forward to prevent weird issues
+          float_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_FACEF_CLIPLOW;
+          float_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_FACEF_CLIPLOW;
+          // The two points that aren't 'a' need to be the interpolated values
+          haloo3d_vertexf_lerp_self(f + bi, f + ai, tba);
+          haloo3d_vertexf_lerp_self(f + ci, f + ai, tca);
+          // Don't do anything with assign, it's already set for this tri
+        } else if (numouters == 1) { // The two triangle thing
+          // For this one, we need to mutate the original AND produce a new
+          int ai = outers[0]; // A is the odd one out
+          int bi = inners[0];
+          int ci = inners[1];
+          float_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_FACEF_CLIPLOW;
+          float_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_FACEF_CLIPLOW;
+          haloo3d_vertexf *f2 = out[t + tris];
+          // BEFORE modification, we copy the existing triangle to the final
+          // outer place
+          memcpy(f2, f, sizeof(haloo3d_facef));
+          assign |= (1L << (t + tris));
+          // Fix existing triangle by replacing the bad outer point a
+          // with an interpolated one to b
+          haloo3d_vertexf_lerp_self(f + ai, f + bi, tab);
+          haloo3d_vertexf olda = f[ai];
+          // And once again replace the a point but interpolating with c
+          haloo3d_vertexf_lerp_self(f2 + ai, f2 + ci, tac);
+          // But the B point needs to actually be the interpolated A point
+          f2[bi] = olda;
+        }
+        // Don't need to check for trivial accept, it's already where it needs
+        // to be
+      }
+      // this is the end of the triangle loop, move to the next triangle
+      tricheck >>= 1;
+    }
+  }
+
+  // Now that we're here, we need to backfill the holes
+  int numout = 0;
+  int index = 0;
+
+  // Though this could be expensive, generally speaking, there won't be
+  // many triangles here. It doesn't scale well though
+  while (assign) {
+    if (assign & 1) {
+      if (index != numout) {
+        memcpy(out + numout, out + index, sizeof(h3d_face));
+      }
+      numout++;
+    }
+    assign >>= 1;
+    index++;
+  }
+
+  return numout;
+#endif
 }
