@@ -1,0 +1,17 @@
+- precalc_verts unnecessary, it's just a for loop around the thing doing the actual math
+- don't REALLY need to fix "w" anymore, as there's no implicit z tracking in the triangle 
+  function. instead, users will need to supply some working depth value for themselves
+  (so it will be part of the program, not the library?)
+- specialized edge functions, such as those for integers vs floats and the subsequent
+  "increment" functions, are not needed. we have an edge macro now which works for
+  all types, and we don't use the increment with our new triangle function
+  (that was used on the barycentric slow tri)
+- I'm not sure if we use the "bounding box" computations, which try to compute the
+  square area encompassing the triangle.
+
+
+- Need to determine how I wnat to pass around "faces", or groups of vertices.
+  Had SOME trouble with the typedef but maybe that's silly? But consider 
+  that matrices are also passed as just float blobs, faces would probably work
+  similarly. But then anything that uses them as groups would need to KNOW
+  when we have 3 vs 4 values etc.
