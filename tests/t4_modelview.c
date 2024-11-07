@@ -11,8 +11,8 @@
 
 // This is expected to run for multiple frames so
 // make the default smaller. I don't feel like allowing inputs
-#define WIDTH 1280
-#define HEIGHT 720
+#define WIDTH 320
+#define HEIGHT 240
 #define FOV 60.0
 #define ASPECT ((float)WIDTH / HEIGHT)
 #define NEARCLIP 0.01
