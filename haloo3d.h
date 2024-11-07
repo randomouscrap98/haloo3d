@@ -159,10 +159,12 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // - rv = rasterize vertex
 // - bw = buffer width
 // - bh = buffer height
+// NOTE: because the triangle scanline right value is exclusive, there's no need
+// to subtract 1 from the width and height, let it go to the edge.
 #define H3DTRI_CLAMP(rv, bw, bh)                                               \
   for (int _i = 0; _i < 3; _i++) {                                             \
-    rv[_i].pos[H3DX] = _H3D_CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw - H3DVF(1));  \
-    rv[_i].pos[H3DY] = _H3D_CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh - H3DVF(1));  \
+    rv[_i].pos[H3DX] = _H3D_CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw);             \
+    rv[_i].pos[H3DY] = _H3D_CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh);             \
   }
 
 // Helper function for initializing triangle functions. This enables
