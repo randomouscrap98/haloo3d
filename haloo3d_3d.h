@@ -11,9 +11,9 @@
 // even know if that's correct). It should(?) be that for
 // each plane we clip against, we multiply by two. So
 // however many planes we clip, that's the number we shift
-#define H3D_FACEF_CLIPPLANES 5
-#define H3D_FACEF_MAXCLIP (1 << H3D_FACEF_CLIPPLANES)
-#define H3D_FACEF_CLIPLOW H3DVF(0.0)
+#define H3D_CLIPPLANES 5
+#define H3D_MAXCLIP (1 << H3D_CLIPPLANES)
+#define H3D_CLIPLOW H3DVF(0.0)
 
 #define LERP(a, b, t) ((a) + ((b) - (a)) * (t))
 // NOTE: pitch = 0 means pointing straight up, this is to prevent gimbal
@@ -367,6 +367,10 @@ void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view);
 void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
                      mat4 m);
 
+// Create model matrix from simple position, lookvector (vector describing
+// facing direction in world), up vector, and scale
+void h3d_model_matrix(vec3 pos, vec3 lookvec, vec3 up, vec3 scale, mat4 out);
+
 // Calculate triangle viewport pixel coordinates from normalized coordinates
 static inline void h3d_viewport(float_t *v, int width, int height,
                                 int16_t *out) {
@@ -385,15 +389,13 @@ static inline int h3d_3dface_normalize(h3d_3dface face) {
   h3d_vec4_homogenous(face[0].pos);
   h3d_vec4_homogenous(face[1].pos);
   h3d_vec4_homogenous(face[2].pos);
+  // WHY is it facing the camera when it's LESS than 0? Something to do with
+  // the way y is inverted on screen, perhaps?
   return H3D_EDGEFUNC(face[0].pos, face[1].pos, face[2].pos) <= 0;
 }
 
 // Clip a single face into 0-2^CLIPPLANES (currently 32) new faces. Make sure
-// the out array has enough space (H3D_FACEF_MAXCLIP)
+// the out array has enough space (H3D_MAXCLIP)
 int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants);
-
-// Create model matrix from simple position, lookvector (vector describing
-// facing direction in world), up vector, and scale
-void h3d_model_matrix(vec3 pos, vec3 lookvec, vec3 up, vec3 scale, mat4 out);
 
 #endif

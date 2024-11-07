@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
   vec4 verttrans[H3D_OBJ_MAXVERTICES];
   h3d_obj_batchtranslate(&_obj, finalmatrix, verttrans);
 
-  h3d_3dface clipfaces[H3D_FACEF_MAXCLIP];
+  h3d_3dface clipfaces[H3D_MAXCLIP];
 
   // Iterate over object faces
   for (int fi = 0; fi < _obj.numfaces; fi++) {

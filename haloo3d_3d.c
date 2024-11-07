@@ -114,7 +114,7 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
   uint64_t assign = 1;
 
   // Do for each plane
-  for (int p = 0; p < H3D_FACEF_CLIPPLANES; p++) {
+  for (int p = 0; p < H3D_CLIPPLANES; p++) {
     if (!assign) { // There's no triangles left
       break;
     }
@@ -151,7 +151,7 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
             dist[i] = f[i].pos[H3DW] - f[i].pos[H3DY];
             break;
           }
-          if (dist[i] < H3D_FACEF_CLIPLOW) {
+          if (dist[i] < H3D_CLIPLOW) {
             outers[numouters++] = i;
           } else {
             inners[numinners++] = i;
@@ -169,8 +169,8 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
           // Calc how far along we are on each of these lines. These are the new
           // points
           // NOTE: we nudge it a little forward to prevent weird issues
-          float_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_FACEF_CLIPLOW;
-          float_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_FACEF_CLIPLOW;
+          float_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_CLIPLOW;
+          float_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_CLIPLOW;
           // The two points that aren't 'a' need to be the interpolated values
           h3d_3dvert_lerp_self(f + bi, f + ai, numinterpolants, tba);
           h3d_3dvert_lerp_self(f + ci, f + ai, numinterpolants, tca);
@@ -180,8 +180,8 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
           int ai = outers[0]; // A is the odd one out
           int bi = inners[0];
           int ci = inners[1];
-          float_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_FACEF_CLIPLOW;
-          float_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_FACEF_CLIPLOW;
+          float_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_CLIPLOW;
+          float_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_CLIPLOW;
           h3d_3dvert *f2 = out[t + tris];
           // BEFORE modification, we copy the existing triangle to the final
           // outer place
