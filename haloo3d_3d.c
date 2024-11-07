@@ -68,7 +68,7 @@ void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view) {
   view[8] = forward[H3DX];
   view[9] = forward[H3DY];
   view[10] = forward[H3DZ];
-  view[12] = from[H3DZ];
+  view[12] = from[H3DX];
   view[13] = from[H3DY];
   view[14] = from[H3DZ];
   // Remember: I don't pre-invert it. That wastes slightly more time but it

@@ -11,8 +11,8 @@
 
 // This is expected to run for multiple frames so
 // make the default smaller. I don't feel like allowing inputs
-#define WIDTH 320
-#define HEIGHT 240
+#define WIDTH 1280
+#define HEIGHT 720
 #define FOV 60.0
 #define ASPECT ((float)WIDTH / HEIGHT)
 #define NEARCLIP 0.01
@@ -25,10 +25,10 @@
 // simple perspective-correct texture mapped triangle with depth buffer
 void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
   H3DTRI_EASY_BEGIN(rv, buf->width, buf->height, linpol, 3, bufi) {
-    if (linpol[2] < buf->dbuffer[bufi]) {
+    if (linpol[2] > buf->dbuffer[bufi]) {
       buf->dbuffer[bufi] = linpol[2];
-      float_t z =
-          1 / linpol[2]; // 1/z is linear across triangle, need z for next
+      // 1/z is linear across triangle, need z for uv
+      float_t z = 1 / linpol[2];
       buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0] * z, linpol[1] * z);
     }
     H3DTRI_LINPOL3(linpol);
@@ -68,14 +68,6 @@ int main(int argc, char **argv) {
   vec3 scale;
   VEC3(scale, 1, 1, 1);
 
-  // Storage stuff
-  // mat4 matrix3d, /*matrixscreen,*/ matrixmodel;
-  // haloo3d_facef outfaces[H3D_FACEF_MAXCLIP];
-  // vec3 tmp1;
-  // haloo3d_facef face, baseface;
-  //  vec4 *vert_precalc;
-  //  mallocordie(vert_precalc, sizeof(struct vec4) * H3D_OBJ_MAXVERTICES);
-
   // -----------------------------------
   //     Actual rendering
   // -----------------------------------
@@ -84,7 +76,7 @@ int main(int argc, char **argv) {
   const int len = h3d_fb_size(&fb);
   for (int i = 0; i < len; i++) {
     fb.buffer[i] = 0xF0F0;
-    fb.dbuffer[i] = H3DVF(999999);
+    fb.dbuffer[i] = H3DVF(0);
   }
 
   // NOTE: we do not change the camera in this one, only the model!
@@ -97,11 +89,6 @@ int main(int argc, char **argv) {
   h3d_obj_batchtranslate(&_obj, finalmatrix, verttrans);
 
   h3d_3dface clipfaces[H3D_FACEF_MAXCLIP];
-  // Screen matrix calc. We multiply the modelview matrix with this later
-  // h3d_camera_calclook(&camera, matrixcam, NULL);
-  // mat4_inverse(matrixcam, matrixcam);
-  // mat4_multiply(perspective, matrixcam, matrixscreen);
-  // haloo3d_precalc_verts(objects[i].model, matrix3d, vert_precalc);
 
   // Iterate over object faces
   for (int fi = 0; fi < _obj.numfaces; fi++) {
@@ -110,7 +97,7 @@ int main(int argc, char **argv) {
       memcpy(face[v].pos, verttrans[_obj.faces[fi][v].verti], sizeof(vec4));
       // For our perspective-correct textures, our interpolants are u/z, v/z,
       // and 1/z
-      float_t invz = 1 / face[v].pos[H3DZ];
+      float_t invz = 1 / face[v].pos[H3DW];
       face[v].interpolants[0] =
           _obj.vtexture[_obj.faces[fi][v].texi][H3DX] * invz;
       face[v].interpolants[1] =
@@ -118,12 +105,8 @@ int main(int argc, char **argv) {
       face[v].interpolants[2] = invz;
     }
 
-    // Copy face values out of precalc array and clip them
-    // haloo3d_make_facef(objects[i].model->faces[fi], vert_precalc,
-    //                    objects[i].model->vtexture, face);
     int tris = h3d_3dface_clip(face, clipfaces, NUMINTERPOLANTS);
     h3d_rasterface rface;
-    // rsettings.texture = objects[i].texture;
     for (int ti = 0; ti < tris; ti++) {
       // You (perhaps unfortunately) still need to finalize the face. This
       // lets you ignore backface culling if you want (we turn it on here)
@@ -135,10 +118,7 @@ int main(int argc, char **argv) {
                sizeof(float_t) * NUMINTERPOLANTS);
         h3d_viewport(clipfaces[ti][v].pos, WIDTH, HEIGHT, rface[v].pos);
       }
-      //   We still have to convert the points into the view
-      // haloo3d_facef_viewport_into(outfaces[ti], WIDTH, HEIGHT);
       triangle(rface, &fb, &_tex);
-      // haloo3d_triangle(&fb, &rsettings, outfaces[ti]);
     }
   }
 
