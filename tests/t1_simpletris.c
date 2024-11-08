@@ -1,4 +1,5 @@
-#include "../haloo3d_helper.h"
+#include "../haloo3d.h"
+#include "../haloo3d_ex.h"
 #include "../haloo3d_unigi.h"
 
 // Simple solid triangle
@@ -14,8 +15,8 @@ void triangle(h3d_rastervert *rv, h3d_fb *buf) {
 void triangle_vcol(h3d_rastervert *rv, h3d_fb *buf) {
   H3DTRI_EASY_BEGIN(rv, buf->width, buf->height, linpol, 3, bufi) {
     buf->buffer[bufi] =
-        H3DC_ARGB(15, (uint16_t)(15 * linpol[0]), (uint16_t)(15 * linpol[1]),
-                  (uint16_t)(15 * linpol[2]));
+        H3DC_A4R4G4B4(0xF, (uint16_t)(15 * linpol[0]),
+                      (uint16_t)(15 * linpol[1]), (uint16_t)(15 * linpol[2]));
     H3DTRI_LINPOL3(linpol);
   }
   H3DTRI_SCAN_END(buf->width);
@@ -61,8 +62,8 @@ int main() {
   rv[2].interpolants[2] = 1.0;
   triangle_vcol(rv, &screen);
 
-  h3d_img_writeppmfile(&screen, OUTFILE);
+  h3d_fb_writeppmfile(&screen, OUTFILE);
 
   // h3d_fb_free(&_tex);
-  h3d_fb_free(&screen);
+  H3D_FB_FREE(&screen);
 }

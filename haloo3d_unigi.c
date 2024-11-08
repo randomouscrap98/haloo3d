@@ -1,5 +1,5 @@
 #include "haloo3d_unigi.h"
-#include "haloo3d_helper.h"
+#include "haloo3d_ex.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 // |                 IMAGE                   |
 // ===========================================
 
-void h3d_img_writeppm(h3d_fb *fb, FILE *f) {
+void h3d_fb_writeppm(h3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
   for (int i = 0; i < H3D_FB_SIZE(fb); i++) {
@@ -20,7 +20,7 @@ void h3d_img_writeppm(h3d_fb *fb, FILE *f) {
   }
 }
 
-void h3d_img_loadppm(FILE *f, h3d_fb *fb) {
+void h3d_fb_loadppm(FILE *f, h3d_fb *fb) {
   char tmp[4096];
   // Must ALWAYS start with "P6"
   int scanned = fscanf(f, "%4095s", tmp);
@@ -66,24 +66,34 @@ void h3d_img_loadppm(FILE *f, h3d_fb *fb) {
   }
 }
 
-void h3d_img_writeppmfile(h3d_fb *fb, char *filename) {
+void h3d_fb_writeppmfile(h3d_fb *fb, char *filename) {
   // And now we should be able to save the framebuffer
   FILE *f = fopen(filename, "w");
   if (f == NULL) {
     dieerr("Can't open %s for writing ppm image\n", filename);
   }
-  h3d_img_writeppm(fb, f);
+  h3d_fb_writeppm(fb, f);
   fclose(f);
   eprintf("Wrote ppm image to %s\n", filename);
 }
 
-void h3d_img_loadppmfile(h3d_fb *tex, char *filename) {
+void h3d_fb_loadppmfile(h3d_fb *tex, char *filename) {
   // Open a simple file and read the ppm from it
   FILE *f = fopen(filename, "r");
   if (f == NULL) {
     dieerr("Can't open %s for ppm image reading\n", filename);
   }
-  h3d_img_loadppm(f, tex); // This also calls init so you have to free
+  h3d_fb_loadppm(f, tex); // This also calls init so you have to free
   fclose(f);
   eprintf("Read ppm image from %s\n", filename);
 }
+
+// ===========================================
+// |              FRAMEBUFFER                |
+// ===========================================
+
+void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height) {
+  H3D_FB_INIT(fb, width, height, 2);
+}
+
+void h3d_fb_free(h3d_fb *fb) { H3D_FB_FREE(fb); }

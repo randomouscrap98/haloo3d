@@ -393,15 +393,16 @@ typedef struct {
   uint16_t height;  // height of the framebuffer
 } h3d_fb8;
 
-#define H3D_FB_GET(fb, x, y) (fb->buffer[(x) + (y) * fb->width])
-#define H3D_FB_DGET(fb, x, y) (fb->dbuffer[(x) + (y) * fb->width])
-#define H3D_FB_SET(fb, x, y, v) fb->buffer[(x) + (y) * fb->width] = (v)
-#define H3D_FB_DSET(fb, x, y, v) fb->dbuffer[x + (y) * fb->width] = (v)
+#define H3D_FB_GET(fb, x, y) ((fb)->buffer[(x) + (y) * (fb)->width])
+#define H3D_FB_DGET(fb, x, y) ((fb)->dbuffer[(x) + (y) * (fb)->width])
+#define H3D_FB_SET(fb, x, y, v) (fb)->buffer[(x) + (y) * (fb)->width] = (v)
+#define H3D_FB_DSET(fb, x, y, v) (fb)->dbuffer[x + (y) * (fb)->width] = (v)
 #define H3D_FB_GETUV(fb, u, v)                                                 \
-  (fb->buffer[((uint16_t)(fb->width * u) & (fb->width - 1)) +                  \
-              ((uint16_t)(fb->height * (H3DVF(1) - v)) & (fb->height - 1)) *   \
-                  fb->width])
-#define H3D_FB_SIZE(fb) (fb->width * fb->height)
+  (fb->buffer[((uint16_t)((fb)->width * u) & ((fb)->width - 1)) +              \
+              ((uint16_t)((fb)->height * (H3DVF(1) - v)) &                     \
+               ((fb)->height - 1)) *                                           \
+                  (fb)->width])
+#define H3D_FB_SIZE(fb) ((fb)->width * (fb)->height)
 
 // Convert given color to full transparency in whole fb
 #define H3D_FB_TOTRANSPARENT(fb, col)                                          \
@@ -428,5 +429,10 @@ typedef struct {
 // #define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
 #define H3DC_A4R4G4B4(a, r, g, b)                                              \
   ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
+
+// // "scale" a color by a given intensity. it WILL clip...
+// #define H3DC_A4R4G4B4_SCALE(col, scale)
+//   H3DC_A4R4G4B4(H3DC_A4(col), H3DC_R4(col) * scale, H3DC_G4(col) * scale,
+//                 H3DC_B4(col) * scale)
 
 #endif

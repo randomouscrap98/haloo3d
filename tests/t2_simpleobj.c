@@ -1,4 +1,4 @@
-#include "../haloo3d_helper.h"
+#include "../haloo3d_ex.h"
 #include "../haloo3d_obj.h"
 #include "../haloo3d_unigi.h"
 
@@ -9,7 +9,7 @@ void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
   H3DTRI_EASY_BEGIN(rv, buf->width, buf->height, linpol, 3, bufi) {
     if (linpol[2] < buf->dbuffer[bufi]) {
       buf->dbuffer[bufi] = linpol[2];
-      buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0], linpol[1]);
+      buf->buffer[bufi] = H3D_FB_GETUV(tex, linpol[0], linpol[1]);
     }
     H3DTRI_LINPOL3(linpol);
   }
@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 
   h3d_fb screen;
   h3d_fb_init(&screen, WIDTH, HEIGHT);
-  const int len = h3d_fb_size(&screen);
+  const int len = H3D_FB_SIZE(&screen);
   for (int i = 0; i < len; i++) {
     screen.buffer[i] = 0xF0F0;
     screen.dbuffer[i] = H3DVF(999999);
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
           model.numvtextures, model.numfaces);
 
   h3d_fb tex;
-  h3d_img_loadppmfile(&tex, argv[2]);
+  h3d_fb_loadppmfile(&tex, argv[2]);
   eprintf("Texture is %dx%d\n", tex.width, tex.height);
 
   h3d_rasterface rv;
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
   }
   eprintf("Drew object\n");
 
-  h3d_img_writeppmfile(&screen, OUTFILE);
+  h3d_fb_writeppmfile(&screen, OUTFILE);
 
   h3d_obj_free(&model);
   h3d_fb_free(&tex);

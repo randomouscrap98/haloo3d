@@ -1,6 +1,6 @@
 #include "../haloo3d.h"
 #include "../haloo3d_3d.h"
-#include "../haloo3d_helper.h"
+#include "../haloo3d_ex.h"
 #include "../haloo3d_obj.h"
 #include "../haloo3d_special.h"
 #include "../haloo3d_unigi.h"
@@ -29,7 +29,7 @@ void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
       buf->dbuffer[bufi] = linpol[2];
       // 1/z is linear across triangle, need z for uv
       float_t z = 1 / linpol[2];
-      buf->buffer[bufi] = h3d_fb_getuv(tex, linpol[0] * z, linpol[1] * z);
+      buf->buffer[bufi] = H3D_FB_GETUV(tex, linpol[0] * z, linpol[1] * z);
     }
     H3DTRI_LINPOL3(linpol);
   }
@@ -47,11 +47,11 @@ int main(int argc, char **argv) {
   h3d_obj _obj;
   h3d_obj_loadfile(&_obj, argv[1]);
   h3d_fb _tex;
-  h3d_img_loadppmfile(&_tex, argv[2]);
+  h3d_fb_loadppmfile(&_tex, argv[2]);
 
   // Create a framebuffer to draw the triangle into
   h3d_fb fb;
-  h3d_fb_init(&fb, WIDTH, HEIGHT);
+  H3D_FB_INIT(&fb, WIDTH, HEIGHT, 2);
 
   // Create the perspective matrix, which doesn't change
   mat4 perspective;
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   // -----------------------------------
 
   // REMEMBER TO CLEAR DEPTH BUFFER
-  const int len = h3d_fb_size(&fb);
+  const int len = H3D_FB_SIZE(&fb);
   for (int i = 0; i < len; i++) {
     fb.buffer[i] = 0xF0F0;
     fb.dbuffer[i] = H3DVF(0);
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  h3d_img_writeppmfile(&fb, OUTFILE);
+  h3d_fb_writeppmfile(&fb, OUTFILE);
 
   h3d_obj_free(&_obj);
   h3d_fb_free(&_tex);

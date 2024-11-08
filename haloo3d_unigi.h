@@ -1,13 +1,18 @@
 // haloopdy 2024
 // An extra header you can use if you're going to use haloo3d with unigi.
-// It provides a simple framebuffer with a zbuffer attached, and functions
-// to manipulate the buffer
+// Depends on the extended library.
 
 #ifndef HALOO3D_UNIGI_H
 #define HALOO3D_UNIGI_H
 
 #include "haloo3d.h"
 #include <stdio.h>
+
+// ========================================
+// |               COLOR                  |
+// ========================================
+
+// unigi-specific color operations
 
 // "scale" a color by a given intensity. it WILL clip...
 static inline uint16_t h3d_col_scale(uint16_t col, float_t scale) {
@@ -79,14 +84,20 @@ static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
 // ===========================================
 
 // Writes a P6 binary ppm from the framebuffer
-void h3d_img_writeppm(h3d_fb *fb, FILE *f);
+void h3d_fb_writeppm(h3d_fb *fb, FILE *f);
 // Loads a P6 binary ppm into a framebuffer
-void h3d_img_loadppm(FILE *f, h3d_fb *fb);
-
+void h3d_fb_loadppm(FILE *f, h3d_fb *fb);
 // Write a P6 binary ppm to a file. Kills whole program if it can't
-void h3d_img_writeppmfile(h3d_fb *fb, char *filename);
+void h3d_fb_writeppmfile(h3d_fb *fb, char *filename);
 // Load a P6 binary ppm into the given texture. Kills whole program
 // if it can't.
-void h3d_img_loadppmfile(h3d_fb *tex, char *filename);
+void h3d_fb_loadppmfile(h3d_fb *tex, char *filename);
+
+// ===========================================
+// |              FRAMEBUFFER                |
+// ===========================================
+
+void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
+void h3d_fb_free(h3d_fb *fb);
 
 #endif
