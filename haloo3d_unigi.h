@@ -8,6 +8,7 @@
 #include "haloo3d.h"
 #include "haloo3d_obj.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -106,6 +107,10 @@ void h3d_fb_loadppmfile(h3d_fb *tex, char *filename);
 void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
 void h3d_fb_free(h3d_fb *fb);
 
+void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
+                     uint8_t scale);
+void h3d_fb_fill(h3d_fb *src, h3d_fb *dst);
+
 // ===========================================
 // |              EASYSYS                    |
 // ===========================================
@@ -176,4 +181,40 @@ void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
 void h3d_gen_crossquad(h3d_obj *obj, h3d_fb *fb, vec3 center);
 void h3d_gen_quad(h3d_obj *obj, h3d_fb *fb, vec3 center);
 
+// ===========================================
+// |          PRINTING (legacy)              |
+// ===========================================
+
+#define H3D_PRINT_CHW 8
+#define H3D_PRINT_CHH 8
+
+typedef struct {
+  int x;
+  int y;
+  int scale;
+  int logprints;
+  h3d_fb *fb;
+  char *buffer;
+  int buflen;
+  uint16_t bcolor;
+  uint16_t fcolor;
+  const uint64_t *glyphs;
+  h3d_recti bounds;
+  // haloo3d_fb *font;
+} h3d_print_tracker;
+
+// Initialize the given print tracker to have all defaults. You will still need
+// to pass some kind of char buffer for storing buffered prints. The default
+// colors are chosen by the library (white text on black background)
+void h3d_print_init(h3d_print_tracker *t, char *buf, int buflen, h3d_fb *fb);
+
+// print using the given tracker. Standard printf formatter
+void h3d_print(h3d_print_tracker *t, const char *fmt, ...);
+
+// reset the cursor and any other "temporary" tracking.
+void h3d_print_refresh(h3d_print_tracker *t);
+
+// Convert a single glyph from compact uint64_t into the given framebuffer
+void h3d_print_convertglyph(uint64_t glpyh, uint16_t bcolor, uint16_t fcolor,
+                            h3d_fb *out);
 #endif
