@@ -194,15 +194,17 @@ void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
   }
 }
 
-void h3d_fb_fill(h3d_fb *src, h3d_fb *dst) {
+void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered) {
   uint16_t scalex = dst->width / src->width;
   uint16_t scaley = dst->height / src->height;
   uint16_t scale = scalex < scaley ? scalex : scaley;
   if (scale == 0) {
     scale = 1;
   }
-  int dstofsx = dst->width - scale * src->width;
-  int dstofsy = dst->height - scale * src->height;
+  int newwidth = scale * src->width;
+  int newheight = scale * src->height;
+  int dstofsx = centered ? (dst->width - newwidth) >> 1 : 0;
+  int dstofsy = centered ? (dst->height - newheight) >> 1 : 0;
   h3d_fb_intscale(src, dst, dstofsx, dstofsy, scale);
 }
 
@@ -383,6 +385,44 @@ void h3d_easytimer_end(h3d_easytimer *t) {
 // ===========================================
 // |              GENERATION                 |
 // ===========================================
+
+// 4x4 dither patterns from 0 (no fill) to 16 (high fill). The pattern is
+// actually 8x4 to make storage easier (each byte is 8 across)
+// clang-format off
+uint8_t _dither4x4[] = {
+    0x00, 0x00, 0x00, 0x00,
+    0x88, 0x00, 0x00, 0x00,
+    0x88, 0x00, 0x22, 0x00,
+    0xAA, 0x00, 0x22, 0x00,
+    0xAA, 0x00, 0xAA, 0x00,
+    0xAA, 0x44, 0xAA, 0x00,
+    0xAA, 0x44, 0xAA, 0x11,
+    0xAA, 0x55, 0xAA, 0x11,
+    0xAA, 0x55, 0xAA, 0x55,
+    0xEE, 0x55, 0xAA, 0x55,
+    0xEE, 0x55, 0xBB, 0x55,
+    0xFF, 0x55, 0xBB, 0x55,
+    0xFF, 0x55, 0xFF, 0x55,
+    0xFF, 0xDD, 0xFF, 0x55,
+    0xFF, 0xDD, 0xFF, 0x77,
+    0xFF, 0xFF, 0xFF, 0x77,
+    0xFF, 0xFF, 0xFF, 0xFF,
+};
+
+inline int h3d_4x4dither_index(float dither) {
+  if (dither < 0) {
+    return 0;
+  } else if (dither > 1) {
+    return 16 << 2;
+  } else {
+    return ((int)round(H3DVF(16) * dither) << 2);
+  }
+}
+
+inline void h3d_getdither4x4(float dither, uint8_t *buf) {
+  int index = h3d_4x4dither_index(dither);
+  memcpy(buf, _dither4x4 + index, 4);
+}
 
 void h3d_apply_alternating(h3d_fb *fb, uint16_t *cols, uint16_t numcols) {
   for (int y = 0; y < fb->height; y++) {

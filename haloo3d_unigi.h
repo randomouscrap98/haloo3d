@@ -109,7 +109,7 @@ void h3d_fb_free(h3d_fb *fb);
 
 void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
                      uint8_t scale);
-void h3d_fb_fill(h3d_fb *src, h3d_fb *dst);
+void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered);
 
 // ===========================================
 // |              EASYSYS                    |
@@ -158,6 +158,9 @@ void h3d_easytimer_end(h3d_easytimer *t);
 // ===========================================
 // |              GENERATION                 |
 // ===========================================
+
+int h3d_4x4dither_index(float dither);
+void h3d_getdither4x4(float dither, uint8_t *buf);
 
 void h3d_apply_alternating(h3d_fb *fb, uint16_t *cols, uint16_t numcols);
 void h3d_apply_vgradient(h3d_fb *fb, uint16_t top, uint16_t bottom);

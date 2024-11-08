@@ -78,7 +78,9 @@
 // width/height must be a power of 2
 #define H3D_FB_TEXINIT(fb, w, h)                                               \
   {                                                                            \
-    if (!H3D_IS2POW(w) || !H3D_IS2POW(h)) {                                    \
+    int width = (w);                                                           \
+    int height = (h);                                                          \
+    if (!H3D_IS2POW(width) || !H3D_IS2POW(height)) {                           \
       dieerr("Texture width and height must be power of 2: %dX%d\n", w, h);    \
     }                                                                          \
     (fb)->width = w;                                                           \
