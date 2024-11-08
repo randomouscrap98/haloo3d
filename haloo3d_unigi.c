@@ -4,35 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// ========================================
-// |            FRAMEBUFFER               |
-// ========================================
-
-void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height) {
-  fb->width = width;
-  fb->height = height;
-  mallocordie(fb->buffer, sizeof(uint16_t) * h3d_fb_size(fb));
-  mallocordie(fb->dbuffer, sizeof(float_t) * h3d_fb_size(fb));
-}
-
-void h3d_fb_init_tex(h3d_fb *fb, uint16_t width, uint16_t height) {
-  if (!IS2POW(width) || !IS2POW(height)) {
-    dieerr("Texture width and height must be power of 2: %dX%d\n", width,
-           height);
-  }
-  fb->width = width;
-  fb->height = height;
-  fb->dbuffer = NULL;
-  mallocordie(fb->buffer, sizeof(uint16_t) * h3d_fb_size(fb));
-}
-
-void h3d_fb_free(h3d_fb *fb) {
-  free(fb->buffer);
-  if (fb->dbuffer != NULL) {
-    free(fb->dbuffer);
-  }
-}
-
 // ===========================================
 // |                 IMAGE                   |
 // ===========================================
@@ -92,14 +63,6 @@ void h3d_img_loadppm(FILE *f, h3d_fb *fb) {
       i++;
       b = 0;
     }
-  }
-}
-
-void h3d_img_totransparent(h3d_fb *fb, uint16_t col) {
-  const int size = h3d_fb_size(fb);
-  for (int i = 0; i < size; i++) {
-    if (fb->buffer[i] == col)
-      fb->buffer[i] = 0;
   }
 }
 

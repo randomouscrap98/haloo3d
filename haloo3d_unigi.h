@@ -89,61 +89,6 @@ static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
   // clang-format on
 }
 
-// ========================================
-// |            FRAMEBUFFER               |
-// ========================================
-
-// The framebuffer object, which stores stuff like the 16 bit
-// framebuffer, the depth buffer, etc
-typedef struct {
-  uint16_t *buffer; // actual buffer (managed manually)
-  float_t *dbuffer; // Depth buffer, probably using w value instead of z
-  uint16_t width;   // width of the framebuffer
-  uint16_t height;  // height of the framebuffer
-} h3d_fb;
-
-// Get a value from the framebuffer at the given location
-static inline uint16_t h3d_fb_get(h3d_fb *fb, int x, int y) {
-  return fb->buffer[x + y * fb->width];
-}
-
-// Get a value from the depth buffer at a given location
-static inline float_t h3d_db_get(h3d_fb *fb, int x, int y) {
-  return fb->dbuffer[x + y * fb->width];
-}
-
-// Set a value in the framebuffer at the given location
-static inline void h3d_fb_set(h3d_fb *fb, int x, int y, uint16_t v) {
-  fb->buffer[x + y * fb->width] = v;
-}
-
-// Set a value in the depth buffer at the given location
-static inline void h3d_db_set(h3d_fb *fb, int x, int y, float_t v) {
-  fb->dbuffer[x + y * fb->width] = v;
-}
-
-// Get a value based on uv coordinates. Does not perform any smoothing
-static inline uint16_t h3d_fb_getuv(h3d_fb *fb, float_t u, float_t v) {
-  // NOTE: Some multiplications here have been changed for systems
-  // where float constants are slow for some reason. For instance, we
-  // multiplied out height with 1 - v
-  uint16_t x = (uint16_t)(fb->width * u) & (fb->width - 1);
-  uint16_t y = (uint16_t)(fb->height - fb->height * v) & (fb->height - 1);
-  return fb->buffer[x + y * fb->width];
-}
-
-// Get the total size in elements of any buffer inside (framebuffer or
-// otherwise)
-static inline int h3d_fb_size(h3d_fb *fb) { return fb->width * fb->height; }
-
-// Initialize a framebuffer with a symmetric data buffer and depth buffer
-void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
-// Free all the buffers created etc
-void h3d_fb_free(h3d_fb *fb);
-// Initialize a framebuffer for use as a texture. This makes the zbuffer null,
-// but you can otherwise use it as normal
-void h3d_fb_init_tex(h3d_fb *fb, uint16_t width, uint16_t height);
-
 // ===========================================
 // |                 IMAGE                   |
 // ===========================================
