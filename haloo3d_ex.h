@@ -81,10 +81,10 @@
     if (!H3D_IS2POW(w) || !H3D_IS2POW(h)) {                                    \
       dieerr("Texture width and height must be power of 2: %dX%d\n", w, h);    \
     }                                                                          \
-    fb->width = w;                                                             \
-    fb->height = h;                                                            \
-    fb->dbuffer = NULL;                                                        \
-    mallocordie(fb->buffer, sizeof(uint16_t) * H3D_FB_SIZE(fb));               \
+    (fb)->width = w;                                                           \
+    (fb)->height = h;                                                          \
+    (fb)->dbuffer = NULL;                                                      \
+    mallocordie((fb)->buffer, sizeof(uint16_t) * H3D_FB_SIZE(fb));             \
   }
 
 // ========================================

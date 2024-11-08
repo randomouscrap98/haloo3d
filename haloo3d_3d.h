@@ -43,6 +43,13 @@ static inline void vec3_add(vec3 v0, vec3 v1, vec3 out) {
   out[2] = v0[2] + v1[2];
 }
 
+// Multiply all values in v by f. Out can be input
+static inline void vec3_multiply(vec3 v0, float_t f, vec3 result) {
+  result[0] = v0[0] * f;
+  result[1] = v0[1] * f;
+  result[2] = v0[2] * f;
+}
+
 // Normalize v0, storing result in out. Out vector can be input vector
 static inline void vec3_normalize(vec3 v0, vec3 out) {
   float_t l = sqrtf(v0[0] * v0[0] + v0[1] * v0[1] + v0[2] * v0[2]);
@@ -170,6 +177,43 @@ static inline void mat4_multiply(mat4 m0, mat4 m1, mat4 result) {
   result[13] = multiplied[13];
   result[14] = multiplied[14];
   result[15] = multiplied[15];
+}
+
+// Transpose m0 and store into result. Result can be same as input
+static inline void mat4_transpose(float_t *m0, float_t *result) {
+  mat4 transposed;
+  transposed[0] = m0[0];
+  transposed[1] = m0[4];
+  transposed[2] = m0[8];
+  transposed[3] = m0[12];
+  transposed[4] = m0[1];
+  transposed[5] = m0[5];
+  transposed[6] = m0[9];
+  transposed[7] = m0[13];
+  transposed[8] = m0[2];
+  transposed[9] = m0[6];
+  transposed[10] = m0[10];
+  transposed[11] = m0[14];
+  transposed[12] = m0[3];
+  transposed[13] = m0[7];
+  transposed[14] = m0[11];
+  transposed[15] = m0[15];
+  result[0] = transposed[0];
+  result[1] = transposed[1];
+  result[2] = transposed[2];
+  result[3] = transposed[3];
+  result[4] = transposed[4];
+  result[5] = transposed[5];
+  result[6] = transposed[6];
+  result[7] = transposed[7];
+  result[8] = transposed[8];
+  result[9] = transposed[9];
+  result[10] = transposed[10];
+  result[11] = transposed[11];
+  result[12] = transposed[12];
+  result[13] = transposed[13];
+  result[14] = transposed[14];
+  result[15] = transposed[15];
 }
 
 // Calculate the inverse of m0 and put result in result. They can be

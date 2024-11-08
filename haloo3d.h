@@ -28,9 +28,24 @@ typedef float float_t;
 // |                  MATH                        |
 // ================================================
 
+typedef float_t vec2[2];
+typedef int32_t vec2i[2];
 typedef float_t vec3[3];
+typedef int32_t vec3i[3];
 typedef float_t vec4[4];
 typedef float_t mat4[16];
+
+// Define a rectangle with INCLUSIVE start EXCLUSIVE endpoint
+typedef struct {
+  int x1;
+  int y1;
+  int x2;
+  int y2;
+} h3d_recti;
+
+#define VEC2(v, x, y)                                                          \
+  v[H3DX] = x;                                                                 \
+  v[H3DY] = y;
 
 #define VEC3(v, x, y, z)                                                       \
   v[H3DX] = x;                                                                 \
@@ -44,7 +59,7 @@ typedef float_t mat4[16];
   v[H3DW] = w;
 
 #define H3D_CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
-#define H3D_IS2POW(x) (!(x & (x - 1)) && x)
+#define H3D_IS2POW(x) (!((x) & ((x) - 1)) && (x))
 #define H3D_MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define H3D_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -407,10 +422,27 @@ typedef struct {
 // Convert given color to full transparency in whole fb
 #define H3D_FB_TOTRANSPARENT(fb, col)                                          \
   {                                                                            \
-    const int size = h3d_fb_size(fb);                                          \
+    const int size = H3D_FB_SIZE(fb);                                          \
     for (int _i = 0; _i < size; _i++) {                                        \
-      if (fb->buffer[_i] == col)                                               \
-        fb->buffer[_i] = 0;                                                    \
+      if ((fb)->buffer[_i] == col)                                             \
+        (fb)->buffer[_i] = 0;                                                  \
+    }                                                                          \
+  }
+
+// Fill buffer with col
+#define H3D_FB_FILL(fb, col)                                                   \
+  {                                                                            \
+    const int size = H3D_FB_SIZE(fb);                                          \
+    for (int _i = 0; _i < size; _i++) {                                        \
+      (fb)->buffer[_i] = col;                                                  \
+    }                                                                          \
+  }
+
+#define H3D_FB_DFILL(fb, val)                                                  \
+  {                                                                            \
+    const int size = H3D_FB_SIZE(fb);                                          \
+    for (int _i = 0; _i < size; _i++) {                                        \
+      (fb)->dbuffer[_i] = val;                                                 \
     }                                                                          \
   }
 

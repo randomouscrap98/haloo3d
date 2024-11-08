@@ -35,19 +35,19 @@ typedef struct {
   h3d_objface *faces;
 } h3d_obj;
 
-static inline int h3d_obj_addvertex(h3d_obj *obj, vec4 vertex) {
+static inline int h3d_obj_addvertex(h3d_obj *obj, const vec4 vertex) {
   int vi = obj->numvertices++;
   memcpy(obj->vertices[vi], vertex, sizeof(vec4));
   return vi;
 }
 
-static inline int h3d_obj_addvtexture(h3d_obj *obj, vec3 vtexture) {
+static inline int h3d_obj_addvtexture(h3d_obj *obj, const vec3 vtexture) {
   int vti = obj->numvtextures++;
   memcpy(obj->vtexture[vti], vtexture, sizeof(vec3));
   return vti;
 }
 
-static int h3d_obj_addface(h3d_obj *obj, h3d_objface face) {
+static inline int h3d_obj_addface(h3d_obj *obj, const h3d_objface face) {
   int fi = obj->numfaces++;
   memcpy(&obj->faces[fi], face, sizeof(h3d_objface));
   return fi;
