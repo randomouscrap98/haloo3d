@@ -143,17 +143,20 @@ void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
   // calculate total usable width and height given offset
   const int dstwidth = dstofsx < 0 ? dst->width : dst->width - dstofsx;
   const int dstheight = dstofsy < 0 ? dst->height : dst->height - dstofsy;
-  if (dstwidth < 0 || dstheight < 0) // degenerate draw
+  if (dstwidth < 0 || dstheight < 0) { // degenerate draw
+    // eprintf("DEGEN DRAW\n");
     return;
+  }
   // Special very fast case of scale 1
   if (scale == 1) {
     const int width = sizeof(uint16_t) * H3D_MIN(src->width, dstwidth);
     const int height = H3D_MIN(src->height, dstheight);
+    // eprintf("WH: %d, %d\n", (int)(width / sizeof(uint16_t)), height);
     uint16_t *dbuf =
         dst->buffer + H3D_MAX(0, dstofsx) + dst->width * H3D_MAX(0, dstofsy);
     uint16_t *sbuf =
         src->buffer + H3D_MAX(0, -dstofsx) + src->width * H3D_MAX(0, -dstofsy);
-    uint16_t *dbuf_e = dst->buffer + dst->width * height;
+    uint16_t *dbuf_e = dbuf + dst->width * height;
     while (dbuf < dbuf_e) {
       memcpy(dbuf, sbuf, width);
       sbuf += src->width;
@@ -961,7 +964,7 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
   tex.height = H3D_PRINT_CHH;
   const int len = strlen(t->buffer);
   for (int i = 0; i < len; i++) {
-    eprintf("P[%d] : %c\n", i, t->buffer[i]);
+    eprintf("P[%d](%d,%d) : %c\n", i, t->x, t->y, t->buffer[i]);
     if (t->buffer[i] == '\n') {
       t->y += t->scale * H3D_PRINT_CHH;
       t->x = sx;
