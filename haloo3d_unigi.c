@@ -11,7 +11,7 @@
 void h3d_img_writeppm(h3d_fb *fb, FILE *f) {
   fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
   uint8_t color[3];
-  for (int i = 0; i < h3d_fb_size(fb); i++) {
+  for (int i = 0; i < H3D_FB_SIZE(fb); i++) {
     uint16_t bc = fb->buffer[i];
     color[0] = (bc >> 8) & 0xF; // H3DC_R(bc);
     color[1] = (bc >> 4) & 0xf; // H3DC_G(bc);
@@ -48,9 +48,9 @@ void h3d_img_loadppm(FILE *f, h3d_fb *fb) {
   fb->width = vals[0];
   fb->height = vals[1];
   int depth = vals[2];
-  h3d_fb_init_tex(fb, fb->width, fb->height);
+  H3D_FB_TEXINIT(fb, fb->width, fb->height);
   // Must set everything to 0
-  memset(fb->buffer, 0, h3d_fb_size(fb));
+  memset(fb->buffer, 0, H3D_FB_SIZE(fb));
   // Now let's just read until the end!
   int b = 0;
   int i = 0;

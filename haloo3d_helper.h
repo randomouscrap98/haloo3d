@@ -1,17 +1,13 @@
 #ifndef HALOO3D_HELPER_H
 #define HALOO3D_HELPER_H
 
-// Helper macros for various aspects of haloo3d. Since it is JUST macros,
-// you can safely include it for any combination of haloo3d sublibraries
+// Helper macros for memory and io in haloo3d. Individual macros may depend on
+// specific parts of the haloo3d library
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define IS2POW(x) (!(x & (x - 1)) && x)
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
 
 // Die with an error (most calls in library will die on fatal error)
@@ -56,8 +52,8 @@
 // Initialize an FB with the given width, height, and pixel byte size
 #define H3D_FB_INIT(fb, w, h, ps)                                              \
   {                                                                            \
-    fb->width = width;                                                         \
-    fb->height = height;                                                       \
+    fb->width = w;                                                             \
+    fb->height = h;                                                            \
     mallocordie(fb->buffer, (ps) * H3D_FB_SIZE(fb));                           \
     mallocordie(fb->dbuffer, sizeof(float_t) * H3D_FB_SIZE(fb));               \
   }
@@ -74,38 +70,18 @@
 // width/height must be a power of 2
 #define H3D_FB_TEXINIT(fb, w, h)                                               \
   {                                                                            \
-    if (!IS2POW(width) || !IS2POW(height)) {                                   \
-      dieerr("Texture width and height must be power of 2: %dX%d\n", width,    \
-             height);                                                          \
+    if (!H3D_IS2POW(w) || !H3D_IS2POW(h)) {                                    \
+      dieerr("Texture width and height must be power of 2: %dX%d\n", w, h);    \
     }                                                                          \
-    fb->width = width;                                                         \
-    fb->height = height;                                                       \
+    fb->width = w;                                                             \
+    fb->height = h;                                                            \
     fb->dbuffer = NULL;                                                        \
     mallocordie(fb->buffer, sizeof(uint16_t) * H3D_FB_SIZE(fb));               \
-  }
-
-// Convert given color to full transparency in whole fb
-#define H3D_FB_TOTRANSPARENT(fb, col)                                          \
-  {                                                                            \
-    const int size = h3d_fb_size(fb);                                          \
-    for (int _i = 0; _i < size; _i++) {                                        \
-      if (fb->buffer[_i] == col)                                               \
-        fb->buffer[_i] = 0;                                                    \
-    }                                                                          \
   }
 
 // ========================================
 // |            OBJECT (MODEL)            |
 // ========================================
-
-#define H3D_OBJ_ADDVERT(obj, v)                                                \
-  memcpy(obj->vertices[obj->numvertices++], v, sizeof(vec4))
-
-#define H3D_OBJ_ADDVTEX(obj, t)                                                \
-  memcpy(obj->vtexture[obj->numvtextures++], t, sizeof(vec3))
-
-#define H3D_OBJ_ADDFACE(obj, f)                                                \
-  memcpy(obj->faces[obj->numfaces++], face, sizeof(h3d_objface))
 
 // Initialize object to have all 0 counts but pre-allocate the given number
 // of faces and vertices (vert count used for tex and normal)

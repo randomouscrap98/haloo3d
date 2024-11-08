@@ -43,6 +43,11 @@ typedef float_t mat4[16];
   v[H3DZ] = z;                                                                 \
   v[H3DW] = w;
 
+#define H3D_CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
+#define H3D_IS2POW(x) (!(x & (x - 1)) && x)
+#define H3D_MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define H3D_MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 // Edge function for a point being on one side or another of a line given by
 // v0 and v1. We use counter-clockwise winding. Technically returns 2 * area
 // of triangle created by v0, v1, and p.
@@ -153,8 +158,6 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // TODO: remember to make textures wrap to prevent buffer overflow
 // TODO: dithering, scaled intensity per tri, etc.
 
-#define _H3D_CLAMP(v, min, max) (((v) < min) ? min : ((v) > max) ? max : (v))
-
 // Clamp the values. This may be wasteful but it's safer...
 // - rv = rasterize vertex
 // - bw = buffer width
@@ -163,8 +166,8 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // to subtract 1 from the width and height, let it go to the edge.
 #define H3DTRI_CLAMP(rv, bw, bh)                                               \
   for (int _i = 0; _i < 3; _i++) {                                             \
-    rv[_i].pos[H3DX] = _H3D_CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw);             \
-    rv[_i].pos[H3DY] = _H3D_CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh);             \
+    rv[_i].pos[H3DX] = H3D_CLAMP(rv[_i].pos[H3DX], H3DVF(0), bw);              \
+    rv[_i].pos[H3DY] = H3D_CLAMP(rv[_i].pos[H3DY], H3DVF(0), bh);              \
   }
 
 // Helper function for initializing triangle functions. This enables
@@ -361,5 +364,69 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   H3DTRI_CLAMP(rv, bw, bh);                                                    \
   H3DTRI_BEGIN(rv, sv, parea);                                                 \
   H3DTRI_SCAN_BEGIN(sv, parea, linpol, numlinpol, bw, bh, bufi)
+
+// ========================================
+// |            FRAMEBUFFER               |
+// ========================================
+
+// The framebuffer object, which stores stuff like the 16 bit
+// framebuffer, the depth buffer, etc. Framebuffers are so simple,
+// they might as well be included in the main library
+typedef struct {
+  uint16_t *buffer; // actual buffer (managed manually)
+  float_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;   // width of the framebuffer
+  uint16_t height;  // height of the framebuffer
+} h3d_fb;
+
+typedef struct {
+  uint32_t *buffer; // actual buffer (managed manually)
+  float_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;   // width of the framebuffer
+  uint16_t height;  // height of the framebuffer
+} h3d_fb32;
+
+typedef struct {
+  uint8_t *buffer;  // actual buffer (managed manually)
+  float_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;   // width of the framebuffer
+  uint16_t height;  // height of the framebuffer
+} h3d_fb8;
+
+#define H3D_FB_GET(fb, x, y) (fb->buffer[(x) + (y) * fb->width])
+#define H3D_FB_DGET(fb, x, y) (fb->dbuffer[(x) + (y) * fb->width])
+#define H3D_FB_SET(fb, x, y, v) fb->buffer[(x) + (y) * fb->width] = (v)
+#define H3D_FB_DSET(fb, x, y, v) fb->dbuffer[x + (y) * fb->width] = (v)
+#define H3D_FB_GETUV(fb, u, v)                                                 \
+  (fb->buffer[((uint16_t)(fb->width * u) & (fb->width - 1)) +                  \
+              ((uint16_t)(fb->height * (H3DVF(1) - v)) & (fb->height - 1)) *   \
+                  fb->width])
+#define H3D_FB_SIZE(fb) (fb->width * fb->height)
+
+// Convert given color to full transparency in whole fb
+#define H3D_FB_TOTRANSPARENT(fb, col)                                          \
+  {                                                                            \
+    const int size = h3d_fb_size(fb);                                          \
+    for (int _i = 0; _i < size; _i++) {                                        \
+      if (fb->buffer[_i] == col)                                               \
+        fb->buffer[_i] = 0;                                                    \
+    }                                                                          \
+  }
+
+// ========================================
+// |               COLOR                  |
+// ========================================
+
+// Color is another thing that's not a big deal to include imo
+
+#define H3DC_A4(c) (((c) >> 12) & 0xF)
+#define H3DC_R4(c) (((c) >> 8) & 0xF)
+#define H3DC_G4(c) (((c) >> 4) & 0xF)
+#define H3DC_B4(c) ((c) & 0xF)
+// #define H3DC_R8(c) ((((c) >> 4) & 0xF0) | 0x07)
+// #define H3DC_G8(c) (((c) & 0xF0) | 0x07)
+// #define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
+#define H3DC_A4R4G4B4(a, r, g, b)                                              \
+  ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
 #endif

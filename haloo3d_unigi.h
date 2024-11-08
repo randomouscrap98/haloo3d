@@ -9,29 +9,12 @@
 #include "haloo3d.h"
 #include <stdio.h>
 
-// ========================================
-// |               COLOR                  |
-// ========================================
-
-// Some color conversion specific to unigi
-#define H3DC_A4(c) (((c) >> 12) & 0xF)
-#define H3DC_R4(c) (((c) >> 8) & 0xF)
-#define H3DC_G4(c) (((c) >> 4) & 0xF)
-#define H3DC_B4(c) ((c) & 0xF)
-#define H3DC_R8(c) ((((c) >> 4) & 0xF0) | 0x07)
-#define H3DC_G8(c) (((c) & 0xF0) | 0x07)
-#define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
-#define H3DC_RGB(r, g, b)                                                      \
-  (0xF000 | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
-#define H3DC_ARGB(a, r, g, b)                                                  \
-  ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
-
 // "scale" a color by a given intensity. it WILL clip...
 static inline uint16_t h3d_col_scale(uint16_t col, float_t scale) {
   uint16_t r = H3DC_R4(col) * scale;
   uint16_t g = H3DC_G4(col) * scale;
   uint16_t b = H3DC_B4(col) * scale;
-  return H3DC_RGB(r, g, b);
+  return H3DC_A4R4G4B4(0xF, r, g, b);
 }
 
 // "scale" a color by a discrete intensity from 0 to 256. 256 is 1.0
@@ -42,7 +25,7 @@ static inline uint16_t h3d_col_scalei(uint16_t col, uint16_t scale) {
   uint16_t r = (H3DC_R4(col) * scale) >> 8;
   uint16_t g = (H3DC_G4(col) * scale) >> 8;
   uint16_t b = (H3DC_B4(col) * scale) >> 8;
-  return H3DC_RGB(r, g, b);
+  return H3DC_A4R4G4B4(0xF, r, g, b);
 }
 
 // linear interpolate between two colors
@@ -55,9 +38,11 @@ static inline uint16_t h3d_col_lerp(uint16_t col1, uint16_t col2, float_t t) {
   uint16_t b2 = H3DC_B4(col2);
 
   // clang-format off
-  return H3DC_RGB((uint8_t)(t * (r2 - r1) + r1), 
-                  (uint8_t)(t * (g2 - g1) + g1),
-                  (uint8_t)(t * (b2 - b1) + b1));
+  return H3DC_A4R4G4B4(
+      0xF,
+      (uint8_t)(t * (r2 - r1) + r1), 
+      (uint8_t)(t * (g2 - g1) + g1),
+      (uint8_t)(t * (b2 - b1) + b1));
   // clang-format on
 }
 
@@ -85,7 +70,7 @@ static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
   uint8_t b = (b1 * a1 + (15 - a1) * b2) / 15;
 
   // clang-format off
-  return H3DC_ARGB(a, r, g, b);
+  return H3DC_A4R4G4B4(a, r, g, b);
   // clang-format on
 }
 
@@ -97,9 +82,6 @@ static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
 void h3d_img_writeppm(h3d_fb *fb, FILE *f);
 // Loads a P6 binary ppm into a framebuffer
 void h3d_img_loadppm(FILE *f, h3d_fb *fb);
-
-// Convert given color to transparent in framebuffer
-void h3d_img_totransparent(h3d_fb *fb, uint16_t col);
 
 // Write a P6 binary ppm to a file. Kills whole program if it can't
 void h3d_img_writeppmfile(h3d_fb *fb, char *filename);
