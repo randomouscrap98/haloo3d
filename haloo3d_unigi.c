@@ -97,3 +97,138 @@ void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height) {
 }
 
 void h3d_fb_free(h3d_fb *fb) { H3D_FB_FREE(fb); }
+
+// ===========================================
+// |              EASYSYS                    |
+// ===========================================
+
+void h3d_easystore_init(h3d_easystore *s) {
+  for (int i = 0; i < H3D_EASYSTORE_MAX; i++) {
+    s->objkeys[i][0] = 0;
+    s->texkeys[i][0] = 0;
+  }
+}
+
+#define _H3D_ES_CHECKKEY(key)                                                  \
+  if (strlen(key) >= H3D_EASYSTORE_MAXKEY) {                                   \
+    dieerr("Key too long! Max: %d\n", H3D_EASYSTORE_MAXKEY - 1);               \
+  }
+#define _H3D_ES_FOREACH(i) for (int i = 0; i < H3D_EASYSTORE_MAX; i++)
+#define _H3D_ES_EMPTY(f) if (f[0] == 0)
+#define _H3D_ES_NOTEMPTY(f) if (f[0] != 0)
+#define _H3D_ES_FIND(f, key) if (strcmp(f, key) == 0)
+#define _H3D_ES_NOEMPTY()                                                      \
+  dieerr("No more room for objects! Max: %d\n", H3D_EASYSTORE_MAX);
+#define _H3D_ES_NOFIND(key) dieerr("Object not found: %s\n", key);
+
+h3d_obj *h3d_easystore_addobj(h3d_easystore *s, const char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_EMPTY(s->objkeys[i]) {
+      strcpy(s->objkeys[i], key);
+      return s->_objects + i;
+    }
+  }
+  _H3D_ES_NOEMPTY()
+}
+
+h3d_obj *h3d_easystore_getobj(h3d_easystore *s, const char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->objkeys[i], key) { return s->_objects + i; }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void h3d_easystore_deleteobj(h3d_easystore *s, const char *key,
+                             void (*ondelete)(h3d_obj *)) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->objkeys[i], key) {
+      s->objkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_objects + i);
+      }
+      return;
+    }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void h3d_easystore_deleteallobj(h3d_easystore *s, void (*ondelete)(h3d_obj *)) {
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_NOTEMPTY(s->objkeys[i]) {
+      s->objkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_objects + i);
+      }
+    }
+  }
+}
+
+h3d_fb *h3d_easystore_addtex(h3d_easystore *s, const char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_EMPTY(s->texkeys[i]) {
+      strcpy(s->texkeys[i], key);
+      return s->_textures + i;
+    }
+  }
+  _H3D_ES_NOEMPTY()
+}
+
+h3d_fb *h3d_easystore_gettex(h3d_easystore *s, const char *key) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->texkeys[i], key) { return s->_textures + i; }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void h3d_easystore_deletetex(h3d_easystore *s, const char *key,
+                             void (*ondelete)(h3d_fb *)) {
+  _H3D_ES_CHECKKEY(key);
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_FIND(s->texkeys[i], key) {
+      s->texkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_textures + i);
+      }
+      return;
+    }
+  }
+  _H3D_ES_NOFIND(key);
+}
+
+void h3d_easystore_deletealltex(h3d_easystore *s, void (*ondelete)(h3d_fb *)) {
+  _H3D_ES_FOREACH(i) {
+    _H3D_ES_NOTEMPTY(s->texkeys[i]) {
+      s->texkeys[i][0] = 0;
+      if (ondelete != NULL) {
+        ondelete(s->_textures + i);
+      }
+    }
+  }
+}
+
+void h3d_easytimer_init(h3d_easytimer *t, float avgweight) {
+  t->sum = 0;
+  t->last = 0;
+  t->avgweight = avgweight;
+  t->min = 99999999.0;
+  t->max = 0.0;
+}
+
+void h3d_easytimer_start(h3d_easytimer *t) { t->start = clock(); }
+
+void h3d_easytimer_end(h3d_easytimer *t) {
+  clock_t end = clock();
+  t->last = (float)(end - t->start) / CLOCKS_PER_SEC;
+  if (t->sum == H3DVF(0))
+    t->sum = t->last;
+  t->sum = t->avgweight * t->sum + (H3DVF(1) - t->avgweight) * t->last;
+  if (t->sum < t->min)
+    t->min = t->sum;
+  if (t->sum > t->max)
+    t->max = t->sum;
+}

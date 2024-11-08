@@ -6,7 +6,13 @@
 #define HALOO3D_UNIGI_H
 
 #include "haloo3d.h"
+#include "haloo3d_obj.h"
+
 #include <stdio.h>
+#include <time.h>
+
+#define H3D_EASYSTORE_MAX 1024
+#define H3D_EASYSTORE_MAXKEY 16
 
 // ========================================
 // |               COLOR                  |
@@ -99,5 +105,49 @@ void h3d_fb_loadppmfile(h3d_fb *tex, char *filename);
 
 void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
 void h3d_fb_free(h3d_fb *fb);
+
+// ===========================================
+// |              EASYSYS                    |
+// ===========================================
+
+// A storage container for easy access to models and textures by name.
+// Adds overhead compared to direct access of models and textures.
+typedef struct {
+  h3d_obj _objects[H3D_EASYSTORE_MAX];
+  h3d_fb _textures[H3D_EASYSTORE_MAX];
+  char objkeys[H3D_EASYSTORE_MAX][H3D_EASYSTORE_MAXKEY];
+  char texkeys[H3D_EASYSTORE_MAX][H3D_EASYSTORE_MAXKEY];
+} h3d_easystore;
+
+// Initialize storage unit
+void h3d_easystore_init(h3d_easystore *s);
+
+h3d_obj *h3d_easystore_addobj(h3d_easystore *s, const char *key);
+h3d_obj *h3d_easystore_getobj(h3d_easystore *s, const char *key);
+void h3d_easystore_deleteobj(h3d_easystore *s, const char *key,
+                             void (*ondelete)(h3d_obj *));
+void h3d_easystore_deleteallobj(h3d_easystore *s, void (*ondelete)(h3d_obj *));
+
+h3d_fb *h3d_easystore_addtex(h3d_easystore *s, const char *key);
+h3d_fb *h3d_easystore_gettex(h3d_easystore *s, const char *key);
+void h3d_easystore_deletetex(h3d_easystore *s, const char *key,
+                             void (*ondelete)(h3d_fb *));
+void h3d_easystore_deletealltex(h3d_easystore *s, void (*ondelete)(h3d_fb *));
+
+// System for tracking time. Values measured in seconds. DON'T
+// expect the 'start' variable to be of any particular type; it
+// will depend on the implementation details
+typedef struct {
+  clock_t start;
+  float sum;
+  float last;
+  float avgweight;
+  float min;
+  float max;
+} h3d_easytimer;
+
+void h3d_easytimer_init(h3d_easytimer *t, float avgweight);
+void h3d_easytimer_start(h3d_easytimer *t);
+void h3d_easytimer_end(h3d_easytimer *t);
 
 #endif

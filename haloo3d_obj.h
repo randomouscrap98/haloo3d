@@ -35,14 +35,23 @@ typedef struct {
   h3d_objface *faces;
 } h3d_obj;
 
-#define H3D_OBJ_ADDVERT(obj, v)                                                \
-  memcpy(obj->vertices[obj->numvertices++], v, sizeof(vec4))
+static inline int h3d_obj_addvertex(h3d_obj *obj, vec4 vertex) {
+  int vi = obj->numvertices++;
+  memcpy(obj->vertices[vi], vertex, sizeof(vec4));
+  return vi;
+}
 
-#define H3D_OBJ_ADDVTEX(obj, t)                                                \
-  memcpy(obj->vtexture[obj->numvtextures++], t, sizeof(vec3))
+static inline int h3d_obj_addvtexture(h3d_obj *obj, vec3 vtexture) {
+  int vti = obj->numvtextures++;
+  memcpy(obj->vtexture[vti], vtexture, sizeof(vec3));
+  return vti;
+}
 
-#define H3D_OBJ_ADDFACE(obj, f)                                                \
-  memcpy(obj->faces[obj->numfaces++], face, sizeof(h3d_objface))
+static int h3d_obj_addface(h3d_obj *obj, h3d_objface face) {
+  int fi = obj->numfaces++;
+  memcpy(&obj->faces[fi], face, sizeof(h3d_objface));
+  return fi;
+}
 
 // Parse a single line of wavefront obj file (though not particularly well, mind
 // you). We only support v, vt, vn, f
