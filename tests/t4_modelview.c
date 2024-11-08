@@ -2,10 +2,8 @@
 #include "../haloo3d_3d.h"
 #include "../haloo3d_ex.h"
 #include "../haloo3d_obj.h"
-#include "../haloo3d_special.h"
 #include "../haloo3d_unigi.h"
 
-// #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
