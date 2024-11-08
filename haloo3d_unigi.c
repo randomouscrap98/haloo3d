@@ -147,10 +147,11 @@ void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
     // eprintf("DEGEN DRAW\n");
     return;
   }
+  // calculate actual width and height
+  const int width = sizeof(uint16_t) * H3D_MIN(src->width * scale, dstwidth);
+  const int height = H3D_MIN(src->height * scale, dstheight);
   // Special very fast case of scale 1
   if (scale == 1) {
-    const int width = sizeof(uint16_t) * H3D_MIN(src->width, dstwidth);
-    const int height = H3D_MIN(src->height, dstheight);
     // eprintf("WH: %d, %d\n", (int)(width / sizeof(uint16_t)), height);
     uint16_t *dbuf =
         dst->buffer + H3D_MAX(0, dstofsx) + dst->width * H3D_MAX(0, dstofsy);
@@ -964,11 +965,21 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
   tex.height = H3D_PRINT_CHH;
   const int len = strlen(t->buffer);
   for (int i = 0; i < len; i++) {
-    eprintf("P[%d](%d,%d) : %c\n", i, t->x, t->y, t->buffer[i]);
+    // eprintf("P[%d](%d,%d) : %c\n", i, t->x, t->y, t->buffer[i]);
     if (t->buffer[i] == '\n') {
       t->y += t->scale * H3D_PRINT_CHH;
       t->x = sx;
       continue;
+    }
+    // We don't support word wrap btw, just char wrap based on rect bounds. Our
+    // int scaler is fast and thus has some problems, so we don't want to print
+    // off screen
+    if (t->x + t->scale * H3D_PRINT_CHW > ex) {
+      t->y += t->scale * H3D_PRINT_CHH;
+      t->x = sx;
+    }
+    if (t->y + t->scale * H3D_PRINT_CHH > ey) {
+      break;
     }
     int glyph = t->buffer[i];
     tex.buffer = buffer + glyph * H3D_PRINT_CHW * H3D_PRINT_CHH;
@@ -978,14 +989,6 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
     }
     h3d_fb_intscale(&tex, t->fb, t->x, t->y, t->scale);
     t->x += t->scale * H3D_PRINT_CHW;
-    // We don't support word wrap btw, just char wrap based on rect bounds
-    if (t->x >= ex) {
-      t->y += t->scale * H3D_PRINT_CHH;
-      t->x = sx;
-    }
-    if (t->y >= ey) {
-      break;
-    }
   }
 }
 

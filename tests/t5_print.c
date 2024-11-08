@@ -6,6 +6,7 @@
 #define HEIGHT 160
 #define OUTFILE "t5_print.ppm"
 #define BUFLEN 8192
+#define REPEAT 10000
 
 int main(int argc, char **argv) {
 
@@ -28,7 +29,10 @@ int main(int argc, char **argv) {
   eprintf("PT init\n");
 
   // Do the work
-  h3d_print(&pt, argv[2]);
+  for (int i = 0; i < REPEAT; i++) {
+    h3d_print_refresh(&pt);
+    h3d_print(&pt, argv[2]);
+  }
   h3d_fb_writeppmfile(&fb, OUTFILE);
   h3d_fb_free(&fb);
   eprintf("Done!\n");
