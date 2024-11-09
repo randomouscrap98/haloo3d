@@ -1,5 +1,4 @@
 #include "haloo3d_ex.h"
-#include "haloo3d_3d.h"
 
 // ========================================
 // |            OBJECT (MODEL)            |
@@ -123,4 +122,22 @@ int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out) {
     h3d_vec4_mult_mat4(tmp, matrix, out[i]);
   }
   return object->numvertices;
+}
+
+// ========================================
+// |            3DFACE                    |
+// ========================================
+
+// Determine an "intensity" for a face compared against the given light source.
+// Does a very simple calculation
+hfloat_t h3d_3dface_light(hfloat_t *light, hfloat_t minlight, h3d_3dface face) {
+  vec3 lnorm;
+  h3d_3dface_normal(face, lnorm);
+  hfloat_t intensity =
+      light[0] * lnorm[0] + light[1] * lnorm[1] + light[2] * lnorm[2];
+  if (intensity < minlight) {
+    return minlight; // Don't just not draw the triangle: it should be black
+  } else {
+    return (intensity + minlight) / (H3DVF(1) + minlight);
+  }
 }

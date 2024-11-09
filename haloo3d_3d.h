@@ -438,6 +438,15 @@ static inline int h3d_3dface_normalize(h3d_3dface face) {
   return H3D_EDGEFUNC(face[0].pos, face[1].pos, face[2].pos) <= 0;
 }
 
+// Calculate the normal vector for the given face, placing it in normal
+static inline void h3d_3dface_normal(h3d_3dface face, vec3 normal) {
+  vec3 lt[2];
+  vec3_subtract(face[2].pos, face[0].pos, lt[0]);
+  vec3_subtract(face[1].pos, face[0].pos, lt[1]);
+  vec3_cross(lt[0], lt[1], normal);
+  vec3_normalize(normal, normal);
+}
+
 // Clip a single face into 0-2^CLIPPLANES (currently 32) new faces. Make sure
 // the out array has enough space (H3D_MAXCLIP)
 int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants);

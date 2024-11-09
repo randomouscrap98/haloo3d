@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "haloo3d.h"
+#include "haloo3d_3d.h"
 #include "haloo3d_obj.h"
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__);
@@ -116,5 +117,11 @@ int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out);
 // IF THE DEST OBJECT HAS ENOUGH SPACE!
 void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
                     vec3 up, vec3 scale);
+
+// ========================================
+// |            3DFACE                    |
+// ========================================
+
+hfloat_t h3d_3dface_light(hfloat_t *light, hfloat_t minlight, h3d_3dface face);
 
 #endif
