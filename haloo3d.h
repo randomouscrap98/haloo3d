@@ -7,7 +7,7 @@ typedef float hfloat_t;
 
 // Some systems get caught up on float literals for some reason...?
 #ifdef H3D_VOLATILE_FLOATS
-#define H3DVF(x) (volatile mhfloat_t)(x)
+#define H3DVF(x) (volatile hfloat_t)(x)
 #else
 #define H3DVF(x) (x)
 #endif
