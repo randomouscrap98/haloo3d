@@ -412,7 +412,7 @@ uint8_t _dither4x4[] = {
 inline int h3d_4x4dither_index(float dither) {
   if (dither < 0) {
     return 0;
-  } else if (dither > 1) {
+  } else if (dither >= 1) {
     return 16 << 2;
   } else {
     return ((int)round(H3DVF(16) * dither) << 2);

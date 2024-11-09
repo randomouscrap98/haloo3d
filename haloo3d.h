@@ -214,11 +214,9 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
   }                                                                            \
   int32_t parea = H3D_EDGEFUNC(sv[0]->pos, sv[1]->pos, sv[2]->pos);
 
-// eprintf("order: (%d,%d) (%d,%d) (%d,%d)\n", sv[0]->pos[0], sv[0]->pos[1],
-//         sv[1]->pos[0], sv[1]->pos[1], sv[2]->pos[0], sv[2]->pos[1]);
-
-// Helper macro for beginning the triangle loop. After this, create your
-// "shader" (inner loop)
+// Helper macro for beginning the triangle loop. After this, you can write
+// code meant to be run "per row" of the triangle. perhaps setup for the
+// scanline?
 // - sv = sorted vertex pointer array
 // - parea = parea calculated in H3DTRI_BEGIN
 // - linpol = name of the linear array (you will use this in shader)
@@ -283,8 +281,12 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
       /* Setup interpolants for inner loop, shifting by appropriate amount*/   \
       for (int _i = 0; _i < numlinpol; _i++) {                                 \
         linpol[_i] = _left.interpolants[_i] + xofs * _dx[_i];                  \
-      }                                                                        \
-      for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
+      }
+
+// The final inner loop, run once per pixel in the triangle. Follow this with
+// brackets indicating the contents of a loop.
+#define H3DTRI_SHADER(bufi)                                                    \
+  for (uint32_t bufi = _bufstart + _xl; bufi < _bufstart + _xr; bufi++)
 
 // A generic linear interpolants update you may need to call in your inner loop
 // (shader) to update linear values. You should ALWAYS prefer the static count
@@ -378,7 +380,8 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 #define H3DTRI_EASY_BEGIN(rv, bw, bh, linpol, numlinpol, bufi)                 \
   H3DTRI_CLAMP(rv, bw, bh);                                                    \
   H3DTRI_BEGIN(rv, sv, parea);                                                 \
-  H3DTRI_SCAN_BEGIN(sv, parea, linpol, numlinpol, bw, bh, bufi)
+  H3DTRI_SCAN_BEGIN(sv, parea, linpol, numlinpol, bw, bh, bufi)                \
+  H3DTRI_SHADER(bufi)
 
 // ========================================
 // |            FRAMEBUFFER               |
