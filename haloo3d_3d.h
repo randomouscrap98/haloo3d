@@ -44,7 +44,7 @@ static inline void vec3_add(vec3 v0, vec3 v1, vec3 out) {
 }
 
 // Multiply all values in v by f. Out can be input
-static inline void vec3_multiply(vec3 v0, float_t f, vec3 result) {
+static inline void vec3_multiply(vec3 v0, hfloat_t f, vec3 result) {
   result[0] = v0[0] * f;
   result[1] = v0[1] * f;
   result[2] = v0[2] * f;
@@ -52,7 +52,7 @@ static inline void vec3_multiply(vec3 v0, float_t f, vec3 result) {
 
 // Normalize v0, storing result in out. Out vector can be input vector
 static inline void vec3_normalize(vec3 v0, vec3 out) {
-  float_t l = sqrtf(v0[0] * v0[0] + v0[1] * v0[1] + v0[2] * v0[2]);
+  hfloat_t l = sqrtf(v0[0] * v0[0] + v0[1] * v0[1] + v0[2] * v0[2]);
   out[0] = v0[0] / l;
   out[1] = v0[1] / l;
   out[2] = v0[2] / l;
@@ -68,7 +68,7 @@ static inline void vec3_cross(vec3 v0, vec3 v1, vec3 out) {
 
 // Linear interpolate all values between v0 and v1 based on t. Result
 // can safely be either v1 or v0
-static inline void vec3_lerp(vec3 v0, vec3 v1, float_t t, vec3 result) {
+static inline void vec3_lerp(vec3 v0, vec3 v1, hfloat_t t, vec3 result) {
   result[0] = LERP(v0[0], v1[0], t);
   result[1] = LERP(v0[1], v1[1], t);
   result[2] = LERP(v0[2], v1[2], t);
@@ -76,7 +76,7 @@ static inline void vec3_lerp(vec3 v0, vec3 v1, float_t t, vec3 result) {
 
 // Linear interpolate all values between v0 and v1 based on t. Result
 // can safely be either v1 or v0
-static inline void vec4_lerp(vec4 v0, vec4 v1, float_t t, vec4 result) {
+static inline void vec4_lerp(vec4 v0, vec4 v1, hfloat_t t, vec4 result) {
   result[0] = LERP(v0[0], v1[0], t);
   result[1] = LERP(v0[1], v1[1], t);
   result[2] = LERP(v0[2], v1[2], t);
@@ -180,7 +180,7 @@ static inline void mat4_multiply(mat4 m0, mat4 m1, mat4 result) {
 }
 
 // Transpose m0 and store into result. Result can be same as input
-static inline void mat4_transpose(float_t *m0, float_t *result) {
+static inline void mat4_transpose(hfloat_t *m0, hfloat_t *result) {
   mat4 transposed;
   transposed[0] = m0[0];
   transposed[1] = m0[4];
@@ -220,23 +220,23 @@ static inline void mat4_transpose(float_t *m0, float_t *result) {
 // the same variable
 static inline void mat4_inverse(mat4 m0, mat4 result) {
   mat4 inverse;
-  float_t inverted_determinant;
-  float_t m11 = m0[0];
-  float_t m21 = m0[1];
-  float_t m31 = m0[2];
-  float_t m41 = m0[3];
-  float_t m12 = m0[4];
-  float_t m22 = m0[5];
-  float_t m32 = m0[6];
-  float_t m42 = m0[7];
-  float_t m13 = m0[8];
-  float_t m23 = m0[9];
-  float_t m33 = m0[10];
-  float_t m43 = m0[11];
-  float_t m14 = m0[12];
-  float_t m24 = m0[13];
-  float_t m34 = m0[14];
-  float_t m44 = m0[15];
+  hfloat_t inverted_determinant;
+  hfloat_t m11 = m0[0];
+  hfloat_t m21 = m0[1];
+  hfloat_t m31 = m0[2];
+  hfloat_t m41 = m0[3];
+  hfloat_t m12 = m0[4];
+  hfloat_t m22 = m0[5];
+  hfloat_t m32 = m0[6];
+  hfloat_t m42 = m0[7];
+  hfloat_t m13 = m0[8];
+  hfloat_t m23 = m0[9];
+  hfloat_t m33 = m0[10];
+  hfloat_t m43 = m0[11];
+  hfloat_t m14 = m0[12];
+  hfloat_t m24 = m0[13];
+  hfloat_t m34 = m0[14];
+  hfloat_t m44 = m0[15];
   inverse[0] = m22 * m33 * m44 - m22 * m43 * m34 - m23 * m32 * m44 +
                m23 * m42 * m34 + m24 * m32 * m43 - m24 * m42 * m33;
   inverse[4] = -m12 * m33 * m44 + m12 * m43 * m34 + m13 * m32 * m44 -
@@ -290,9 +290,9 @@ static inline void mat4_inverse(mat4 m0, mat4 result) {
 }
 
 // Assign x rotation directly to result
-static inline void mat4_rotation_x(float_t f, mat4 result) {
-  float_t c = cosf(f);
-  float_t s = sinf(f);
+static inline void mat4_rotation_x(hfloat_t f, mat4 result) {
+  hfloat_t c = cosf(f);
+  hfloat_t s = sinf(f);
   result[5] = c;
   result[6] = s;
   result[9] = -s;
@@ -300,9 +300,9 @@ static inline void mat4_rotation_x(float_t f, mat4 result) {
 }
 
 // Assign y rotation directly to result
-static inline void mat4_rotation_y(float_t f, mat4 result) {
-  float_t c = cosf(f);
-  float_t s = sinf(f);
+static inline void mat4_rotation_y(hfloat_t f, mat4 result) {
+  hfloat_t c = cosf(f);
+  hfloat_t s = sinf(f);
   result[0] = c;
   result[2] = -s;
   result[8] = s;
@@ -310,9 +310,9 @@ static inline void mat4_rotation_y(float_t f, mat4 result) {
 }
 
 // Assign z rotation directly to result
-static inline void mat4_rotation_z(float_t f, mat4 result) {
-  float_t c = cosf(f);
-  float_t s = sinf(f);
+static inline void mat4_rotation_z(hfloat_t f, mat4 result) {
+  hfloat_t c = cosf(f);
+  hfloat_t s = sinf(f);
   result[0] = c;
   result[1] = s;
   result[4] = -s;
@@ -352,7 +352,7 @@ static inline void h3d_mat4_prescale_self(mat4 m, vec3 scale) {
 // This is often the last step of perspective projection (perspective divide)
 static inline void h3d_vec4_homogenous(vec4 v) {
   if (v[H3DW] != H3DVF(1)) {
-    float_t div = H3DVF(1) / v[H3DW];
+    hfloat_t div = H3DVF(1) / v[H3DW];
     v[H3DX] *= div;
     v[H3DY] *= div;
     v[H3DZ] *= div;
@@ -367,8 +367,8 @@ static inline void h3d_vec4_homogenous(vec4 v) {
 // typedef struct {
 //   vec3 pos;
 //   vec3 up;
-//   float_t pitch;
-//   float_t yaw;
+//   hfloat_t pitch;
+//   hfloat_t yaw;
 // } h3d_camera;
 //
 // // Initialize the camera to look in a safe direction with
@@ -392,7 +392,7 @@ static inline void h3d_vec4_homogenous(vec4 v) {
 // various processing.
 typedef struct {
   vec4 pos;
-  float_t interpolants[H3D_MAXINTERPOLANTS];
+  hfloat_t interpolants[H3D_MAXINTERPOLANTS];
 } h3d_3dvert;
 
 typedef h3d_3dvert h3d_3dface[3];
@@ -400,7 +400,7 @@ typedef h3d_3dvert h3d_3dface[3];
 // Linear interpolate between v and v2, storing result back into v. Also
 // lerps the interpolants.
 void h3d_3dvert_lerp_self(h3d_3dvert *v, h3d_3dvert *v2, int numinterpolants,
-                          float_t t);
+                          hfloat_t t);
 
 // My personal lookat function, which does not perform the inverse or anything.
 // Because of this, you can use it to orient models too
@@ -408,7 +408,7 @@ void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view);
 
 // My personal perspective projection function. For some reason, it produces
 // different results than the mathc libary's
-void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
+void h3d_perspective(hfloat_t fov, hfloat_t aspect, hfloat_t near, hfloat_t far,
                      mat4 m);
 
 // Create model matrix from simple position, lookvector (vector describing
@@ -416,7 +416,7 @@ void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
 void h3d_model_matrix(vec3 pos, vec3 lookvec, vec3 up, vec3 scale, mat4 out);
 
 // Calculate triangle viewport pixel coordinates from normalized coordinates
-static inline void h3d_viewport(float_t *v, int width, int height,
+static inline void h3d_viewport(hfloat_t *v, int width, int height,
                                 int16_t *out) {
   // I'm honestly not sure if round, ceil, or floor is more appropriate.
   // I've read those articles from Chris Hecker indicating that ceil

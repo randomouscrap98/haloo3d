@@ -41,7 +41,7 @@
 // ----------------------
 
 void h3d_3dvert_lerp_self(h3d_3dvert *v, h3d_3dvert *v2, int numinterpolants,
-                          float_t t) {
+                          hfloat_t t) {
   vec4_lerp(v->pos, v2->pos, t, v->pos);
   for (int i = 0; i < numinterpolants; i++) {
     v->interpolants[i] = LERP(v->interpolants[i], v2->interpolants[i], t);
@@ -77,12 +77,12 @@ void h3d_my_lookat(vec3 from, vec3 to, vec3 up, mat4 view) {
 
 // My personal perspective matrix setter which uses horizontal fov
 // and aspect ratio
-void h3d_perspective(float_t fov, float_t aspect, float_t near, float_t far,
+void h3d_perspective(hfloat_t fov, hfloat_t aspect, hfloat_t near, hfloat_t far,
                      mat4 m) {
   mat4_zero(m);
 
   fov = fov / H3DVF(180) * H3DVF(MPI); // Convert to radians
-  float_t e = H3DVF(1.0) / tanf(fov * H3DVF(0.5));
+  hfloat_t e = H3DVF(1.0) / tanf(fov * H3DVF(0.5));
 
   m[0] = e / aspect;
   m[5] = e;
@@ -169,8 +169,8 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
           // Calc how far along we are on each of these lines. These are the new
           // points
           // NOTE: we nudge it a little forward to prevent weird issues
-          float_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_CLIPLOW;
-          float_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_CLIPLOW;
+          hfloat_t tba = dist[bi] / (dist[bi] - dist[ai]) + H3D_CLIPLOW;
+          hfloat_t tca = dist[ci] / (dist[ci] - dist[ai]) + H3D_CLIPLOW;
           // The two points that aren't 'a' need to be the interpolated values
           h3d_3dvert_lerp_self(f + bi, f + ai, numinterpolants, tba);
           h3d_3dvert_lerp_self(f + ci, f + ai, numinterpolants, tca);
@@ -180,8 +180,8 @@ int h3d_3dface_clip(h3d_3dface face, h3d_3dface *out, int numinterpolants) {
           int ai = outers[0]; // A is the odd one out
           int bi = inners[0];
           int ci = inners[1];
-          float_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_CLIPLOW;
-          float_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_CLIPLOW;
+          hfloat_t tab = dist[ai] / (dist[ai] - dist[bi]) + H3D_CLIPLOW;
+          hfloat_t tac = dist[ai] / (dist[ai] - dist[ci]) + H3D_CLIPLOW;
           h3d_3dvert *f2 = out[t + tris];
           // BEFORE modification, we copy the existing triangle to the final
           // outer place

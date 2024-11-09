@@ -26,7 +26,7 @@ void triangle(h3d_rastervert *rv, h3d_fb *buf, h3d_fb *tex) {
     if (linpol[2] > buf->dbuffer[bufi]) {
       buf->dbuffer[bufi] = linpol[2];
       // 1/z is linear across triangle, need z for uv
-      float_t z = 1 / linpol[2];
+      hfloat_t z = 1 / linpol[2];
       buf->buffer[bufi] = H3D_FB_GETUV(tex, linpol[0] * z, linpol[1] * z);
     }
     H3DTRI_LINPOL3(linpol);
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   vec3 pos;
   VEC3(pos, atof(argv[3]), atof(argv[4]), atof(argv[5]));
   vec3 lookvec;
-  float_t yaw = atof(argv[6]);
+  hfloat_t yaw = atof(argv[6]);
   VEC3(lookvec, sinf(yaw), 0, -cosf(yaw));
   vec3 up;
   VEC3(up, 0, 1, 0);
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
       memcpy(face[v].pos, verttrans[_obj.faces[fi][v].verti], sizeof(vec4));
       // For our perspective-correct textures, our interpolants are u/z, v/z,
       // and 1/z
-      float_t invz = 1 / face[v].pos[H3DW];
+      hfloat_t invz = 1 / face[v].pos[H3DW];
       face[v].interpolants[0] =
           _obj.vtexture[_obj.faces[fi][v].texi][H3DX] * invz;
       face[v].interpolants[1] =
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
       }
       for (int v = 0; v < 3; v++) {
         memcpy(rface[v].interpolants, clipfaces[ti][v].interpolants,
-               sizeof(float_t) * NUMINTERPOLANTS);
+               sizeof(hfloat_t) * NUMINTERPOLANTS);
         h3d_viewport(clipfaces[ti][v].pos, WIDTH, HEIGHT, rface[v].pos);
       }
       triangle(rface, &fb, &_tex);

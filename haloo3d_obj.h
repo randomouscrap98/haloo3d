@@ -72,7 +72,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
       return 1;
     }
     // v can have 3 or 4 floats. We try to read 4 floats
-    float_t *v = (float_t *)(obj->vertices + obj->numvertices);
+    hfloat_t *v = (hfloat_t *)(obj->vertices + obj->numvertices);
     scanned = sscanf(next, "%f %f %f %f", v, v + 1, v + 2, v + 3);
     if (scanned < 4) {
       v[H3DW] = 1.0; // default value for w
@@ -85,7 +85,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
       return 2;
     }
     // v can have 1 to 3 floats. Read all, and it's fine if we don't get them
-    float_t *v = (float_t *)(obj->vtexture + obj->numvtextures);
+    hfloat_t *v = (hfloat_t *)(obj->vtexture + obj->numvtextures);
     scanned = sscanf(next, "%f %f %f", v, v + 1, v + 2);
     if (scanned < 3) {
       v[H3DZ] = 0.0; // default value for z
@@ -101,7 +101,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
       return 3;
     }
     // vn must have 3 floats
-    float_t *v = (float_t *)(obj->vnormals + obj->numvnormals);
+    hfloat_t *v = (hfloat_t *)(obj->vnormals + obj->numvnormals);
     scanned = sscanf(next, "%f %f %f", v, v + 1, v + 2);
     if (scanned < 3) {
       snprintf(errout, errlen, "Vertex normal %d did not have enough arguments",

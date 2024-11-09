@@ -22,7 +22,7 @@
 // unigi-specific color operations
 
 // "scale" a color by a given intensity. it WILL clip...
-static inline uint16_t h3d_col_scale(uint16_t col, float_t scale) {
+static inline uint16_t h3d_col_scale(uint16_t col, hfloat_t scale) {
   uint16_t r = H3DC_R4(col) * scale;
   uint16_t g = H3DC_G4(col) * scale;
   uint16_t b = H3DC_B4(col) * scale;
@@ -41,7 +41,7 @@ static inline uint16_t h3d_col_scalei(uint16_t col, uint16_t scale) {
 }
 
 // linear interpolate between two colors
-static inline uint16_t h3d_col_lerp(uint16_t col1, uint16_t col2, float_t t) {
+static inline uint16_t h3d_col_lerp(uint16_t col1, uint16_t col2, hfloat_t t) {
   uint16_t r1 = H3DC_R4(col1);
   uint16_t g1 = H3DC_G4(col1);
   uint16_t b1 = H3DC_B4(col1);
@@ -177,8 +177,8 @@ void h3d_gen_skybox(h3d_obj *obj);
 void h3d_gen_plane(h3d_obj *obj, uint16_t size);
 void h3d_gen_grid_quad(h3d_obj *obj, int x, int y, int32_t dir[2]);
 void h3d_gen_grid(h3d_obj *obj, uint16_t size, uint8_t faces);
-void h3d_gen_sloped(h3d_obj *obj, uint16_t size, float_t slopiness,
-                    float_t downbias);
+void h3d_gen_sloped(h3d_obj *obj, uint16_t size, hfloat_t slopiness,
+                    hfloat_t downbias);
 void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
                                int count);
 void h3d_gen_crossquad(h3d_obj *obj, h3d_fb *fb, vec3 center);

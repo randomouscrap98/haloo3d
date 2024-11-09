@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-typedef float float_t;
+typedef float hfloat_t;
 
 // Some systems get caught up on float literals for some reason...?
 #ifdef H3D_VOLATILE_FLOATS
-#define H3DVF(x) (volatile mfloat_t)(x)
+#define H3DVF(x) (volatile mhfloat_t)(x)
 #else
 #define H3DVF(x) (x)
 #endif
@@ -28,12 +28,12 @@ typedef float float_t;
 // |                  MATH                        |
 // ================================================
 
-typedef float_t vec2[2];
+typedef hfloat_t vec2[2];
 typedef int32_t vec2i[2];
-typedef float_t vec3[3];
+typedef hfloat_t vec3[3];
 typedef int32_t vec3i[3];
-typedef float_t vec4[4];
-typedef float_t mat4[16];
+typedef hfloat_t vec4[4];
+typedef hfloat_t mat4[16];
 
 // Define a rectangle with INCLUSIVE start EXCLUSIVE endpoint
 typedef struct {
@@ -85,7 +85,7 @@ typedef struct {
 // rasterization
 typedef struct {
   int16_t pos[2];
-  float_t interpolants[H3D_MAXINTERPOLANTS];
+  hfloat_t interpolants[H3D_MAXINTERPOLANTS];
 } h3d_rastervert;
 
 typedef h3d_rastervert h3d_rasterface[3];
@@ -99,9 +99,9 @@ typedef struct {
   h3d_rastervert *stack[3]; // Vertex order
   int top;
   int sectionheight; // Tracking for how much is left in the current section
-  float_t x, x_dy;   // Tracking for specifically the x coordinate.
-  float_t interpolants[H3D_MAXINTERPOLANTS];   // Tracking variables
-  float_t interpolant_dy[H3D_MAXINTERPOLANTS]; // Y Delta along current edge
+  hfloat_t x, x_dy;  // Tracking for specifically the x coordinate.
+  hfloat_t interpolants[H3D_MAXINTERPOLANTS];   // Tracking variables
+  hfloat_t interpolant_dy[H3D_MAXINTERPOLANTS]; // Y Delta along current edge
   uint8_t num_interpolants;
 } _h3dtriside;
 
@@ -130,7 +130,7 @@ static inline int _h3dtriside_start(_h3dtriside *s) {
   if (height == 0) {
     return 0;
   }
-  const float_t invheight = H3DVF(1.0) / height;
+  const hfloat_t invheight = H3DVF(1.0) / height;
   s->x_dy = (v2->pos[H3DX] - v1->pos[H3DX]) * invheight;
   s->x = v1->pos[H3DX];
   // eprintf("X and x_dy: %f %f\n", s->x, s->x_dy);
@@ -263,8 +263,8 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     }                                                                          \
   }                                                                            \
   /* need to calc all the constant horizontal diffs. */                        \
-  float_t _dx[H3D_MAXINTERPOLANTS];                                            \
-  float_t linpol[H3D_MAXINTERPOLANTS];                                         \
+  hfloat_t _dx[H3D_MAXINTERPOLANTS];                                           \
+  hfloat_t linpol[H3D_MAXINTERPOLANTS];                                        \
   /* If linear interpolation is not used, the compiler will warn */            \
   (void)linpol;                                                                \
   for (int _i = 0; _i < numlinpol; _i++) {                                     \
@@ -279,7 +279,7 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
     uint16_t _xl = _left.x;                                                    \
     uint16_t _xr = _right.x;                                                   \
     if (_xl < _xr) {                                                           \
-      float_t xofs = _xl - _left.x;                                            \
+      hfloat_t xofs = _xl - _left.x;                                           \
       /* Setup interpolants for inner loop, shifting by appropriate amount*/   \
       for (int _i = 0; _i < numlinpol; _i++) {                                 \
         linpol[_i] = _left.interpolants[_i] + xofs * _dx[_i];                  \
@@ -388,24 +388,24 @@ static inline int _h3dtriside_next(_h3dtriside *s) {
 // framebuffer, the depth buffer, etc. Framebuffers are so simple,
 // they might as well be included in the main library
 typedef struct {
-  uint16_t *buffer; // actual buffer (managed manually)
-  float_t *dbuffer; // Depth buffer, probably using w value instead of z
-  uint16_t width;   // width of the framebuffer
-  uint16_t height;  // height of the framebuffer
+  uint16_t *buffer;  // actual buffer (managed manually)
+  hfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;    // width of the framebuffer
+  uint16_t height;   // height of the framebuffer
 } h3d_fb;
 
 typedef struct {
-  uint32_t *buffer; // actual buffer (managed manually)
-  float_t *dbuffer; // Depth buffer, probably using w value instead of z
-  uint16_t width;   // width of the framebuffer
-  uint16_t height;  // height of the framebuffer
+  uint32_t *buffer;  // actual buffer (managed manually)
+  hfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;    // width of the framebuffer
+  uint16_t height;   // height of the framebuffer
 } h3d_fb32;
 
 typedef struct {
-  uint8_t *buffer;  // actual buffer (managed manually)
-  float_t *dbuffer; // Depth buffer, probably using w value instead of z
-  uint16_t width;   // width of the framebuffer
-  uint16_t height;  // height of the framebuffer
+  uint8_t *buffer;   // actual buffer (managed manually)
+  hfloat_t *dbuffer; // Depth buffer, probably using w value instead of z
+  uint16_t width;    // width of the framebuffer
+  uint16_t height;   // height of the framebuffer
 } h3d_fb8;
 
 #define H3D_FB_GET(fb, x, y) ((fb)->buffer[(x) + (y) * (fb)->width])

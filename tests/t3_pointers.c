@@ -14,9 +14,9 @@ int main() {
   test[H3DZ] = -1.0;
   test[H3DW] = 1.0;
   printvec4(test);
-  float_t test2[4];
+  hfloat_t test2[4];
   memcpy(test2, test, sizeof(vec4));
   printvec4(test2);
-  float_t *test3 = test2;
+  hfloat_t *test3 = test2;
   printvec4(test3);
 }

@@ -63,7 +63,7 @@
     (fb)->width = w;                                                           \
     (fb)->height = h;                                                          \
     mallocordie((fb)->buffer, (ps) * H3D_FB_SIZE(fb));                         \
-    mallocordie((fb)->dbuffer, sizeof(float_t) * H3D_FB_SIZE(fb));             \
+    mallocordie((fb)->dbuffer, sizeof(hfloat_t) * H3D_FB_SIZE(fb));            \
   }
 
 #define H3D_FB_FREE(fb)                                                        \

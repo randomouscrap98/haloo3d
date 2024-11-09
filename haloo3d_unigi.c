@@ -435,7 +435,7 @@ void h3d_apply_alternating(h3d_fb *fb, uint16_t *cols, uint16_t numcols) {
 
 void h3d_apply_vgradient(h3d_fb *fb, uint16_t top, uint16_t bottom) {
   for (int y = 0; y < fb->height; y++) {
-    uint16_t col = h3d_col_lerp(top, bottom, (float_t)y / (fb->height - 1));
+    uint16_t col = h3d_col_lerp(top, bottom, (hfloat_t)y / (fb->height - 1));
     for (int x = 0; x < fb->width; x++) {
       uint16_t basecol = H3D_FB_GET(fb, x, y);
       H3D_FB_SET(fb, x, y, h3d_col_blend(col, basecol));
@@ -629,8 +629,8 @@ void h3d_gen_plane(h3d_obj *obj, uint16_t size) {
   h3d_gen_boxvtexture(obj->vtexture);
   // Generate all the simple vertices along the plane at y=0
   int i = 0;
-  for (float_t z = -size / 2.0; z <= size / 2.0; z += 1) {
-    for (float_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+  for (hfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (hfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
       VEC4(obj->vertices[i], x, 0, z, 1);
       i++;
     }
@@ -734,15 +734,15 @@ void h3d_gen_grid(h3d_obj *obj, uint16_t size, uint8_t faces) {
   h3d_gen_boxvtexture(obj->vtexture);
   // Generate the bottom vertices. It's the same as the plane
   int i = 0;
-  for (float_t z = -size / 2.0; z <= size / 2.0; z += 1) {
-    for (float_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+  for (hfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (hfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
       VEC4(obj->vertices[i], x, 0, z, 1);
       i++;
     }
   }
   // Generate the top vertices. It's the same as the plane
-  for (float_t z = -size / 2.0; z <= size / 2.0; z += 1) {
-    for (float_t x = -size / 2.0; x <= size / 2.0; x += 1) {
+  for (hfloat_t z = -size / 2.0; z <= size / 2.0; z += 1) {
+    for (hfloat_t x = -size / 2.0; x <= size / 2.0; x += 1) {
       VEC4(obj->vertices[i], x, 1, z, 1);
       i++;
     }
@@ -776,8 +776,8 @@ void h3d_gen_grid(h3d_obj *obj, uint16_t size, uint8_t faces) {
   }
 }
 
-void h3d_gen_sloped(h3d_obj *obj, uint16_t size, float_t slopiness,
-                    float_t downbias) {
+void h3d_gen_sloped(h3d_obj *obj, uint16_t size, hfloat_t slopiness,
+                    hfloat_t downbias) {
   h3d_gen_plane(obj, size);
   size++; // Actual vertex size is +1
   uint16_t center = size >> 1;
@@ -814,7 +814,7 @@ void h3d_gen_sloped(h3d_obj *obj, uint16_t size, float_t slopiness,
         }
         obj->vertices[pi][H3DY] =
             obj->vertices[ti][H3DY] +
-            slopiness * ((float_t)rand() / (float_t)RAND_MAX - downbias);
+            slopiness * ((hfloat_t)rand() / (hfloat_t)RAND_MAX - downbias);
       }
     }
   }
@@ -822,14 +822,14 @@ void h3d_gen_sloped(h3d_obj *obj, uint16_t size, float_t slopiness,
 
 void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
                                int count) {
-  float_t dims[2];
+  hfloat_t dims[2];
   uint16_t width = fb->width;
   uint16_t height = fb->height;
   if (width > height) {
     dims[H3DX] = 1.0;
-    dims[H3DY] = (float_t)height / width;
+    dims[H3DY] = (hfloat_t)height / width;
   } else {
-    dims[H3DX] = (float_t)width / height;
+    dims[H3DX] = (hfloat_t)width / height;
     dims[H3DY] = 1.0;
   }
   haloo3d_gen_obj_prealloc(obj, 4 * count, 4, 2 * count);
