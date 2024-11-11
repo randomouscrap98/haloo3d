@@ -183,6 +183,8 @@ void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
                                int count);
 void h3d_gen_crossquad(h3d_obj *obj, h3d_fb *fb, vec3 center);
 void h3d_gen_quad(h3d_obj *obj, h3d_fb *fb, vec3 center);
+void h3d_gen_gradient(h3d_fb *buf, uint16_t topcol, uint16_t botcol,
+                      int height);
 
 // ===========================================
 // |          PRINTING (legacy)              |

@@ -884,6 +884,42 @@ void h3d_gen_quad(h3d_obj *obj, h3d_fb *fb, vec3 center) {
   h3d_gen_crossquad_generic(obj, fb, center, 1);
 }
 
+void h3d_gen_gradient(h3d_fb *buf, uint16_t topcol, uint16_t botcol,
+                      int height) {
+  // Precalc an array indicating the bands of color.
+  int row[64]; // not sure how many bands there can be but...
+  uint16_t col[64];
+  int bandscount = 1;
+  row[0] = 0;
+  col[0] = topcol;
+  uint8_t dither[4];
+  for (int y = 1; y < height; y++) {
+    uint16_t thiscol = h3d_col_lerp(topcol, botcol, (float)y / (height - 1));
+    if (thiscol != col[bandscount - 1]) {
+      row[bandscount] = y;
+      col[bandscount] = thiscol;
+      bandscount++;
+    }
+  }
+  for (int band = 0; band < bandscount - 1; band++) {
+    for (int r = row[band]; r < row[band + 1]; r++) {
+      h3d_getdither4x4((float)(r - row[band]) / (row[band + 1] - row[band]),
+                       dither);
+      uint8_t df = dither[r & 3];
+      for (int b = 0; b < 8; b++) {
+        H3D_FB_SET(buf, b, r, (df & 1) ? col[band + 1] : col[band]);
+        df >>= 1;
+      }
+      uint16_t *bufstart = buf->buffer + r * buf->width;
+      // Then, a repeated growing copy to minimize copies? IDK
+      for (int size = 8; size < buf->width; size <<= 1) {
+        memcpy(bufstart + size, bufstart,
+               sizeof(uint16_t) * H3D_MIN(size, buf->width - size));
+      }
+    }
+  }
+}
+
 // ===========================================
 // |          PRINTING (legacy)              |
 // ===========================================
