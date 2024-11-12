@@ -162,27 +162,27 @@ void h3d_easytimer_end(h3d_easytimer *t);
 int h3d_4x4dither_index(float dither);
 void h3d_getdither4x4(float dither, uint8_t *buf);
 
-void h3d_apply_alternating(h3d_fb *fb, uint16_t *cols, uint16_t numcols);
+void h3d_apply_alternating(h3d_fb *fb, const uint16_t *cols, uint16_t numcols);
 void h3d_apply_vgradient(h3d_fb *fb, uint16_t top, uint16_t bottom);
 void h3d_apply_brick(h3d_fb *fb, uint16_t width, uint16_t height,
                      uint16_t color);
 void h3d_apply_rect(h3d_fb *fb, h3d_recti rect, uint16_t color, int width);
 void h3d_apply_fillrect(h3d_fb *fb, h3d_recti rect, uint16_t color,
-                        uint8_t dithering[4]);
+                        const uint8_t dithering[4]);
 void h3d_gen_solidtex(h3d_fb *fb, uint16_t color);
 void h3d_gen_palettetex(h3d_fb *fb);
 void h3d_gen_paletteuv(uint16_t col, vec3 result);
 void h3d_gen_boxvtexture(vec3 *textures);
 void h3d_gen_skybox(h3d_obj *obj);
 void h3d_gen_plane(h3d_obj *obj, uint16_t size);
-void h3d_gen_grid_quad(h3d_obj *obj, int x, int y, int32_t dir[2]);
+void h3d_gen_grid_quad(h3d_obj *obj, int x, int y, const vec2i dir);
 void h3d_gen_grid(h3d_obj *obj, uint16_t size, uint8_t faces);
 void h3d_gen_sloped(h3d_obj *obj, uint16_t size, hfloat_t slopiness,
                     hfloat_t downbias);
-void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
-                               int count);
-void h3d_gen_crossquad(h3d_obj *obj, h3d_fb *fb, vec3 center);
-void h3d_gen_quad(h3d_obj *obj, h3d_fb *fb, vec3 center);
+void h3d_gen_crossquad_generic(h3d_obj *obj, const h3d_fb *fb,
+                               const vec3 center, int count);
+void h3d_gen_crossquad(h3d_obj *obj, const h3d_fb *fb, const vec3 center);
+void h3d_gen_quad(h3d_obj *obj, const h3d_fb *fb, const vec3 center);
 void h3d_gen_gradient(h3d_fb *buf, uint16_t topcol, uint16_t botcol,
                       int height);
 

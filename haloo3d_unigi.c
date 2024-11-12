@@ -424,7 +424,7 @@ inline void h3d_getdither4x4(float dither, uint8_t *buf) {
   memcpy(buf, _dither4x4 + index, 4);
 }
 
-void h3d_apply_alternating(h3d_fb *fb, uint16_t *cols, uint16_t numcols) {
+void h3d_apply_alternating(h3d_fb *fb, const uint16_t *cols, uint16_t numcols) {
   for (int y = 0; y < fb->height; y++) {
     for (int x = 0; x < fb->width; x++) {
       uint16_t basecol = H3D_FB_GET(fb, x, y);
@@ -519,7 +519,7 @@ void h3d_apply_rect(h3d_fb *fb, h3d_recti rect, uint16_t color, int width) {
 
 // Fill rectangle, EXCLUSIVE
 void h3d_apply_fillrect(h3d_fb *fb, h3d_recti rect, uint16_t color,
-                        uint8_t dithering[4]) {
+                        const uint8_t dithering[4]) {
   for (int y = rect.y1; y < rect.y2; y++) {
     uint8_t dither = dithering[y & 3];
     for (int x = rect.x1; x < rect.x2; x++) {
@@ -666,15 +666,19 @@ void h3d_gen_plane(h3d_obj *obj, uint16_t size) {
 }
 
 // Generate a face at the given cell in the given direction.
-void h3d_gen_grid_quad(h3d_obj *obj, int x, int y, int32_t dir[2]) {
+void h3d_gen_grid_quad(h3d_obj *obj, int x, int y, const vec2i dir) {
   if (dir[H3DX] == 1) {
-    dir[H3DX] = -1;
-    h3d_gen_grid_quad(obj, x + 1, y, dir);
+    vec2i dir2;
+    dir2[H3DY] = dir[H3DY];
+    dir2[H3DX] = -1;
+    h3d_gen_grid_quad(obj, x + 1, y, dir2);
     return;
   }
   if (dir[H3DY] == 1) {
-    dir[H3DY] = -1;
-    h3d_gen_grid_quad(obj, x, y + 1, dir);
+    vec2i dir2;
+    dir2[H3DX] = dir[H3DX];
+    dir2[H3DY] = -1;
+    h3d_gen_grid_quad(obj, x, y + 1, dir2);
     return;
   }
   const int vertplanesize = obj->numvertices / 2;
@@ -820,8 +824,8 @@ void h3d_gen_sloped(h3d_obj *obj, uint16_t size, hfloat_t slopiness,
   }
 }
 
-void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
-                               int count) {
+void h3d_gen_crossquad_generic(h3d_obj *obj, const h3d_fb *fb,
+                               const vec3 center, int count) {
   hfloat_t dims[2];
   uint16_t width = fb->width;
   uint16_t height = fb->height;
@@ -876,11 +880,11 @@ void h3d_gen_crossquad_generic(h3d_obj *obj, h3d_fb *fb, vec3 center,
   }
 }
 
-void h3d_gen_crossquad(h3d_obj *obj, h3d_fb *fb, vec3 center) {
+void h3d_gen_crossquad(h3d_obj *obj, const h3d_fb *fb, const vec3 center) {
   h3d_gen_crossquad_generic(obj, fb, center, 2);
 }
 
-void h3d_gen_quad(h3d_obj *obj, h3d_fb *fb, vec3 center) {
+void h3d_gen_quad(h3d_obj *obj, const h3d_fb *fb, const vec3 center) {
   h3d_gen_crossquad_generic(obj, fb, center, 1);
 }
 
