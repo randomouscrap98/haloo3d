@@ -208,44 +208,44 @@ void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered) {
   h3d_fb_intscale(src, dst, dstofsx, dstofsy, scale);
 }
 
-// void h3d_sprite(h3d_fb *fb, h3d_fb *sprite,
-//                         h3d_recti texrect, h3d_recti outrect) {
-//   // Precalc the step, as it's always the same even if we clip the rect
-//   const int FIXEDPOINTDEPTH = H3D_SPRITE_FPDEPTH;
-//   vec2i texdim = h3d_recti_dims(&texrect);
-//   vec2i outdim = h3d_recti_dims(&outrect);
-//   int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)texdim.x / outdim.x;
-//   int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)texdim.y / outdim.y;
-//   int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
-//   int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
-//   // Clip the rect
-//   if (outrect.x1 < 0) {
-//     texx += stepx * -outrect.x1;
-//     outrect.x1 = 0;
-//   }
-//   if (outrect.y1 < 0) {
-//     texy += stepy * -outrect.y1;
-//     outrect.y1 = 0;
-//   }
-//   if (outrect.x2 >= fb->width) {
-//     outrect.x2 = fb->width - 1;
-//   }
-//   if (outrect.y2 >= fb->height) {
-//     outrect.y2 = fb->height - 1;
-//   }
-//   for (int y = outrect.y1; y < outrect.y2; y++) {
-//     texx = texrect.x1;
-//     for (int x = outrect.x1; x < outrect.x2; x++) {
-//       uint16_t pix = haloo3d_fb_get(sprite, texx >> FIXEDPOINTDEPTH,
-//                                     texy >> FIXEDPOINTDEPTH);
-//       if (pix & 0xF000) {
-//         haloo3d_fb_set(fb, x, y, pix);
-//       }
-//       texx += stepx;
-//     }
-//     texy += stepy;
-//   }
-// }
+void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
+                h3d_recti outrect) {
+  // Precalc the step, as it's always the same even if we clip the rect
+  const int FIXEDPOINTDEPTH = 16;
+  int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.x2 - texrect.x1) /
+                  abs(outrect.x2 - outrect.x1);
+  int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.y2 - texrect.y1) /
+                  abs(outrect.y2 - outrect.y1);
+  int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
+  int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
+  // Clip the rect
+  if (outrect.x1 < 0) {
+    texx += stepx * -outrect.x1;
+    outrect.x1 = 0;
+  }
+  if (outrect.y1 < 0) {
+    texy += stepy * -outrect.y1;
+    outrect.y1 = 0;
+  }
+  if (outrect.x2 >= fb->width) {
+    outrect.x2 = fb->width - 1;
+  }
+  if (outrect.y2 >= fb->height) {
+    outrect.y2 = fb->height - 1;
+  }
+  for (int y = outrect.y1; y < outrect.y2; y++) {
+    texx = texrect.x1;
+    for (int x = outrect.x1; x < outrect.x2; x++) {
+      uint16_t pix =
+          H3D_FB_GET(sprite, texx >> FIXEDPOINTDEPTH, texy >> FIXEDPOINTDEPTH);
+      if (pix & 0xF000) {
+        H3D_FB_SET(fb, x, y, pix);
+      }
+      texx += stepx;
+    }
+    texy += stepy;
+  }
+}
 
 // ===========================================
 // |              EASYSYS                    |
@@ -1012,6 +1012,7 @@ void h3d_print_init(h3d_print_tracker *t, char *buf, int buflen, h3d_fb *fb) {
   t->bounds.x2 = -1;
   t->bounds.y2 = -1;
   t->fb = fb;
+  t->fast = 1;
   h3d_print_refresh(t);
 }
 
@@ -1028,6 +1029,18 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
   if (t->logprints) {
     eprintf("%s", t->buffer);
   }
+  h3d_recti srect = {
+      .x1 = 0,
+      .y1 = 0,
+      .x2 = t->scale * H3D_PRINT_CHW,
+      .y2 = t->scale * H3D_PRINT_CHH,
+  };
+  h3d_recti trect = {
+      .x1 = 0,
+      .y1 = 0,
+      .x2 = H3D_PRINT_CHW,
+      .y2 = H3D_PRINT_CHH,
+  };
   uint16_t sx = H3D_MAX(0, t->bounds.x1);
   uint16_t sy = H3D_MAX(0, t->bounds.y1);
   uint16_t ex = t->bounds.x2 < 0 ? t->fb->width : t->bounds.x2;
@@ -1067,7 +1080,15 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
       h3d_print_convertglyph(t->glyphs[glyph], t->bcolor, t->fcolor, &tex);
       prerendered[glyph] = 1;
     }
-    h3d_fb_intscale(&tex, t->fb, t->x, t->y, t->scale);
+    if (t->fast) {
+      h3d_fb_intscale(&tex, t->fb, t->x, t->y, t->scale);
+    } else {
+      srect.x1 = t->x;
+      srect.y1 = t->y;
+      srect.x2 = srect.x1 + t->scale * H3D_PRINT_CHW;
+      srect.y2 = srect.y1 + t->scale * H3D_PRINT_CHH;
+      h3d_sprite(t->fb, &tex, trect, srect);
+    }
     t->x += t->scale * H3D_PRINT_CHW;
   }
 }

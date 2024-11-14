@@ -205,7 +205,7 @@ typedef struct {
   uint16_t fcolor;
   const uint64_t *glyphs;
   h3d_recti bounds;
-  // haloo3d_fb *font;
+  uint8_t fast;
 } h3d_print_tracker;
 
 // Initialize the given print tracker to have all defaults. You will still need
