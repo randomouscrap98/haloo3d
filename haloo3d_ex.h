@@ -128,7 +128,7 @@ void h3d_obj_shrink(h3d_obj *obj);
 // pointer. Assumes the file pointer is at the point you want it at
 void h3d_obj_load(h3d_obj *obj, FILE *f);
 // Load a whole object file into an unitialized object using the given string
-void h3d_obj_loadstring(h3d_obj *obj, char *s);
+void h3d_obj_loadstring(h3d_obj *obj, const char *s);
 // Open a simple file and read the wavefront obj into an unitialized obj
 void h3d_obj_loadfile(h3d_obj *obj, char *filename);
 

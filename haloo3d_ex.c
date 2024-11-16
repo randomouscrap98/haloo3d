@@ -43,7 +43,7 @@ void h3d_obj_load(h3d_obj *obj, FILE *f) {
   h3d_obj_shrink(obj);
 }
 
-void h3d_obj_loadstring(h3d_obj *obj, char *str) {
+void h3d_obj_loadstring(h3d_obj *obj, const char *str) {
   h3d_obj_initmax(obj);
   char line[H3D_OBJ_MAXLINESIZE];
   char err[1024];
