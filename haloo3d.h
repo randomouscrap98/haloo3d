@@ -416,10 +416,10 @@ typedef struct {
 #define H3D_FB_SET(fb, x, y, v) (fb)->buffer[(x) + (y) * (fb)->width] = (v)
 #define H3D_FB_DSET(fb, x, y, v) (fb)->dbuffer[x + (y) * (fb)->width] = (v)
 #define H3D_FB_GETUV(fb, u, v)                                                 \
-  (fb->buffer[((uint16_t)((fb)->width * u) & ((fb)->width - 1)) +              \
-              ((uint16_t)((fb)->height * (H3DVF(1) - v)) &                     \
-               ((fb)->height - 1)) *                                           \
-                  (fb)->width])
+  ((fb)->buffer[((uint16_t)((fb)->width * u) & ((fb)->width - 1)) +            \
+                ((uint16_t)((fb)->height * (H3DVF(1) - v)) &                   \
+                 ((fb)->height - 1)) *                                         \
+                    (fb)->width])
 #define H3D_FB_SIZE(fb) ((fb)->width * (fb)->height)
 
 // Convert given color to full transparency in whole fb
