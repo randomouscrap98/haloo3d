@@ -23,6 +23,18 @@
     h3d_fb_writeppmfile(&fbn, #func ".ppm");                                   \
   }
 
+#define SPEEDTESTLOOP_GENERIC(func, repeat, ...)                               \
+  {                                                                            \
+    eprintf("Starting %s...\n", #func);                                        \
+    clock_t begin = clock();                                                   \
+    for (int _i = 0; _i < repeat; ++_i) {                                      \
+      func(__VA_ARGS__);                                                       \
+    }                                                                          \
+    clock_t end = clock();                                                     \
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;                \
+    printf("%24s * %6d = %5.2f ms\n", #func, repeat, time_spent * 1000);       \
+  }
+
 #define FBDEFWIDTH 256
 #define FBDEFHEIGHT 256
 #define DEFFOV 90.0

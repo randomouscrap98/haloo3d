@@ -78,6 +78,11 @@ void tri3d_texuv_pc(h3d_fb *buf, h3d_rasterface rfb) {
   H3DTRI_SCAN_END(buf->width);
 }
 
+static inline void calc3d_nomodel(h3d_rasterface out) {
+  DEFAULT_RASTERFACE3D(rface);
+  memcpy(out, rface, sizeof(h3d_rasterface));
+}
+
 int main() {
   eprintf("Starting program\n");
   DEFAULTFB_UNIGI(fb);
@@ -90,6 +95,7 @@ int main() {
 
   TEST(tri3d_flat);
   TEST(tri3d_flat);
+  SPEEDTESTLOOP_GENERIC(calc3d_nomodel, REPEAT, rface);
   TEST(tri3d_flat);
   TEST(tri3d_vertexcolors);
   TEST(tri3d_vertexcolors_pc);
