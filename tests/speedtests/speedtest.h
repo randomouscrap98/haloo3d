@@ -19,12 +19,20 @@
     }                                                                          \
     clock_t end = clock();                                                     \
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;                \
-    printf("%16s X %6d = %5.2f ms\n", #func, repeat, time_spent * 1000);       \
+    printf("%24s * %6d = %5.2f ms\n", #func, repeat, time_spent * 1000);       \
     h3d_fb_writeppmfile(&fbn, #func ".ppm");                                   \
   }
 
 #define FBDEFWIDTH 256
 #define FBDEFHEIGHT 256
+#define DEFFOV 90.0
+#define DEFNEAR 0.01
+#define DEFFAR 100.0
+#define RF3DDEFUP {0.0, 1.0, 0.0}
+#define RF3DDEFPOS {-0.5, 0.5, 1.2}
+#define RF3DDEFLOOK {0.0, 0.0, 0.0}
+#define RF3DDEFVECS                                                            \
+  {{0.0, 1.0, 0.0, 1.0}, {-1.0, -1.0, 0.0, 1.0}, {1.0, -1.0, 0.0, 1.0}}
 
 // Create a framebuffer, pre-cleared, of the default size.
 #define DEFAULTFB_UNIGI(fbn)                                                   \
@@ -49,3 +57,41 @@
   rfn[2].pos[H3DY] = FBDEFHEIGHT * 15 / 16;                                    \
   rfn[2].interpolants[0] = 1.0;                                                \
   rfn[2].interpolants[1] = 0;
+
+// Create a default rasterface which takes up some reasonable amount of space
+// on the default fb screen. Interpolants are z, u, and v. The triangle is
+// rendered at an angle to enable testing of depth and such
+#define DEFAULT_RASTERFACE3D(rfn)                                              \
+  h3d_rasterface rfn;                                                          \
+  {                                                                            \
+    /* Setup premade projection/translation/etc matrix */                      \
+    vec3 up = RF3DDEFUP;                                                       \
+    vec3 pos = RF3DDEFPOS;                                                     \
+    vec3 lookat = RF3DDEFLOOK;                                                 \
+    mat4 cammatrix, perspective, finalmat;                                     \
+    h3d_perspective(DEFFOV, (hfloat_t)FBDEFWIDTH / FBDEFHEIGHT, DEFNEAR,       \
+                    DEFFAR, perspective);                                      \
+    h3d_my_lookat(pos, lookat, up, cammatrix);                                 \
+    mat4_inverse(cammatrix, cammatrix);                                        \
+    mat4_multiply(perspective, cammatrix, finalmat);                           \
+    /* Setup 3dface in 3d space translated with previous matrix */             \
+    vec4 verts[3] = RF3DDEFVECS;                                               \
+    h3d_3dface face3d;                                                         \
+    for (int _i = 0; _i < 3; _i++) {                                           \
+      h3d_vec4_mult_mat4(verts[_i], finalmat, face3d[_i].pos);                 \
+    }                                                                          \
+    if (!h3d_3dface_normalize(face3d)) {                                       \
+      dieerr("TRIFACE NOT FACING CAMERA???");                                  \
+    }                                                                          \
+    /* Setup renderface by translating to screen space + set interpolants */   \
+    for (int _v = 0; _v < 3; _v++) {                                           \
+      rfn[_v].interpolants[0] = face3d[_v].pos[H3DW];                          \
+      h3d_viewport(face3d[_v].pos, FBDEFWIDTH, FBDEFHEIGHT, rfn[_v].pos);      \
+    }                                                                          \
+    rfn[0].interpolants[1] = 0.5;                                              \
+    rfn[0].interpolants[2] = 1.0;                                              \
+    rfn[1].interpolants[1] = 0;                                                \
+    rfn[1].interpolants[2] = 0;                                                \
+    rfn[2].interpolants[1] = 1.0;                                              \
+    rfn[2].interpolants[2] = 0;                                                \
+  }

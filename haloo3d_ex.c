@@ -118,7 +118,7 @@ int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out) {
     // want to skip the homogenous conversion
     vec4 tmp;
     memcpy(tmp, object->vertices[i], sizeof(vec4));
-    h3d_vec4_homogenous(tmp);
+    h3d_vec4_homogenous_real(tmp);
     h3d_vec4_mult_mat4(tmp, matrix, out[i]);
   }
   return object->numvertices;

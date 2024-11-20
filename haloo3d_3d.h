@@ -359,6 +359,18 @@ static inline void h3d_vec4_homogenous(vec4 v) {
   }
 }
 
+// Divide x, y, and z by the w value. Proper homogenous function because it
+// also modifies w (this isn't how the other one works!)
+static inline void h3d_vec4_homogenous_real(vec4 v) {
+  if (v[H3DW] != H3DVF(1)) {
+    hfloat_t div = H3DVF(1) / v[H3DW];
+    v[H3DX] *= div;
+    v[H3DY] *= div;
+    v[H3DZ] *= div;
+    v[H3DW] = H3DVF(1);
+  }
+}
+
 // // ----------------------
 // //   Camera
 // // ----------------------

@@ -12,5 +12,6 @@ build() {
 
 echo "Building tests"
 build "simple2dtest"
+build "simple3dtest"
 
 echo "Done!"
