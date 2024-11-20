@@ -28,7 +28,9 @@ void tri3d_vertexcolors(h3d_fb *buf, h3d_rasterface rf) {
 }
 
 // Perspective correct vertex colors
-void tri3d_vertexcolors_pc(h3d_fb *buf, h3d_rasterface rf) {
+void tri3d_vertexcolors_pc(h3d_fb *buf, h3d_rasterface rfb) {
+  h3d_rasterface rf;
+  memcpy(rf, rfb, sizeof(h3d_rasterface));
   // Persp correct is inverse z
   for (int f = 0; f < 3; f++) {
     rf[f].interpolants[0] = 1.0 / rf[f].interpolants[0];
@@ -56,10 +58,12 @@ void tri3d_texuv(h3d_fb *buf, h3d_rasterface rf) {
   H3DTRI_SCAN_END(buf->width);
 }
 
-void tri3d_texuv_pc(h3d_fb *buf, h3d_rasterface rf) {
+void tri3d_texuv_pc(h3d_fb *buf, h3d_rasterface rfb) {
+  // This might destroy the perf monitor, ugh
+  h3d_rasterface rf;
+  memcpy(rf, rfb, sizeof(h3d_rasterface));
   // Persp correct is inverse z
   for (int f = 0; f < 3; f++) {
-    eprintf("0: %f\n", rf[f].interpolants[0]);
     rf[f].interpolants[0] = 1.0 / rf[f].interpolants[0];
     rf[f].interpolants[1] *= rf[f].interpolants[0];
     rf[f].interpolants[2] *= rf[f].interpolants[0];

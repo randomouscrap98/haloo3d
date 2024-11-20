@@ -29,7 +29,7 @@
 #define DEFNEAR 0.01
 #define DEFFAR 100.0
 #define RF3DDEFUP {0.0, 1.0, 0.0}
-#define RF3DDEFPOS {-0.5, 0.5, 1.2}
+#define RF3DDEFPOS {-0.75, 0.5, 1.1}
 #define RF3DDEFLOOK {0.0, 0.0, 0.0}
 #define RF3DDEFVECS                                                            \
   {{0.0, 1.0, 0.0, 1.0}, {-1.0, -1.0, 0.0, 1.0}, {1.0, -1.0, 0.0, 1.0}}

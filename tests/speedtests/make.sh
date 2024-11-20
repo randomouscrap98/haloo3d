@@ -7,7 +7,7 @@ make
 cd -
 
 build() {
-  gcc -O3 -flto $1.c ../../build/haloo3d.a -o $1.exe -lm
+  gcc -O2 -flto $1.c ../../build/haloo3d.a -o $1.exe -lm
 }
 
 echo "Building tests"
