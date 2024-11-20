@@ -62,6 +62,14 @@ typedef struct {
 #define H3D_IS2POW(x) (!((x) & ((x) - 1)) && (x))
 #define H3D_MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define H3D_MAX(a, b) (((a) > (b)) ? (a) : (b))
+// Rotate left (byte)
+#define H3D_ROL8(v) ((v << 1) | (v >> 7))
+// Rotate right (byte)
+#define H3D_ROR8(v) ((v >> 1) | (v << 7))
+// Rotate left by n (byte)
+#define H3D_ROL8N(v, n) ((v << (n & 0x7)) | (v >> (8 - (n & 0x7))))
+// Rotate right by n (byte)
+#define H3D_ROR8N(v, n) ((v >> (n & 0x7)) | (v << (8 - (n & 0x7))))
 
 // Edge function for a point being on one side or another of a line given by
 // v0 and v1. We use counter-clockwise winding. Technically returns 2 * area
