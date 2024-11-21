@@ -12,6 +12,9 @@
 #define SPEEDTESTLOOP(func, repeat, fbn, ...)                                  \
   {                                                                            \
     eprintf("Starting %s...\n", #func);                                        \
+    h3d_print_tracker pt;                                                      \
+    char cbuf[1024];                                                           \
+    h3d_print_init(&pt, cbuf, sizeof(cbuf), &fbn);                             \
     H3D_FB_FILL(&fbn, 0xF000);                                                 \
     clock_t begin = clock();                                                   \
     for (int _i = 0; _i < repeat; ++_i) {                                      \
@@ -19,7 +22,8 @@
     }                                                                          \
     clock_t end = clock();                                                     \
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;                \
-    printf("%24s * %6d = %5.2f ms\n", #func, repeat, time_spent * 1000);       \
+    printf("%24s * %6d = %6.2f ms\n", #func, repeat, time_spent * 1000);       \
+    h3d_print(&pt, "%s\n%6.2fms", #func, time_spent * 1000);                   \
     h3d_fb_writeppmfile(&fbn, #func ".ppm");                                   \
   }
 

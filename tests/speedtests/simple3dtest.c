@@ -6,7 +6,7 @@
 #define REPEAT 10000
 #define TEXTURE "texture.ppm"
 
-#define DITHEREND 2.3
+#define DITHEREND 2.2
 #define DITHERSTART 1.0
 #define DITHERSCALE 1.0 / (DITHEREND - DITHERSTART);
 
@@ -111,7 +111,7 @@ void tri3d_flat_fd(h3d_fb *buf, h3d_rasterface rf) {
 }
 
 // Distance dithering on flat color
-void tri3d_flat_dd(h3d_fb *buf, h3d_rasterface rfb) {
+void tri3d_flat_ddpc(h3d_fb *buf, h3d_rasterface rfb) {
   PCRF(rf, rfb);
   int basedithofs = h3d_4x4dither_index(1.0);
   uint8_t dithermask;
@@ -133,6 +133,36 @@ void tri3d_flat_dd(h3d_fb *buf, h3d_rasterface rfb) {
     }
     dithermask <<= 1;
     H3DTRI_LINPOL1(linpol);
+  }
+  H3DTRI_SCAN_END(buf->width);
+}
+
+// Distance dithering on pc texture. This is close to what
+// a real game would use
+void tri3d_texuv_ddpc(h3d_fb *buf, h3d_rasterface rfb) {
+  PCRF(rf, rfb);
+  int basedithofs = h3d_4x4dither_index(1.0);
+  uint8_t dithermask;
+  uint8_t dither;
+  uint8_t basedither = 0xFF;
+  H3DTRI_CLAMP(rf, buf->width, buf->height);
+  H3DTRI_BEGIN(rf, sv, parea);
+  H3DTRI_SCAN_BEGIN(sv, parea, linpol, 3, buf->width, buf->height, bufi) {
+    dither = _dither[basedithofs + (_y & 3)];
+    dithermask = 0;
+    DITHERCALC(H3DVF(1) / linpol[0]);
+    dithermask = 1 << (_xl & 7);
+  }
+  H3DTRI_SHADER(bufi) {
+    hfloat_t pz = H3DVF(1) / linpol[0];
+    hfloat_t u = linpol[1] * pz;
+    hfloat_t v = linpol[2] * pz;
+    DITHERCALC(pz);
+    if (dither & dithermask) {
+      buf->buffer[bufi] = H3D_FB_GETUV(&texuv, u, v);
+    }
+    dithermask <<= 1;
+    H3DTRI_LINPOL3(linpol);
   }
   H3DTRI_SCAN_END(buf->width);
 }
@@ -161,7 +191,8 @@ int main() {
   TEST(tri3d_texuv);
   TEST(tri3d_texuv_pc);
   TEST(tri3d_flat_fd);
-  TEST(tri3d_flat_dd);
+  TEST(tri3d_flat_ddpc);
+  TEST(tri3d_texuv_ddpc);
 
   h3d_fb_free(&fb);
   h3d_fb_free(&texuv);
