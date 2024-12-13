@@ -24,7 +24,7 @@ everything, necesitating an FPU. This may change in the distant future.
 ## Quick start
 
 If you want to immediately jump into code, I recommend taking a look at 
-[tests/t4_modelview.c](test/t4_modelview.c).
+[tests/t4_modelview.c](tests/t4_modelview.c).
 It showcases creating a simple shader function using the library's macros,
 loading model `.obj` files and texture `.ppm` files, creating a framebuffer,
 creating the perspective / model / final view matrix, iterating over 
