@@ -6,90 +6,6 @@
 #include <string.h>
 
 // ===========================================
-// |                 IMAGE                   |
-// ===========================================
-
-void h3d_fb_writeppm(h3d_fb *fb, FILE *f) {
-  fprintf(f, "P6 %d %d 15\n", fb->width, fb->height);
-  uint8_t color[3];
-  for (int i = 0; i < H3D_FB_SIZE(fb); i++) {
-    uint16_t bc = fb->buffer[i];
-    color[0] = (bc >> 8) & 0xF; // H3DC_R(bc);
-    color[1] = (bc >> 4) & 0xf; // H3DC_G(bc);
-    color[2] = bc & 0xf;        // H3DC_B(bc);
-    fwrite(color, sizeof(uint8_t), 3, f);
-  }
-}
-
-void h3d_fb_loadppm(FILE *f, h3d_fb *fb) {
-  char tmp[4096];
-  // Must ALWAYS start with "P6"
-  int scanned = fscanf(f, "%4095s", tmp);
-  if (scanned != 1 || strcmp(tmp, "P6") != 0) {
-    dieerr("Image file not in P6 format (no P6 identifier)");
-  }
-  // Now just pull three digits
-  int vals[3];
-  int numvals = 0;
-  while (numvals != 3) {
-    scanned = fscanf(f, "%d", vals + numvals);
-    if (scanned != 1) {
-      // This might just be a comment. Consume the rest of the line if so
-      scanned = fscanf(f, "%4095s", tmp);
-      if (scanned != 1 || tmp[0] != '#' || !fgets(tmp, 4095, f)) {
-        dieerr("Image file not in P6 format (unexpected header value: %s)",
-               tmp);
-      }
-    } else {
-      numvals++;
-    }
-  }
-  // Consume one character, it's the whitespace after depth
-  fgetc(f);
-  fb->width = vals[0];
-  fb->height = vals[1];
-  int depth = vals[2];
-  H3D_FB_TEXINIT(fb, fb->width, fb->height);
-  // Must set everything to 0
-  memset(fb->buffer, 0, H3D_FB_SIZE(fb));
-  // Now let's just read until the end!
-  int b = 0;
-  int i = 0;
-  int c = 0;
-  while ((c = fgetc(f)) != EOF) {
-    fb->buffer[i] |=
-        0xF000 | ((uint16_t)((c / (float)depth) * 15 + 0.5) << ((2 - b) * 4));
-    b++;
-    if (b == 3) { // We've read the full rgb
-      i++;
-      b = 0;
-    }
-  }
-}
-
-void h3d_fb_writeppmfile(h3d_fb *fb, char *filename) {
-  // And now we should be able to save the framebuffer
-  FILE *f = fopen(filename, "w");
-  if (f == NULL) {
-    dieerr("Can't open %s for writing ppm image\n", filename);
-  }
-  h3d_fb_writeppm(fb, f);
-  fclose(f);
-  eprintf("Wrote ppm image to %s\n", filename);
-}
-
-void h3d_fb_loadppmfile(h3d_fb *tex, char *filename) {
-  // Open a simple file and read the ppm from it
-  FILE *f = fopen(filename, "r");
-  if (f == NULL) {
-    dieerr("Can't open %s for ppm image reading\n", filename);
-  }
-  h3d_fb_loadppm(f, tex); // This also calls init so you have to free
-  fclose(f);
-  eprintf("Read ppm image from %s\n", filename);
-}
-
-// ===========================================
 // |              FRAMEBUFFER                |
 // ===========================================
 
@@ -98,45 +14,6 @@ void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height) {
 }
 
 void h3d_fb_free(h3d_fb *fb) { H3D_FB_FREE(fb); }
-
-void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
-                h3d_recti outrect) {
-  // Precalc the step, as it's always the same even if we clip the rect
-  const int FIXEDPOINTDEPTH = 16;
-  int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.x2 - texrect.x1) /
-                  abs(outrect.x2 - outrect.x1);
-  int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.y2 - texrect.y1) /
-                  abs(outrect.y2 - outrect.y1);
-  int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
-  int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
-  // Clip the rect
-  if (outrect.x1 < 0) {
-    texx += stepx * -outrect.x1;
-    outrect.x1 = 0;
-  }
-  if (outrect.y1 < 0) {
-    texy += stepy * -outrect.y1;
-    outrect.y1 = 0;
-  }
-  if (outrect.x2 >= fb->width) {
-    outrect.x2 = fb->width - 1;
-  }
-  if (outrect.y2 >= fb->height) {
-    outrect.y2 = fb->height - 1;
-  }
-  for (int y = outrect.y1; y < outrect.y2; y++) {
-    texx = texrect.x1;
-    for (int x = outrect.x1; x < outrect.x2; x++) {
-      uint16_t pix =
-          H3D_FB_GET(sprite, texx >> FIXEDPOINTDEPTH, texy >> FIXEDPOINTDEPTH);
-      if (pix & 0xF000) {
-        H3D_FB_SET(fb, x, y, pix);
-      }
-      texx += stepx;
-    }
-    texy += stepy;
-  }
-}
 
 // ===========================================
 // |              EASYSYS                    |
@@ -819,6 +696,46 @@ void h3d_gen_gradient(h3d_fb *buf, uint16_t topcol, uint16_t botcol,
 // |          PRINTING (legacy)              |
 // ===========================================
 
+// An old sprite drawing function I use for this legacy print only
+void _h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
+                 h3d_recti outrect) {
+  // Precalc the step, as it's always the same even if we clip the rect
+  const int FIXEDPOINTDEPTH = 16;
+  int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.x2 - texrect.x1) /
+                  abs(outrect.x2 - outrect.x1);
+  int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.y2 - texrect.y1) /
+                  abs(outrect.y2 - outrect.y1);
+  int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
+  int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
+  // Clip the rect
+  if (outrect.x1 < 0) {
+    texx += stepx * -outrect.x1;
+    outrect.x1 = 0;
+  }
+  if (outrect.y1 < 0) {
+    texy += stepy * -outrect.y1;
+    outrect.y1 = 0;
+  }
+  if (outrect.x2 >= fb->width) {
+    outrect.x2 = fb->width - 1;
+  }
+  if (outrect.y2 >= fb->height) {
+    outrect.y2 = fb->height - 1;
+  }
+  for (int y = outrect.y1; y < outrect.y2; y++) {
+    texx = texrect.x1;
+    for (int x = outrect.x1; x < outrect.x2; x++) {
+      uint16_t pix =
+          H3D_FB_GET(sprite, texx >> FIXEDPOINTDEPTH, texy >> FIXEDPOINTDEPTH);
+      if (pix & 0xF000) {
+        H3D_FB_SET(fb, x, y, pix);
+      }
+      texx += stepx;
+    }
+    texy += stepy;
+  }
+}
+
 // These are 8x8 glyphs for characters in the ascii range. If you try to
 // print utf8, oh well
 // clang-format off
@@ -978,7 +895,7 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
       srect.y1 = t->y;
       srect.x2 = srect.x1 + t->scale * H3D_PRINT_CHW;
       srect.y2 = srect.y1 + t->scale * H3D_PRINT_CHH;
-      h3d_sprite(t->fb, &tex, trect, srect);
+      _h3d_sprite(t->fb, &tex, trect, srect);
     }
     t->x += t->scale * H3D_PRINT_CHW;
   }

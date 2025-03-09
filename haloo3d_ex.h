@@ -74,6 +74,51 @@
 }
 // clang-format on
 
+// ===========================================
+// |                 IMAGE                   |
+// ===========================================
+
+typedef void (*h3d_fb_imgout)(uint16_t, uint8_t[4]);
+typedef uint16_t (*h3d_fb_imgin)(float[4]);
+
+// Write 16 bit color in A4R4G4B4 out to given buffer in order ARGB
+static inline void h3d_fb_out_A4R4G4B4(uint16_t color, uint8_t buf[4]) {
+  buf[0] = H3DC_A4(color);
+  buf[1] = H3DC_R4(color);
+  buf[2] = H3DC_G4(color);
+  buf[3] = H3DC_B4(color);
+};
+// Write 16 bit color in A1R5G5B5 out to given buffer in order ARGB
+static inline void h3d_fb_out_A1R5G5B5(uint16_t color, uint8_t buf[4]) {
+  buf[0] = H3DC_A1(color);
+  buf[1] = H3DC_R5(color);
+  buf[2] = H3DC_G5(color);
+  buf[3] = H3DC_B5(color);
+};
+
+// Create 16 bit color in A4R4G4B4 from given color buffer (0 to 1)
+static inline uint16_t h3d_fb_in_A4R4G4B4(float buf[4]) {
+  return H3DC_A4R4G4B4(
+      (uint16_t)(buf[0] * 15 + 0.5), (uint16_t)(buf[1] * 15 + 0.5),
+      (uint16_t)(buf[2] * 15 + 0.5), (uint16_t)(buf[3] * 15 + 0.5));
+};
+static inline uint16_t h3d_fb_in_A1R5G5B5(float buf[4]) {
+  return H3DC_A1R5G5B5(buf[0] ? 1 : 0, (uint16_t)(buf[1] * 31 + 0.5),
+                       (uint16_t)(buf[2] * 31 + 0.5),
+                       (uint16_t)(buf[3] * 31 + 0.5));
+};
+
+// Writes a P6 binary ppm from the 16 bit framebuffer. Must give the
+// conversion function for color to buffer
+void h3d_fb_writeppm(h3d_fb *fb, FILE *f, h3d_fb_imgout cc);
+// Write a P6 binary ppm to a file. Kills whole program if it can't
+void h3d_fb_writeppmfile(h3d_fb *fb, char *filename, h3d_fb_imgout cc);
+// Loads a P6 binary ppm into a framebuffer
+void h3d_fb_loadppm(FILE *f, h3d_fb *fb, h3d_fb_imgin cc);
+// Load a P6 binary ppm into the given texture. Kills whole program
+// if it can't.
+void h3d_fb_loadppmfile(h3d_fb *tex, char *filename, h3d_fb_imgin cc);
+
 // ========================================
 // |            FRAMEBUFFER               |
 // ========================================

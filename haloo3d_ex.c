@@ -1,6 +1,94 @@
 #include "haloo3d_ex.h"
 
 // ========================================
+// |            IMAGE                     |
+// ========================================
+
+void h3d_fb_writeppm(h3d_fb *fb, FILE *f, h3d_fb_imgout cc) {
+  uint8_t color[4];
+  // Figure out max color with a bit of a hack
+  cc(0xFFFF, color);
+  uint8_t cwidth = color[1];
+  fprintf(f, "P6 %d %d %d\n", fb->width, fb->height, cwidth);
+  for (int i = 0; i < H3D_FB_SIZE(fb); i++) {
+    cc(fb->buffer[i], color);
+    if (!color[0])
+      memset(color, 0, 4); // set to black if no alpha
+    fwrite(color + 1, sizeof(uint8_t), 3, f);
+  }
+}
+
+void h3d_fb_writeppmfile(h3d_fb *fb, char *filename, h3d_fb_imgout cc) {
+  // And now we should be able to save the framebuffer
+  FILE *f = fopen(filename, "w");
+  if (f == NULL) {
+    dieerr("Can't open %s for writing ppm image\n", filename);
+  }
+  h3d_fb_writeppm(fb, f, cc);
+  fclose(f);
+  eprintf("Wrote ppm image to %s\n", filename);
+}
+
+void h3d_fb_loadppm(FILE *f, h3d_fb *fb, h3d_fb_imgin cc) {
+  char tmp[4096];
+  // Must ALWAYS start with "P6"
+  int scanned = fscanf(f, "%4095s", tmp);
+  if (scanned != 1 || strcmp(tmp, "P6") != 0) {
+    dieerr("Image file not in P6 format (no P6 identifier)");
+  }
+  // Now just pull three digits
+  int vals[3];
+  int numvals = 0;
+  while (numvals != 3) {
+    scanned = fscanf(f, "%d", vals + numvals);
+    if (scanned != 1) {
+      // This might just be a comment. Consume the rest of the line if so
+      scanned = fscanf(f, "%4095s", tmp);
+      if (scanned != 1 || tmp[0] != '#' || !fgets(tmp, 4095, f)) {
+        dieerr("Image file not in P6 format (unexpected header value: %s)",
+               tmp);
+      }
+    } else {
+      numvals++;
+    }
+  }
+  // Consume one character, it's the whitespace after depth
+  fgetc(f);
+  fb->width = vals[0];
+  fb->height = vals[1];
+  int depth = vals[2];
+  H3D_FB_TEXINIT(fb, fb->width, fb->height);
+  // Must set everything to 0
+  memset(fb->buffer, 0, H3D_FB_SIZE(fb));
+  // Now let's just read until the end!
+  int b = 0;
+  int i = 0;
+  int c = 0;
+  float buf[4];
+  while ((c = fgetc(f)) != EOF) {
+    b++;
+    buf[b] = c / (float)depth;
+    if (b == 3) { // We've read the full rgb
+      buf[0] = 1;
+      fb->buffer[i] = cc(buf);
+      i++;
+      b = 0;
+    }
+  }
+}
+
+void h3d_fb_loadppmfile(h3d_fb *tex, char *filename, h3d_fb_imgin cc) {
+  // Open a simple file and read the ppm from it
+  FILE *f = fopen(filename, "r");
+  if (f == NULL) {
+    dieerr("Can't open %s for ppm image reading\n", filename);
+  }
+  h3d_fb_loadppm(f, tex, cc); // This also calls init so you have to free
+  fclose(f);
+  eprintf("Read ppm image from %s\n", filename);
+}
+
+// ========================================
 // |            FRAMEBUFFER               |
 // ========================================
 

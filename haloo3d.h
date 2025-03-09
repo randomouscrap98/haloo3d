@@ -467,15 +467,15 @@ typedef struct {
 #define H3DC_R4(c) (((c) >> 8) & 0xF)
 #define H3DC_G4(c) (((c) >> 4) & 0xF)
 #define H3DC_B4(c) ((c) & 0xF)
-// #define H3DC_R8(c) ((((c) >> 4) & 0xF0) | 0x07)
-// #define H3DC_G8(c) (((c) & 0xF0) | 0x07)
-// #define H3DC_B8(c) ((((c) << 4) & 0xF0) | 0x07)
 #define H3DC_A4R4G4B4(a, r, g, b)                                              \
   ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
 
-// // "scale" a color by a given intensity. it WILL clip...
-// #define H3DC_A4R4G4B4_SCALE(col, scale)
-//   H3DC_A4R4G4B4(H3DC_A4(col), H3DC_R4(col) * scale, H3DC_G4(col) * scale,
-//                 H3DC_B4(col) * scale)
+#define H3DC_A1(c) (((c) >> 15) & 0x1)
+#define H3DC_R5(c) (((c) >> 10) & 0x1F)
+#define H3DC_G5(c) (((c) >> 5) & 0x1F)
+#define H3DC_B5(c) ((c) & 0x1F)
+#define H3DC_A1R5G5B5(a, r, g, b)                                              \
+  ((((a) & 0x1) << 15) | (((r) & 0x1F) << 10) | (((g) & 0x1F) << 5) |          \
+   ((b) & 0x1F))
 
 #endif

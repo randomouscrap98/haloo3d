@@ -1,6 +1,7 @@
 // haloopdy 2024
 // An extra header you can use if you're going to use haloo3d with unigi.
-// Depends on the extended library.
+// Depends on the extended library. A lot of this is legacy stuff, you
+// don't really need any of this.
 
 #ifndef HALOO3D_UNIGI_H
 #define HALOO3D_UNIGI_H
@@ -81,24 +82,8 @@ static inline uint16_t h3d_col_blend(uint16_t src, uint16_t dst) {
   uint8_t g = (g1 * a1 + (15 - a1) * g2) / 15;
   uint8_t b = (b1 * a1 + (15 - a1) * b2) / 15;
 
-  // clang-format off
   return H3DC_A4R4G4B4(a, r, g, b);
-  // clang-format on
 }
-
-// ===========================================
-// |                 IMAGE                   |
-// ===========================================
-
-// Writes a P6 binary ppm from the framebuffer
-void h3d_fb_writeppm(h3d_fb *fb, FILE *f);
-// Loads a P6 binary ppm into a framebuffer
-void h3d_fb_loadppm(FILE *f, h3d_fb *fb);
-// Write a P6 binary ppm to a file. Kills whole program if it can't
-void h3d_fb_writeppmfile(h3d_fb *fb, char *filename);
-// Load a P6 binary ppm into the given texture. Kills whole program
-// if it can't.
-void h3d_fb_loadppmfile(h3d_fb *tex, char *filename);
 
 // ===========================================
 // |            FRAMEBUFFER (legacy)         |
