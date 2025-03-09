@@ -2,11 +2,10 @@
 
 <img src="https://haloopdy.com/blog/resources/baseline_fast_default.gif" alt="a 3d software renderer">
 
-A simple software renderer written in C99 which is made specifically for games
-I might want to make. It is a modular library with a simple shader-esque
-design for rendering, along with some idiosyncratic "batteries-included"
-extras for reading textures from `.ppm` files, reading models from `.obj`
-files, drawing sprites, printing to screen, performing 3d calculations, etc.
+A simple, modular 3D software renderer written in C99. It has a simple shader-esque
+design for rendering 2d triangles, along with some idiosyncratic "batteries-included"
+extras for performing 3d calculations, reading textures from `.ppm` files, 
+reading models from `.obj` files, drawing sprites, printing text to screen, etc.
 Though if you have your own libraries for all those, it's extremely easy
 to put together your own system with only pieces of mine.
 
@@ -48,14 +47,19 @@ library and how to use it.
 ## Structure
 
 The library is split into parts based on your needs. The main rendering library
-is just a single header, [haloo3d.h](haloo3d.h). If you have your own model,
-texture, and 3d math libraries, you could use just this header as your rendering 
-code. The header is extremely simple, including code only for rendering 2 dimensional
-triangles and some simple framebuffer structs. No color format is assumed.
+is just a single header, [haloo3d.h](haloo3d.h). The header is extremely simple,
+including code for efficiently walking the pixels of a 2d triangle, some basic framebuffers,
+and some helpful color macros. If you have your own model, texture, and 3d math libraries, 
+you could use just this header as your rendering code.
 
-I also include a 3d math library ([haloo3d_3d.h](haloo3d_3d.h) + [haloo3d_3d.c](haloo3d_3d.c)), 
-an .obj loading library ([haloo3d_obj.h](haloo3d_obj.h)),
-and an "extensions" library ([haloo3d_ex.h](haloo3d_ex.h) + [haloo3d_ex.c](haloo3d_ex.c)).
+I also include:
+- A 3d math library: [haloo3d_3d.h](haloo3d_3d.h), [haloo3d_3d.c](haloo3d_3d.c)
+- An .obj loading library: [haloo3d_obj.h](haloo3d_obj.h)
+- A helper library for ppm textures, some memory management, etc: [haloo3d_ex.h](haloo3d_ex.h), [haloo3d_ex.c](haloo3d_ex.c)
+- A library to connect haloo3d with [unigi](https://git.lumen.sh/Fierelier/unigi),
+  an intermediary graphics frontend: [haloo3d_unigi.h](haloo3d_unigi.h), [haloo3d_unigi.c](haloo3d_unigi.c)
+  - Not required if you're using SDL/etc
+
 You can plug them all together to get a functioning 3d software renderer.
 
 If you want the entire library, extras and all, wrapped up in a nice single object, 
