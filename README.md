@@ -98,11 +98,13 @@ programmer". I hope you will forgive my transgression.
 
 ### Basic flat color triangle example
 
-For example, here is the full code for how you might write code 
-that draws a flat color triangle to a framebuffer:
+For example, here is how you might write code 
+that draws a flat color triangle to a framebuffer, saving it
+to a `.ppm` file:
 
 ```c
 #include "haloo3d.h"
+#include "haloo3d_ex.h" // Only for writing framebuffer to file
 
 void triangle(h3d_rastervert *rv, h3d_fb *buf) {
   // This is a wrapper macro around several other macros. Only for simple shaders.
@@ -119,11 +121,11 @@ void triangle(h3d_rastervert *rv, h3d_fb *buf) {
 
 int main() {
   uint16_t screenbuf[WIDTH*HEIGHT] = {0};
-  h3d_fb screen = {
+  h3d_fb screen = {  
     .width = WIDTH,
     .height = HEIGHT,
     .buffer = screenbuf
-  };
+  }; // For convenience; haloo3d.h doesn't require a framebuffer
 
   h3d_rasterface rv;
   rv[0].pos[H3DX] = 20;
@@ -135,7 +137,7 @@ int main() {
 
   triangle(rv, &screen);
 
-  // Write out screenbuf however you like here.
+  h3d_fb_writeppmfile(&screen, "example.ppm", h3d_fb_out_A1R5G5B5);
 }
 ```
 
