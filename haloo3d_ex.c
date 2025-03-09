@@ -1,6 +1,118 @@
 #include "haloo3d_ex.h"
 
 // ========================================
+// |            FRAMEBUFFER               |
+// ========================================
+
+#define _H3D_FBF_BL(dbuf, sbuf)                                                \
+  *dbuf = *sbuf;                                                               \
+  dbuf++;
+
+// Explicit loop unrolling for various amounts of scale factors
+#define _H3D_FBF_ROW2(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROW3(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROW4(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    _H3D_FBF_BL(dbuf, sbuf);                                                   \
+    sbuf++;                                                                    \
+  }
+
+#define _H3D_FBF_ROWN(dbuf, sbuf, sbufe)                                       \
+  while (sbuf < sbufe) {                                                       \
+    for (int sx = 0; sx < scale; sx++) {                                       \
+      _H3D_FBF_BL(dbuf, sbuf);                                                 \
+    }                                                                          \
+    sbuf++;                                                                    \
+  }
+
+// Fast draw the ENTIRE src into the dst at x, y at the given integer scale. If
+// drawing outside the bounds or too big, behavior is undefined (for now). Does
+// NOT check alpha, simply a full overwrite
+void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
+                     uint8_t scale) {
+  // calculate total usable width and height given offset
+  const int dstwidth = dstofsx < 0 ? dst->width : dst->width - dstofsx;
+  const int dstheight = dstofsy < 0 ? dst->height : dst->height - dstofsy;
+  if (dstwidth < 0 || dstheight < 0) { // degenerate draw
+    return;
+  }
+  // calculate actual width and height
+  const int width = sizeof(uint16_t) * H3D_MIN(src->width * scale, dstwidth);
+  const int height = H3D_MIN(src->height * scale, dstheight);
+  // Special very fast case of scale 1
+  if (scale == 1) {
+    uint16_t *dbuf =
+        dst->buffer + H3D_MAX(0, dstofsx) + dst->width * H3D_MAX(0, dstofsy);
+    uint16_t *sbuf =
+        src->buffer + H3D_MAX(0, -dstofsx) + src->width * H3D_MAX(0, -dstofsy);
+    uint16_t *dbuf_e = dbuf + dst->width * height;
+    while (dbuf < dbuf_e) {
+      memcpy(dbuf, sbuf, width);
+      sbuf += src->width;
+      dbuf += dst->width;
+    }
+    return;
+  }
+  // Need a step per y of src and a step per y of dst
+  uint16_t *dbuf_y = &dst->buffer[dstofsx + dstofsy * dst->width];
+  uint16_t *sbuf_y = src->buffer;
+  uint16_t *sbuf_ye = src->buffer + src->width * src->height;
+  // Iterate over original image
+  while (sbuf_y < sbuf_ye) {
+    for (int sy = 0; sy < scale; sy++) {
+      uint16_t *sbuf = sbuf_y;
+      uint16_t *sbufe = sbuf_y + src->width;
+      uint16_t *dbuf = dbuf_y;
+      switch (scale) {
+      case 2:
+        _H3D_FBF_ROW2(dbuf, sbuf, sbufe);
+        break;
+      case 3:
+        _H3D_FBF_ROW3(dbuf, sbuf, sbufe);
+        break;
+      case 4:
+        _H3D_FBF_ROW4(dbuf, sbuf, sbufe);
+        break;
+      default:
+        _H3D_FBF_ROWN(dbuf, sbuf, sbufe);
+      }
+      dbuf_y += dst->width;
+    }
+    sbuf_y += src->width;
+  }
+}
+
+void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered) {
+  uint16_t scalex = dst->width / src->width;
+  uint16_t scaley = dst->height / src->height;
+  uint16_t scale = scalex < scaley ? scalex : scaley;
+  if (scale == 0) {
+    scale = 1;
+  }
+  int newwidth = scale * src->width;
+  int newheight = scale * src->height;
+  int dstofsx = centered ? (dst->width - newwidth) >> 1 : 0;
+  int dstofsy = centered ? (dst->height - newheight) >> 1 : 0;
+  h3d_fb_intscale(src, dst, dstofsx, dstofsy, scale);
+}
+
+// ========================================
 // |            OBJECT (MODEL)            |
 // ========================================
 

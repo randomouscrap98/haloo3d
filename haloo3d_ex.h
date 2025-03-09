@@ -112,6 +112,17 @@
     mallocordie((fb)->buffer, sizeof(uint16_t) * H3D_FB_SIZE(fb));             \
   }
 
+// Fast draw the ENTIRE src into the dst at x, y at the given integer scale. If
+// drawing outside the bounds or too big, behavior is undefined (for now). Does
+// NOT check alpha, simply a full overwrite
+void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
+                     uint8_t scale);
+// Simplified wrapper around h3d_fb_intscale for the common usecase of
+// overwriting dst with source filled as much as possible, with optional
+// centering. Useful when copying a small buffer used for 3d rendering into a
+// larger screen buffer
+void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered);
+
 // ========================================
 // |            OBJECT (MODEL)            |
 // ========================================

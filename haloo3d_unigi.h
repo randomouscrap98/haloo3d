@@ -101,18 +101,14 @@ void h3d_fb_writeppmfile(h3d_fb *fb, char *filename);
 void h3d_fb_loadppmfile(h3d_fb *tex, char *filename);
 
 // ===========================================
-// |              FRAMEBUFFER                |
+// |            FRAMEBUFFER (legacy)         |
 // ===========================================
 
 void h3d_fb_init(h3d_fb *fb, uint16_t width, uint16_t height);
 void h3d_fb_free(h3d_fb *fb);
 
-void h3d_fb_intscale(h3d_fb *src, h3d_fb *dst, int dstofsx, int dstofsy,
-                     uint8_t scale);
-void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered);
-
 // ===========================================
-// |              EASYSYS                    |
+// |            EASYSYS (legacy)             |
 // ===========================================
 
 // A storage container for easy access to models and textures by name.
