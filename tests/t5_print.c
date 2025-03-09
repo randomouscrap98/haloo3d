@@ -1,3 +1,8 @@
+// This test program tests the legacy printing functions related
+// specifically to unigi. Feel free to also use these functions, however
+// it assumes a buffer of A4R4G4B4, which may be wasteful (and
+// depends on the unigi extra, which is unnecessary for most things)
+
 #include "../haloo3d.h"
 #include "../haloo3d_ex.h"
 #include "../haloo3d_unigi.h"
@@ -33,7 +38,7 @@ int main(int argc, char **argv) {
     h3d_print_refresh(&pt);
     h3d_print(&pt, argv[2]);
   }
-  h3d_fb_writeppmfile(&fb, OUTFILE);
+  h3d_fb_writeppmfile(&fb, OUTFILE, h3d_fb_out_A4R4G4B4);
   h3d_fb_free(&fb);
   eprintf("Done!\n");
 }
