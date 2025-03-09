@@ -177,7 +177,7 @@ int main() {
   DEFAULTFB_UNIGI(fb);
   DEFAULT_RASTERFACE3D(rface);
 
-  h3d_fb_loadppmfile(&texuv, TEXTURE);
+  h3d_fb_loadppmfile(&texuv, TEXTURE, h3d_fb_in_A4R4G4B4);
 
   // All tests follow the same format, so simplify it
 #define TEST(func) SPEEDTESTLOOP(func, REPEAT, fb, rface);

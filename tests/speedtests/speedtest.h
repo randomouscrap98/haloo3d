@@ -24,7 +24,7 @@
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;                \
     printf("%24s * %6d = %6.2f ms\n", #func, repeat, time_spent * 1000);       \
     h3d_print(&pt, "%s\n%6.2fms", #func, time_spent * 1000);                   \
-    h3d_fb_writeppmfile(&fbn, #func ".ppm");                                   \
+    h3d_fb_writeppmfile(&fbn, #func ".ppm", h3d_fb_out_A4R4G4B4);              \
   }
 
 #define SPEEDTESTLOOP_GENERIC(func, repeat, ...)                               \
