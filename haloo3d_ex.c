@@ -65,11 +65,11 @@ void h3d_fb_loadppm(FILE *f, h3d_fb *fb, h3d_fb_imgin cc) {
   int i = 0;
   int c = 0;
   float buf[4];
+  buf[0] = 1; // Alpha always full in ppm
   while ((c = fgetc(f)) != EOF) {
     b++;
     buf[b] = c / (float)depth;
     if (b == 3) { // We've read the full rgb
-      buf[0] = 1;
       fb->buffer[i] = cc(buf);
       i++;
       b = 0;

@@ -469,6 +469,9 @@ typedef struct {
 #define H3DC_B4(c) ((c) & 0xF)
 #define H3DC_A4R4G4B4(a, r, g, b)                                              \
   ((((a) & 0xF) << 12) | (((r) & 0xF) << 8) | (((g) & 0xF) << 4) | ((b) & 0xF))
+#define H3DC_A4R4G4B4_F(a, r, g, b)                                            \
+  (((uint16_t)((a) * 15 + 0.5) << 12) | ((uint16_t)((r) * 15 + 0.5) << 8) |    \
+   ((uint16_t)((g) * 15 + 0.5) << 4) | (uint16_t)((b) * 15 + 0.5))
 
 #define H3DC_A1(c) (((c) >> 15) & 0x1)
 #define H3DC_R5(c) (((c) >> 10) & 0x1F)
@@ -477,5 +480,8 @@ typedef struct {
 #define H3DC_A1R5G5B5(a, r, g, b)                                              \
   ((((a) & 0x1) << 15) | (((r) & 0x1F) << 10) | (((g) & 0x1F) << 5) |          \
    ((b) & 0x1F))
+#define H3DC_A1R5G5B5_F(a, r, g, b)                                            \
+  ((((a) > 0 ? 1 : 0) << 15) | ((uint16_t)((r) * 31 + 0.5) << 10) |            \
+   ((uint16_t)((g) * 31 + 0.5) << 5) | (uint16_t)((b) * 31 + 0.5))
 
 #endif
