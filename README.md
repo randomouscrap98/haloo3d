@@ -53,6 +53,11 @@ texture, and 3d math libraries, you could use just this header as your rendering
 code. The header is extremely simple, including code only for rendering 2 dimensional
 triangles and some simple framebuffer structs. No color format is assumed.
 
+I also include a 3d math library ([haloo3d_3d.h](haloo3d_3d.h) + [haloo3d_3d.c](haloo3d_3d.c)), 
+an .obj loading library ([haloo3d_obj.h](haloo3d_obj.h)),
+and an "extensions" library ([haloo3d_ex.h](haloo3d_ex.h) + [haloo3d_ex.c](haloo3d_ex.c)).
+You can plug them all together to get a functioning 3d software renderer.
+
 If you want the entire library, extras and all, wrapped up in a nice single object, 
 you can do a simple `make` to create `haloo3d.a`, then include it when linking. Example:
 
