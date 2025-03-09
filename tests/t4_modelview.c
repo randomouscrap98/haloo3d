@@ -2,7 +2,6 @@
 #include "../haloo3d_3d.h"
 #include "../haloo3d_ex.h"
 #include "../haloo3d_obj.h"
-#include "../haloo3d_unigi.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -45,7 +44,7 @@ int main(int argc, char **argv) {
   h3d_obj _obj;
   h3d_obj_loadfile(&_obj, argv[1]);
   h3d_fb _tex;
-  h3d_fb_loadppmfile(&_tex, argv[2]);
+  h3d_fb_loadppmfile(&_tex, argv[2], h3d_fb_in_A1R5G5B5);
 
   // Create a framebuffer to draw the triangle into
   h3d_fb fb;
@@ -73,7 +72,7 @@ int main(int argc, char **argv) {
   // REMEMBER TO CLEAR DEPTH BUFFER
   const int len = H3D_FB_SIZE(&fb);
   for (int i = 0; i < len; i++) {
-    fb.buffer[i] = 0xF0F0;
+    fb.buffer[i] = H3DC_A1R5G5B5_F(1.0, 0, 1.0, 0);
     fb.dbuffer[i] = H3DVF(0);
   }
 
@@ -120,9 +119,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  h3d_fb_writeppmfile(&fb, OUTFILE);
+  h3d_fb_writeppmfile(&fb, OUTFILE, h3d_fb_out_A1R5G5B5);
 
   h3d_obj_free(&_obj);
-  h3d_fb_free(&_tex);
-  h3d_fb_free(&fb);
+  H3D_FB_FREE(&_tex);
+  H3D_FB_FREE(&fb);
 }

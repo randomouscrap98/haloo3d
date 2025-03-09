@@ -1,6 +1,5 @@
 #include "../haloo3d_ex.h"
 #include "../haloo3d_obj.h"
-#include "../haloo3d_unigi.h"
 
 #include <math.h>
 
@@ -27,10 +26,10 @@ int main(int argc, char **argv) {
   }
 
   h3d_fb screen;
-  h3d_fb_init(&screen, WIDTH, HEIGHT);
+  H3D_FB_INIT(&screen, WIDTH, HEIGHT, sizeof(uint16_t));
   const int len = H3D_FB_SIZE(&screen);
   for (int i = 0; i < len; i++) {
-    screen.buffer[i] = 0xF0F0;
+    screen.buffer[i] = H3DC_A1R5G5B5_F(1.0, 0, 1.0, 0);
     screen.dbuffer[i] = H3DVF(999999);
   }
   eprintf("Initialized screen fb\n");
@@ -41,7 +40,7 @@ int main(int argc, char **argv) {
           model.numvtextures, model.numfaces);
 
   h3d_fb tex;
-  h3d_fb_loadppmfile(&tex, argv[2]);
+  h3d_fb_loadppmfile(&tex, argv[2], h3d_fb_in_A1R5G5B5);
   eprintf("Texture is %dx%d\n", tex.width, tex.height);
 
   h3d_rasterface rv;
@@ -63,9 +62,9 @@ int main(int argc, char **argv) {
   }
   eprintf("Drew object\n");
 
-  h3d_fb_writeppmfile(&screen, OUTFILE);
+  h3d_fb_writeppmfile(&screen, OUTFILE, h3d_fb_out_A1R5G5B5);
 
   h3d_obj_free(&model);
-  h3d_fb_free(&tex);
-  h3d_fb_free(&screen);
+  H3D_FB_FREE(&tex);
+  H3D_FB_FREE(&screen);
 }
