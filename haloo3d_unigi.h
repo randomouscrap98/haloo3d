@@ -203,4 +203,8 @@ void h3d_print_refresh(h3d_print_tracker *t);
 // Convert a single glyph from compact uint64_t into the given framebuffer
 void h3d_print_convertglyph(uint64_t glpyh, uint16_t bcolor, uint16_t fcolor,
                             h3d_fb *out);
+
+// Generic sprite drawing function.
+void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
+                h3d_recti outrect);
 #endif

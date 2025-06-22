@@ -697,8 +697,8 @@ void h3d_gen_gradient(h3d_fb *buf, uint16_t topcol, uint16_t botcol,
 // ===========================================
 
 // An old sprite drawing function I use for this legacy print only
-void _h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
-                 h3d_recti outrect) {
+void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
+                h3d_recti outrect) {
   // Precalc the step, as it's always the same even if we clip the rect
   const int FIXEDPOINTDEPTH = 16;
   int32_t stepx = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.x2 - texrect.x1) /
@@ -895,7 +895,7 @@ void h3d_print(h3d_print_tracker *t, const char *fmt, ...) {
       srect.y1 = t->y;
       srect.x2 = srect.x1 + t->scale * H3D_PRINT_CHW;
       srect.y2 = srect.y1 + t->scale * H3D_PRINT_CHH;
-      _h3d_sprite(t->fb, &tex, trect, srect);
+      h3d_sprite(t->fb, &tex, trect, srect);
     }
     t->x += t->scale * H3D_PRINT_CHW;
   }
