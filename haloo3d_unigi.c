@@ -705,11 +705,11 @@ void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
                   abs(outrect.x2 - outrect.x1);
   int32_t stepy = (1 << FIXEDPOINTDEPTH) * (float)abs(texrect.y2 - texrect.y1) /
                   abs(outrect.y2 - outrect.y1);
-  int32_t texx = (1 << FIXEDPOINTDEPTH) * texrect.x1;
+  int32_t texx_s = (1 << FIXEDPOINTDEPTH) * texrect.x1;
   int32_t texy = (1 << FIXEDPOINTDEPTH) * texrect.y1;
   // Clip the rect
   if (outrect.x1 < 0) {
-    texx += stepx * -outrect.x1;
+    texx_s += stepx * -outrect.x1;
     outrect.x1 = 0;
   }
   if (outrect.y1 < 0) {
@@ -723,7 +723,7 @@ void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
     outrect.y2 = fb->height - 1;
   }
   for (int y = outrect.y1; y < outrect.y2; y++) {
-    texx = texrect.x1;
+    int32_t texx = texx_s;
     for (int x = outrect.x1; x < outrect.x2; x++) {
       uint16_t pix =
           H3D_FB_GET(sprite, texx >> FIXEDPOINTDEPTH, texy >> FIXEDPOINTDEPTH);
