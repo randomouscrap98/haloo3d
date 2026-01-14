@@ -255,7 +255,7 @@ void h3d_obj_loadstring(h3d_obj *obj, const char *str) {
       strncpy(line, str, H3D_MIN(H3D_OBJ_MAXLINESIZE - 1, endline - str));
       str = endline + 1;
     } else {
-      strncpy(line, str, H3D_MIN(H3D_OBJ_MAXLINESIZE - 1, strlen(str)));
+      strncpy(line, str, H3D_OBJ_MAXLINESIZE - 1);
       running = 0;
     }
     h3d_obj_parseline(obj, line, err, 1024);
