@@ -204,20 +204,24 @@ void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered) {
 // |            OBJECT (MODEL)            |
 // ========================================
 
-void h3d_obj_init(h3d_obj *obj, uint16_t numf, uint16_t numv) {
+void h3d_obj_init(h3d_obj *obj, uint32_t numf, uint32_t numv) {
   (obj)->numfaces = 0;
+  (obj)->maxfaces = numf;
   (obj)->numvertices = 0;
+  (obj)->maxvertices = numv;
   (obj)->numvtextures = 0;
+  (obj)->maxvtextures = numv;
   (obj)->numvnormals = 0;
+  (obj)->maxvnormals = numv;
   mallocordie((obj)->faces, sizeof(h3d_objface) * numf);
   mallocordie((obj)->vertices, sizeof(vec4) * numv);
   mallocordie((obj)->vtexture, sizeof(vec3) * numv);
   mallocordie((obj)->vnormals, sizeof(vec3) * numv);
 }
 
-void h3d_obj_initmax(h3d_obj *obj) {
-  h3d_obj_init(obj, H3D_OBJ_MAXFACES, H3D_OBJ_MAXVERTICES);
-}
+// void h3d_obj_initmax(h3d_obj *obj) {
+//   h3d_obj_init(obj, H3D_OBJ_MAXFACES, H3D_OBJ_MAXVERTICES);
+// }
 
 void h3d_obj_free(h3d_obj *obj) {
   free((obj)->faces);
@@ -228,13 +232,17 @@ void h3d_obj_free(h3d_obj *obj) {
 
 void h3d_obj_shrink(h3d_obj *obj) {
   reallocordie((obj)->faces, sizeof(h3d_objface) * H3D_MAX(1, (obj)->numfaces));
+  obj->maxfaces = obj->numfaces;
   reallocordie((obj)->vertices, sizeof(vec4) * H3D_MAX(1, (obj)->numvertices));
+  obj->maxvertices = obj->numvertices;
   reallocordie((obj)->vtexture, sizeof(vec3) * H3D_MAX(1, (obj)->numvtextures));
+  obj->maxvtextures = obj->numvtextures;
   reallocordie((obj)->vnormals, sizeof(vec3) * H3D_MAX(1, (obj)->numvnormals));
+  obj->maxvnormals = obj->numvnormals;
 }
 
-void h3d_obj_load(h3d_obj *obj, FILE *f) {
-  h3d_obj_initmax(obj);
+void h3d_obj_load(h3d_obj *obj, FILE *f, uint32_t maxf, uint32_t maxv) {
+  h3d_obj_init(obj, maxf, maxv);
   char line[H3D_OBJ_MAXLINESIZE];
   char err[1024];
   while (fgets(line, H3D_OBJ_MAXLINESIZE, f)) {
@@ -243,8 +251,8 @@ void h3d_obj_load(h3d_obj *obj, FILE *f) {
   h3d_obj_shrink(obj);
 }
 
-void h3d_obj_loadstring(h3d_obj *obj, const char *str) {
-  h3d_obj_initmax(obj);
+void h3d_obj_loadstring(h3d_obj *obj, const char *str, uint32_t maxf, uint32_t maxv) {
+  h3d_obj_init(obj, maxf, maxv);
   char line[H3D_OBJ_MAXLINESIZE];
   char err[1024];
   char *endline;
@@ -265,22 +273,28 @@ void h3d_obj_loadstring(h3d_obj *obj, const char *str) {
           (obj)->numfaces, (obj)->numvtextures);
 }
 
-void h3d_obj_loadfile(h3d_obj *obj, char *filename) {
+void h3d_obj_loadfile(h3d_obj *obj, char *filename, uint32_t maxf, uint32_t maxv) {
   FILE *f = fopen(filename, "r");
   if (f == NULL) {
     dieerr("Can't open %s for reading object\n", filename);
   }
-  h3d_obj_load(obj, f);
+  h3d_obj_load(obj, f, maxf, maxv);
   fclose(f);
   eprintf("Read from object file %s\n", filename);
 }
 
 // ****************** 3d ************************
 
-// Insert the entirety of an object into another. IT'S UP TO YOU TO KNOW
-// IF THE DEST OBJECT HAS ENOUGH SPACE!
-void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
+// Insert the entirety of an object into another. Returns -1 if there
+// wasn't enough space in the destination object to insert
+int h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
                     vec3 up, vec3 scale) {
+  if(dest->maxfaces < src->numfaces + dest->numfaces ||
+    dest->maxvnormals < src->numvnormals + dest->numvnormals ||
+    dest->maxvtextures < src->numvtextures + dest->numvtextures ||
+    dest->maxvertices < src->numvertices + dest->numvertices) {
+    return -1;
+  }
   // Create model matrix
   mat4 modelm;
   h3d_model_matrix(pos, lookvec, up, scale, modelm);
@@ -294,8 +308,8 @@ void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
          sizeof(vec3) * src->numvnormals);
   // Create new faces by assigning indices to the newly copied verts, textures,
   // and normals
-  for (int i = 0; i < src->numfaces; i++) {
-    for (int vi = 0; vi < 3; vi++) {
+  for (uint32_t i = 0; i < src->numfaces; i++) {
+    for (uint32_t vi = 0; vi < 3; vi++) {
       dest->faces[dest->numfaces][vi].verti =
           src->faces[i][vi].verti + dest->numvertices;
       dest->faces[dest->numfaces][vi].texi =
@@ -308,12 +322,13 @@ void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
   dest->numvertices += src->numvertices;
   dest->numvtextures += src->numvtextures;
   dest->numvnormals += src->numvnormals;
+  return 0;
 }
 
 // Batch convert all vertices in an object into translated homogenous vertices.
 // This is a very common operation done for triangle rendering
 int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out) {
-  for (int i = 0; i < object->numvertices; i++) {
+  for (uint32_t i = 0; i < object->numvertices; i++) {
     // This is SLOW but safe. If you want a faster translation, you may
     // want to skip the homogenous conversion
     vec4 tmp;

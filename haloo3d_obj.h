@@ -9,15 +9,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#define H3D_OBJ_MAXVERTICES 8192
-#define H3D_OBJ_MAXFACES 8192
+// #define H3D_OBJ_MAXVERTICES 8192
+// #define H3D_OBJ_MAXFACES 8192
 #define H3D_OBJ_MAXLINESIZE 1024
 
 // A vertex which is made up of indexes into the obj
 typedef struct {
-  uint16_t verti;
-  uint16_t texi;
-  uint16_t normi;
+  uint32_t verti;
+  uint32_t texi;
+  uint32_t normi;
 } h3d_objvert;
 
 typedef h3d_objvert h3d_objface[3];
@@ -25,10 +25,14 @@ typedef h3d_objvert h3d_objface[3];
 // An object definition, where every face is a simple
 // index into the internal structures
 typedef struct {
-  uint16_t numvertices;
-  uint16_t numvtextures;
-  uint16_t numfaces;
-  uint16_t numvnormals;
+  uint32_t numvertices;
+  uint32_t maxvertices;
+  uint32_t numvtextures;
+  uint32_t maxvtextures;
+  uint32_t numfaces;
+  uint32_t maxfaces;
+  uint32_t numvnormals;
+  uint32_t maxvnormals;
   vec4 *vertices;
   vec3 *vtexture;
   vec3 *vnormals;
@@ -36,18 +40,27 @@ typedef struct {
 } h3d_obj;
 
 static inline int h3d_obj_addvertex(h3d_obj *obj, const vec4 vertex) {
+  if(obj->numvertices >= obj->maxvertices) {
+    return -1;
+  }
   int vi = obj->numvertices++;
   memcpy(obj->vertices[vi], vertex, sizeof(vec4));
   return vi;
 }
 
 static inline int h3d_obj_addvtexture(h3d_obj *obj, const vec3 vtexture) {
+  if(obj->numvtextures >= obj->maxvtextures) {
+    return -1;
+  }
   int vti = obj->numvtextures++;
   memcpy(obj->vtexture[vti], vtexture, sizeof(vec3));
   return vti;
 }
 
 static inline int h3d_obj_addface(h3d_obj *obj, const h3d_objface face) {
+  if(obj->numfaces >= obj->maxfaces) {
+    return -1;
+  }
   int fi = obj->numfaces++;
   memcpy(&obj->faces[fi], face, sizeof(h3d_objface));
   return fi;
@@ -66,7 +79,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
   }
   next += strlen(tmp);
   if (strcmp(tmp, "v") == 0) {
-    if (obj->numvertices >= H3D_OBJ_MAXVERTICES) {
+    if (obj->numvertices >= obj->maxvertices) {
       snprintf(errout, errlen, "Too many object vertices (%d)!\n",
                obj->numvertices);
       return 1;
@@ -79,7 +92,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
     }
     obj->numvertices++;
   } else if (strcmp(tmp, "vt") == 0) {
-    if (obj->numvtextures >= H3D_OBJ_MAXVERTICES) {
+    if (obj->numvtextures >= obj->maxvtextures) {
       snprintf(errout, errlen, "Too many object vtexture points (%d)!\n",
                obj->numvtextures);
       return 2;
@@ -95,7 +108,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
     }
     obj->numvtextures++;
   } else if (strcmp(tmp, "vn") == 0) {
-    if (obj->numvnormals >= H3D_OBJ_MAXVERTICES) {
+    if (obj->numvnormals >= obj->maxvnormals) {
       snprintf(errout, errlen, "Too many object vnormal points (%d)!\n",
                obj->numvnormals);
       return 3;
@@ -110,7 +123,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
     }
     obj->numvnormals++;
   } else if (strcmp(tmp, "f") == 0) {
-    if (obj->numfaces >= H3D_OBJ_MAXFACES) {
+    if (obj->numfaces >= obj->maxfaces) {
       snprintf(errout, errlen, "Too many object faces! (%d)\n", obj->numfaces);
       return 5;
     }
@@ -127,7 +140,7 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
         err = 1;
         break;
       }
-      int vi, ti, ni; // the three numbers we're trying to parse
+      int32_t vi, ti, ni; // the three numbers we're trying to parse
       vi = ti = ni = 1;
       // There are only 4 formats for the face: v, v/t, v/t/n, and v//n.
       // Start with the weird format first.
@@ -158,9 +171,9 @@ static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
         ni -= 1;
       }
       // Check each against the lists to make sure it's not out of whatever
-      if (vi < 0 || vi >= obj->numvertices || ti < 0 ||
-          (ti >= obj->numvtextures && obj->numvtextures) || ni < 0 ||
-          (ni >= obj->numvnormals && obj->numvnormals)) {
+      if (vi < 0 || vi >= (int32_t)obj->numvertices || ti < 0 ||
+          (ti >= (int32_t)obj->numvtextures && obj->numvtextures) || ni < 0 ||
+          (ni >= (int32_t)obj->numvnormals && obj->numvnormals)) {
         snprintf(errout, errlen, "Invalid face index: %s | %s\n", tmp, line);
         err = 1;
         break;

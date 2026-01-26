@@ -170,25 +170,25 @@ void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered);
 
 // Initialize object to have all 0 counts but pre-allocate the given number
 // of faces and vertices (vert count used for tex and normal)
-void h3d_obj_init(h3d_obj *obj, uint16_t numf, uint16_t numv);
+void h3d_obj_init(h3d_obj *obj, uint32_t numf, uint32_t numv);
 void h3d_obj_free(h3d_obj *obj);
 // Resize all arrays so they're exactly the size needed for the numbers
 // in the given obj
 void h3d_obj_shrink(h3d_obj *obj);
 // Load a whole object file into an unitialized object using the given file
 // pointer. Assumes the file pointer is at the point you want it at
-void h3d_obj_load(h3d_obj *obj, FILE *f);
+void h3d_obj_load(h3d_obj *obj, FILE *f, uint32_t maxf, uint32_t maxv);
 // Load a whole object file into an unitialized object using the given string
-void h3d_obj_loadstring(h3d_obj *obj, const char *s);
+void h3d_obj_loadstring(h3d_obj *obj, const char *s, uint32_t maxf, uint32_t maxv);
 // Open a simple file and read the wavefront obj into an unitialized obj
-void h3d_obj_loadfile(h3d_obj *obj, char *filename);
+void h3d_obj_loadfile(h3d_obj *obj, char *filename, uint32_t maxf, uint32_t maxv);
 
 // Batch convert all vertices in an object into translated homogenous vertices.
 // This is a very common operation done for triangle rendering
 int h3d_obj_batchtranslate(h3d_obj *object, mat4 matrix, vec4 *out);
 // Insert the entirety of an object into another. IT'S UP TO YOU TO KNOW
 // IF THE DEST OBJECT HAS ENOUGH SPACE!
-void h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
+int h3d_obj_addobj(h3d_obj *dest, h3d_obj *src, vec3 pos, vec3 lookvec,
                     vec3 up, vec3 scale);
 
 // ========================================
