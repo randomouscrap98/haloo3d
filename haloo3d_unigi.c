@@ -716,11 +716,11 @@ void h3d_sprite(h3d_fb *fb, h3d_fb *sprite, h3d_recti texrect,
     texy += stepy * -outrect.y1;
     outrect.y1 = 0;
   }
-  if (outrect.x2 >= fb->width) {
-    outrect.x2 = fb->width - 1;
+  if (outrect.x2 > fb->width) {
+    outrect.x2 = fb->width;
   }
-  if (outrect.y2 >= fb->height) {
-    outrect.y2 = fb->height - 1;
+  if (outrect.y2 > fb->height) {
+    outrect.y2 = fb->height;
   }
   for (int y = outrect.y1; y < outrect.y2; y++) {
     int32_t texx = texx_s;
