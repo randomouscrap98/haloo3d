@@ -383,7 +383,7 @@ void h3d_gen_skybox(h3d_obj *obj) {
 		{3, 1, 0},
   };
   // clang-format on
-  for (int fi = 0; fi < obj->numfaces; fi++) {
+  for (uint32_t fi = 0; fi < obj->numfaces; fi++) {
     for (int v = 0; v < 3; v++) {
       obj->faces[fi][v].verti = fv[fi][v];
       obj->faces[fi][v].texi = vt[fi][v];
