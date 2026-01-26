@@ -204,19 +204,23 @@ void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered) {
 // |            OBJECT (MODEL)            |
 // ========================================
 
-void h3d_obj_init(h3d_obj *obj, uint32_t numf, uint32_t numv) {
+void h3d_obj_init_full(h3d_obj *obj, uint32_t numf, uint32_t numv, uint32_t numvtex, uint32_t numvnorm) {
   (obj)->numfaces = 0;
   (obj)->maxfaces = numf;
   (obj)->numvertices = 0;
   (obj)->maxvertices = numv;
   (obj)->numvtextures = 0;
-  (obj)->maxvtextures = numv;
+  (obj)->maxvtextures = numvtex;
   (obj)->numvnormals = 0;
-  (obj)->maxvnormals = numv;
+  (obj)->maxvnormals = numvnorm;
   mallocordie((obj)->faces, sizeof(h3d_objface) * numf);
   mallocordie((obj)->vertices, sizeof(vec4) * numv);
-  mallocordie((obj)->vtexture, sizeof(vec3) * numv);
-  mallocordie((obj)->vnormals, sizeof(vec3) * numv);
+  mallocordie((obj)->vtexture, sizeof(vec3) * numvtex);
+  mallocordie((obj)->vnormals, sizeof(vec3) * numvnorm);
+}
+
+void h3d_obj_init(h3d_obj *obj, uint32_t numf, uint32_t numv) {
+  h3d_obj_init_full(obj, numf, numv, numv, numv);
 }
 
 // void h3d_obj_initmax(h3d_obj *obj) {

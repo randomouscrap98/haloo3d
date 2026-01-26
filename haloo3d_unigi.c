@@ -320,12 +320,10 @@ void h3d_gen_paletteuv(uint16_t col, vec3 result) {
 // Only for these functions
 void haloo3d_gen_obj_prealloc(h3d_obj *obj, uint16_t numverts, uint16_t numvtex,
                               uint16_t numfaces) {
+  h3d_obj_init_full(obj, numfaces, numverts, numvtex, 0);
   obj->numvertices = numverts;
   obj->numvtextures = numvtex;
   obj->numfaces = numfaces;
-  mallocordie(obj->vertices, obj->numvertices * sizeof(vec4));
-  mallocordie(obj->vtexture, obj->numvtextures * sizeof(vec3));
-  mallocordie(obj->faces, obj->numfaces * sizeof(h3d_objface));
 }
 
 void h3d_gen_boxvtexture(vec3 *textures) {

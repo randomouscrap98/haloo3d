@@ -171,6 +171,7 @@ void h3d_fb_fill(h3d_fb *src, h3d_fb *dst, uint8_t centered);
 // Initialize object to have all 0 counts but pre-allocate the given number
 // of faces and vertices (vert count used for tex and normal)
 void h3d_obj_init(h3d_obj *obj, uint32_t numf, uint32_t numv);
+void h3d_obj_init_full(h3d_obj *obj, uint32_t numf, uint32_t numv, uint32_t numvtex, uint32_t vnorm);
 void h3d_obj_free(h3d_obj *obj);
 // Resize all arrays so they're exactly the size needed for the numbers
 // in the given obj
