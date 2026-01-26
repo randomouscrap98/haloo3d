@@ -98,10 +98,10 @@ static inline void h3d_fb_out_A1R5G5B5(uint16_t color, uint8_t buf[4]) {
 
 // Create 16 bit color in A4R4G4B4 from given color buffer (0 to 1)
 static inline uint16_t h3d_fb_in_A4R4G4B4(float buf[4]) {
-  return H3DC_A4R4G4B4_F(buf[0], buf[1], buf[2], buf[2]);
+  return H3DC_A4R4G4B4_F(buf[0], buf[1], buf[2], buf[3]);
 };
 static inline uint16_t h3d_fb_in_A1R5G5B5(float buf[4]) {
-  return H3DC_A1R5G5B5_F(buf[0], buf[1], buf[2], buf[2]);
+  return H3DC_A1R5G5B5_F(buf[0], buf[1], buf[2], buf[3]);
 };
 
 // Writes a P6 binary ppm from the 16 bit framebuffer. Must give the

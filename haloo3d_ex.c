@@ -71,6 +71,7 @@ void h3d_fb_loadppm(FILE *f, h3d_fb *fb, h3d_fb_imgin cc) {
     buf[b] = c / (float)depth;
     if (b == 3) { // We've read the full rgb
       fb->buffer[i] = cc(buf);
+      // printf("RGB %04x\n", fb->buffer[i]);
       i++;
       b = 0;
     }
