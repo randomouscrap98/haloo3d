@@ -1,0 +1,6 @@
+[submodule "game/unigi"]
+	path = game/unigi
+	url = https://git.lumen.sh/Fierelier/unigi.git
+[submodule "game/unigi.platform.sdl2"]
+	path = game/unigi.platform.sdl2
+	url = https://git.lumen.sh/Fierelier/unigi.platform.sdl2.git

@@ -1,0 +1,6 @@
+#include "screen.c"
+#include "triangles.c"
+#include "look.c"
+#include "object.c"
+#include "timing.c"
+#include "effects.c"

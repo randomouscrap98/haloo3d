@@ -252,4 +252,9 @@ for ease of building.
 You probably shouldn't use that one, but feel free to if
 you want.
 
+## New: game engine
+
+I'm adding some random helper stuff to the `game` folder. It may
+change unexpectedly and may be a mess. Feel free to poke around,
+but honestly I wouldn't use it.
 
