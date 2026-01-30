@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 // ===========================================
 // |              FRAMEBUFFER                |
@@ -128,19 +129,25 @@ void h3d_easystore_deletealltex(h3d_easystore *s, void (*ondelete)(h3d_fb *)) {
   }
 }
 
+static uint64_t _h3d_easytimer_defaultgettime() {
+  return clock();
+}
+
 void h3d_easytimer_init(h3d_easytimer *t, float avgweight) {
   t->sum = 0;
   t->last = 0;
   t->avgweight = avgweight;
   t->min = 99999999.0;
   t->max = 0.0;
+  t->gettime = _h3d_easytimer_defaultgettime;
+  t->timepersec = CLOCKS_PER_SEC;
 }
 
-void h3d_easytimer_start(h3d_easytimer *t) { t->start = clock(); }
+void h3d_easytimer_start(h3d_easytimer *t) { t->start = t->gettime(); }
 
 void h3d_easytimer_end(h3d_easytimer *t) {
-  clock_t end = clock();
-  t->last = (float)(end - t->start) / CLOCKS_PER_SEC;
+  uint64_t end = t->gettime();
+  t->last = (float)(end - t->start) / t->timepersec;
   if (t->sum == H3DVF(0))
     t->sum = t->last;
   t->sum = t->avgweight * t->sum + (H3DVF(1) - t->avgweight) * t->last;

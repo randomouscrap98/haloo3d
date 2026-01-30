@@ -11,7 +11,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <time.h>
+//#include <time.h>
 
 #define H3D_EASYSTORE_MAX 1024
 #define H3D_EASYSTORE_MAXKEY 16
@@ -124,12 +124,14 @@ void h3d_easystore_deletealltex(h3d_easystore *s, void (*ondelete)(h3d_fb *));
 // expect the 'start' variable to be of any particular type; it
 // will depend on the implementation details
 typedef struct {
-  clock_t start;
+  uint64_t start;
   float sum;
   float last;
   float avgweight;
   float min;
   float max;
+  uint64_t (*gettime)(void);
+  uint64_t timepersec;
 } h3d_easytimer;
 
 void h3d_easytimer_init(h3d_easytimer *t, float avgweight);
