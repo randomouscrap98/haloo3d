@@ -20,4 +20,10 @@
   x++; \
 }
 
+// Give x aligned to y (VERY not optimized, unless you trust the compiler)
+#define ALIGN(x,y) ((x) % (y) ? ((x) - ((x) % (y))) + (y) : (x))
+// Give x div y rounded up to nearest whole (assume x and y are ints).
+// VERY not optimized, unless you trust the compiler
+#define DIVROUNDUP(x,y) (((x) / (y)) + ((x) % (y) ? 1 : 0))
+
 #endif

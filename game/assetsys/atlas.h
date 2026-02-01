@@ -4,6 +4,11 @@
 #include "store.h"
 
 #define ATLAS_UNIT_MAXCHECK 1024
+#define ATLAS_MAX_HEIGHT_UNITS 1024
+
+#define ATLAS_POSITION_SORT_HEIGHT_DESC(a, b) (a.original_texture->height > b.original_texture->height)
+//static inline int atlas_position_compare(atlas_position * a, atlas_position * b) {
+  //return a->original_texture->height > b->original_texture->height;
 
 typedef struct {
   char * name;                  // Points back INTO the assetstore, careful!
@@ -25,6 +30,7 @@ uint16_t atlas_baseline_texture_unit(assetstore * store);
 // will fill it. This uses a variation of the "shelf" algorithm and thus does not produce 
 // particularly good results, but if you're using mostly standard sized textures and not 
 // random sizes, this should suffice.
-int atlas_create(assetstore * store, uint32_t maxwidth, h3d_fb * out, atlas_position ** outpos);
+int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size, 
+    h3d_fb * out, atlas_position ** outpos);
 
 #endif
