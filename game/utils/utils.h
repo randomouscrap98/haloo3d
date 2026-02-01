@@ -26,4 +26,8 @@
 // VERY not optimized, unless you trust the compiler
 #define DIVROUNDUP(x,y) (((x) / (y)) + ((x) % (y) ? 1 : 0))
 
+#define AABBCOLLIDE(p1, d1, p2, d2) \
+  ((p1[0] < p2[0] + d2[0]) && (p1[1] < p2[1] + d2[1]) && \
+   (p2[0] < p1[0] + d1[0]) && (p2[1] < p1[1] + d1[1]))
+
 #endif
