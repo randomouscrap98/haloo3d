@@ -50,9 +50,9 @@ int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size,
                  h3d_fb * out, atlas_position ** outpos) {
   NEXTPOW2_32(maxwidth);
   // Prep the tracking for how many PIXELS are filled in any unit-sized row (shelves)
-  uint32_t fill[ATLAS_MAX_HEIGHT_UNITS];
-  uint32_t fillheight = 1; // In units
-  memset(fill, 0, sizeof(fill));
+  uint32_t shelves[ATLAS_MAX_HEIGHT_UNITS];
+  uint32_t shelvescount = 1; // In units
+  memset(shelves, 0, sizeof(shelves));
   // Prealloc the storage of positions
   int32_t texcount = _texturenode_count(store->textures);
   logdebug("Creating an atlas out of %d textures with width %d", texcount, maxwidth);
@@ -75,37 +75,37 @@ int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size,
       goto ATLAS_FAIL2;
     }
     uint32_t unitheight = DIVROUNDUP(tex->height, baseline_size);
-    int32_t foundidx = -1;
-    for(uint32_t j = 0; j <= fillheight - unitheight; j++) {
+    int32_t foundshelf = -1;
+    for(uint32_t j = 0; j <= shelvescount - unitheight; j++) {
       if(unitheight > 1) { // Do an extra check to see if the next few rows are aligned
         for(uint32_t rofs = 1; rofs < unitheight; rofs++) {
           // We can check just for equality because we sort by largest first
-          if(fill[rofs + j] != fill[j]) goto ATLAS_BADROW;
+          if(shelves[rofs + j] != shelves[j]) goto ATLAS_BADROW;
         }
       }
       // This may work for height, but now need to see if it will fit. easy
-      if(tex->width + fill[j] <= maxwidth) {
-        foundidx = j;
+      if(tex->width + shelves[j] <= maxwidth) {
+        foundshelf = j;
         break;
       }
       ATLAS_BADROW:;
     }
-    if(foundidx < 0) { // Need to add a new row or five
-      foundidx = fillheight;
-      fillheight += unitheight;
-      if(fillheight > ATLAS_MAX_HEIGHT_UNITS) {
+    if(foundshelf < 0) { // Need to add a new row or five
+      foundshelf = shelvescount;
+      shelvescount += unitheight;
+      if(shelvescount > ATLAS_MAX_HEIGHT_UNITS) {
         logerror("Textures don't fit into restricted unit height! Failed at texture %d(%s)", idx, (*outpos)[idx].name);
         goto ATLAS_FAIL2;
       }
     }
     // And now, we have a place to put the texture
-    VEC2((*outpos)[idx].offset, fill[foundidx], foundidx * baseline_size);
-    for(uint32_t j = foundidx; j < foundidx + fillheight; j++) {
-      fill[j] += tex->width;
+    VEC2((*outpos)[idx].offset, shelves[foundshelf], foundshelf * baseline_size);
+    for(uint32_t j = foundshelf; j < foundshelf + unitheight; j++) {
+      shelves[j] += tex->width;
     }
   }
   // Now actually build the texture and put everything together!
-  H3D_FB_INIT(out, maxwidth, fillheight * baseline_size, 2); 
+  H3D_FB_INIT(out, maxwidth, shelvescount * baseline_size, 2); 
   for(idx = 0; idx < texcount; idx++) {
     // Is this really all I have for copying textures into other textures?
     h3d_fb_intscale((*outpos)[idx].original_texture, out, (*outpos)[idx].offset[0], (*outpos)[idx].offset[1], 1);
