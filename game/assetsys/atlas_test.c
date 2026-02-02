@@ -47,8 +47,8 @@ static void gen_and_check_atlas(assetstore * store, h3d_fb * atlas, atlas_positi
   uint16_t basesize = atlas_baseline_texture_unit(store);
   int result = atlas_create(store, width, basesize, atlas, positions);
   ASSERT(result == 0, "atlas_create%d result 0", texcount);
-  ASSERT(atlas->width == width, "atlas_create%d width %d", texcount, width);
-  ASSERT(atlas->height == exp_height, "atlas_create%d height %d", texcount, exp_height);
+  ASSERT(atlas->width == width, "atlas_create%d width %d (was %d)", texcount, width, atlas->width);
+  ASSERT(atlas->height == exp_height, "atlas_create%d height %d (was %d)", texcount, exp_height, atlas->height);
 
   _no_overlap(*positions, texcount);
   for(int i = 0; i < texcount; i++) {
@@ -94,9 +94,27 @@ void atlas_test() {
   H3D_FB_INIT(basic, 16, 16, 2);
   _fill_fb(basic, 2*256);
 
-  gen_and_check_atlas(&store, &atlas, &positions, 16, 48);
+  gen_and_check_atlas(&store, &atlas, &positions, 16, 64); // Always power of 2
   gen_and_check_atlas(&store, &atlas, &positions, 32, 32);
   gen_and_check_atlas(&store, &atlas, &positions, 64, 16);
+
+  // -- And now, can we do four textures, where one is two tall?
+  basic = assetstore_new_texture(&store, "four");
+  H3D_FB_INIT(basic, 16, 30, 2); // This ALSO tests non-normal heights
+  _fill_fb(basic, 3*256);
+
+  gen_and_check_atlas(&store, &atlas, &positions, 16, 128); // Always power of 2
+  gen_and_check_atlas(&store, &atlas, &positions, 32, 64);
+  gen_and_check_atlas(&store, &atlas, &positions, 64, 32);
+
+  // And a mega 32x32 tex
+  basic = assetstore_new_texture(&store, "five");
+  H3D_FB_TEXINIT(basic, 32, 32);
+  _fill_fb(basic, 5*256);
+
+  gen_and_check_atlas(&store, &atlas, &positions, 32, 128);
+  gen_and_check_atlas(&store, &atlas, &positions, 64, 64);
+  gen_and_check_atlas(&store, &atlas, &positions, 128, 32);
 
   //assetstore_free(&atlases);
   H3D_FB_FREE(&atlas); free(positions);

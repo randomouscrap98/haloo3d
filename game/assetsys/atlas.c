@@ -55,7 +55,7 @@ int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size,
   memset(shelves, 0, sizeof(shelves));
   // Prealloc the storage of positions
   int32_t texcount = _texturenode_count(store->textures);
-  logdebug("Creating an atlas out of %d textures with width %d", texcount, maxwidth);
+  logdebug("Creating an atlas out of %d textures with width %d (baseline %d)", texcount, maxwidth, baseline_size);
   *outpos = malloc(sizeof(atlas_position) * texcount);
   if(*outpos == NULL) goto ATLAS_FAIL1;
   // The order of the outpos data doesn't matter. Prefill it so we can sort it
@@ -75,6 +75,7 @@ int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size,
       goto ATLAS_FAIL2;
     }
     uint32_t unitheight = DIVROUNDUP(tex->height, baseline_size);
+    if(unitheight > shelvescount) shelvescount = unitheight;
     int32_t foundshelf = -1;
     for(uint32_t j = 0; j <= shelvescount - unitheight; j++) {
       if(unitheight > 1) { // Do an extra check to see if the next few rows are aligned
@@ -105,7 +106,9 @@ int atlas_create(assetstore * store, uint32_t maxwidth, uint16_t baseline_size,
     }
   }
   // Now actually build the texture and put everything together!
-  H3D_FB_INIT(out, maxwidth, shelvescount * baseline_size, 2); 
+  uint32_t newheight = shelvescount * baseline_size;
+  NEXTPOW2_32(newheight);
+  H3D_FB_TEXINIT(out, maxwidth, newheight);
   for(idx = 0; idx < texcount; idx++) {
     // Is this really all I have for copying textures into other textures?
     h3d_fb_intscale((*outpos)[idx].original_texture, out, (*outpos)[idx].offset[0], (*outpos)[idx].offset[1], 1);
