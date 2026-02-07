@@ -18,38 +18,64 @@ void vector_test() {
   ASSERT(v.length == 0, "vector length 0");
 
   // Some inserts
-  int val = 5;
+  int val = 5, out;
   ASSERT(vector_int_push(&v, &val) == 0, "vector_int_push [0]");
   ASSERT(v.length == 1, "vector length 1");
-  ASSERT(v.array[0] == 5, "vector[0] = 5");
+  ASSERT(vector_int_get(&v, 0, &out) == 0, "vector_int_get[0] works");
+  ASSERT(out == 5, "vector_int_get(0) = 5");
   val = 7;
   ASSERT(vector_int_push(&v, &val) == 0, "vector_int_push [1]");
   ASSERT(v.length == 2, "vector length 2");
   ASSERT(v.array[1] == 7, "vector[1] = 7");
 
+  // decrement/increment
+  ASSERT(vector_int_decrement(&v) == 0, "vector_int_decrement works");
+  ASSERT(v.length == 1, "vector length 1");
+  size_t index;
+  ASSERT(vector_int_increment(&v, &index) == 0, "vector_int_increment works");
+  ASSERT(v.length == 2, "vector length back up");
+  ASSERT(index == 1, "vector increment index correct");
+
+  val = 88;
+  ASSERT(vector_int_set(&v, 0, &val) == 0, "vector_int_set[0] works");
+  ASSERT(vector_int_get(&v, 0, &out) == 0, "vector_int_get[0] works");
+  ASSERT(out == 88, "vector_int_get(0) = 88");
+  val = 99;
+  ASSERT(vector_int_set(&v, 1, &val) == 0, "vector_int_set[1] works");
+  ASSERT(vector_int_get(&v, 1, &out) == 0, "vector_int_get[1] works");
+  ASSERT(out == 99, "vector_int_get(1) = 99");
+
   // Bad reserves
   ASSERT(vector_int_reserve(&v, 2) != 0, "vector_int_reserve fail on 2");
   ASSERT(vector_int_reserve(&v, 1) != 0, "vector_int_reserve fail on 1");
 
-  // Insert a huge pile of integers
-  size_t olength = v.length;
-  size_t ocapacity = v.capacity;
-  for(int i = 2; i < 100; i++) {
-    ASSERT(vector_int_push(&v, &i) == 0, "vector_int_push [%d]", i);
-    ASSERT(v.length == olength + 1, "vector length + 1");
-    ASSERT(v.capacity >= v.length, "vector capacity(%zu) >= length", v.capacity);
-    ASSERT(v.capacity >= ocapacity, "vector capacity >= old");
-    ASSERT(v.array[i] == i, "vector i = %d", i);
-    olength = v.length;
-    ocapacity = v.capacity;
+  // Insert a huge pile of integers into a new vector
+  vector_int v2;
+  ASSERT(vector_int_init(&v2) == 0, "vector_init works again");
+
+  size_t olength = v2.length;
+  size_t ocapacity = v2.capacity;
+  for(int i = 0; i < 100; i++) {
+    ASSERT(vector_int_push(&v2, &i) == 0, "vector_int_push [%d]", i);
+    ASSERT(v2.length == olength + 1, "vector length + 1");
+    ASSERT(v2.capacity >= v2.length, "vector capacity(%zu) >= length", v.capacity);
+    ASSERT(v2.capacity >= ocapacity, "vector capacity >= old");
+    ASSERT(v2.array[i] == i, "vector i = %d", i);
+    olength = v2.length;
+    ocapacity = v2.capacity;
   }
 
-  ASSERT(vector_int_decrement(&v) == 0, "vector_int_decrement works");
-  ASSERT(v.length == olength - 1, "vector length -1");
-  size_t index;
-  ASSERT(vector_int_increment(&v, &index) == 0, "vector_int_increment works");
-  ASSERT(v.length == olength, "vector length back up");
-  ASSERT(index == olength - 1, "vector increment index correct");
+  // Merge the two vectors
+  ASSERT(vector_int_mergeinto(&v, &v2) == 0, "vector_mergeinto works");
+  ASSERT(v.length == 102, "vector merge has correct length (%zu vs 102)", v.length);
+
+  ASSERT(v.array[0] == 88, "vector 0 = %d", v.array[0]);
+  ASSERT(v.array[1] == 99, "vector 1 = %d", v.array[1]);
+
+  // Make sure all the values are correct
+  for(int i = 2; i < 102; i++) {
+    ASSERT(v.array[i] == i - 2, "vector i = %d", i);
+  }
 
   // Clear it out
   vector_int_clear(&v);

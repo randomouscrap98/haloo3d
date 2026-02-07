@@ -1,7 +1,6 @@
 #ifndef __UTILS_VECTOR_H__
 #define __UTILS_VECTOR_H__
 
-//#include "log.h"
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -35,7 +34,6 @@
   int  vector_##type##_bag_remove(vector_##type *, size_t index);
 
 // TODO: missing
-// - merge (very useful)
 // - slow remove (move everything over)
 // - slow insert (move everything over)
 // - maybe a safe pointer to an element? useless though
