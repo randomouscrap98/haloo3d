@@ -5,6 +5,7 @@
 #include "log.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Macros to generate code for a custom vector type. This
 // wastes code space but decreases complexity of trying to store
@@ -39,7 +40,7 @@
   int vector_##type##_init(vector_##type * v) { \
     v->capacity = init_cap; \
     v->length = 0; \
-    return !v->array = malloc(sizeof(type) * v->capacity); \
+    return !(v->array = malloc(sizeof(type) * v->capacity)); \
   }
 
 #define VECTOR_FUNC_FREE(type) \
@@ -54,7 +55,7 @@
 
 #define VECTOR_FUNC_RESERVE(type) \
   int vector_##type##_reserve(vector_##type * v, size_t cap) { \
-    if(cap <= v->capacity) return 1; \
+    if(cap <= v->capacity) { return 1; } \
     v->capacity = cap; \
     return !(v->array = realloc(v->array, sizeof(type) * v->capacity)); \
   }
@@ -67,10 +68,10 @@
   }
 
 #define VECTOR_FUNC_INCREMENT(type, grow_factor) \
-  int vector_##type##_increment(vbuffer * v, size_t * out) { \
+  int vector_##type##_increment(vector_##type * v, size_t * out) { \
     if(v->length >= v->capacity) { \
       if(vector_##type##_reserve(v, (size_t)(v->capacity * (grow_factor)))) { \
-        logerror("Couldn't reallocate vbuffer during reserve (out of memory?)"); \
+        logerror("Couldn't reallocate vector during reserve (out of memory?)"); \
         return 1; \
       } \
     } \
@@ -84,7 +85,7 @@
     size_t dest; \
     int result = vector_##type##_increment(v, &dest); \
     if(result) { return result; } \
-    memcpy(v->array[dest], item, sizeof(type)); \
+    memcpy(v->array + dest, item, sizeof(type)); \
     return 0; \
   }
 
@@ -92,7 +93,7 @@
   int vector_##type##_pop(vector_##type * v, type * out) { \
     if(v->length == 0) { return 1; } \
     vector_##type##_decrement(v); \
-    memcpy(out, v->array[v->length], sizeof(type)); \
+    memcpy(out, v->array + v->length, sizeof(type)); \
     return 0; \
   }
 
@@ -116,28 +117,5 @@
   VECTOR_FUNC_POP(type) \
   VECTOR_FUNC_BAGREMOVE(type) 
 
-
-// Put this inside a struct definition to turn it into a vector.
-// You COULD put other stuff in there but... egh, you probably want empty
-#define VECTOR_FIELDS(type) \
-  type * array; \
-  size_t length; \
-  size_t capacity;
-
-// This is something you can do on your own without this macro
-#define VECTOR_BASICSTRUCT(name, type) \
-  typedef struct { \
-    VECTOR_FIELDS(type) \
-  } name;
-
-// Put this in your header to create the prototype for your
-// new custom vector type
-#define VECTOR_PROTOTYPE(name, type) \
-  void name##_init(name ** list); \
-  void name##_free(name ** list, void (*pre_free)(name *)); \
-  int  name##_push(name ** list, name * afterthis, name ** out); \
-  int  name##_pop(name ** list, name * beforethis, name ** out); \
-  void name##_remove(name ** list, name * item); \
-  size_t name##_count(name * list);
 
 #endif
