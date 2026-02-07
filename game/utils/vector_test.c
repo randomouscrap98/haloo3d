@@ -6,6 +6,11 @@
 VECTOR_DECLARE(int);
 VECTOR_DEFINE(int);
 
+typedef struct {
+  vector_int * v;
+  size_t index;
+} vintpointer;
+
 void vector_test() {
   // Initialization
   vector_int v;

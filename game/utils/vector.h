@@ -1,11 +1,9 @@
 #ifndef __UTILS_VECTOR_H__
 #define __UTILS_VECTOR_H__
 
-#include "utils.h"
-#include "log.h"
+//#include "log.h"
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
 
 // Macros to generate code for a custom vector type. This
 // wastes code space but decreases complexity of trying to store
@@ -27,14 +25,22 @@
   void vector_##type##_clear(vector_##type *); \
   /* Preallocate the given amount of capacity, only if larger than current capacity */ \
   int  vector_##type##_reserve(vector_##type *, size_t); \
-  /* Add one item to the end of the array and return a pointer to the index. More efficient than push (no memcpy)*/ \
+  /* Add one item to the end of the array and return a pointer to the index. More efficient than push (no copy)*/ \
   int  vector_##type##_increment(vector_##type *, size_t * index); \
-  /* Remove one item from the end of the array. More efficient than pop (no memcpy)*/ \
+  /* Remove one item from the end of the array. More efficient than pop (no copy)*/ \
   int  vector_##type##_decrement(vector_##type *); \
   int  vector_##type##_push(vector_##type *, type *); \
   int  vector_##type##_pop(vector_##type *, type * out); \
   /* Remove an item at the given index and swap the last item in the list with it. Treats vector like an unordered bag */ \
   int  vector_##type##_bag_remove(vector_##type *, size_t index);
+
+// TODO: missing
+// - merge (very useful)
+// - slow remove (move everything over)
+// - slow insert (move everything over)
+// - maybe a safe pointer to an element? useless though
+// - sort? if possible? There's already a sort macro...
+
 
 #define VECTOR_FUNC_INIT(type, init_cap) \
   int vector_##type##_init(vector_##type * v) { \
@@ -45,7 +51,8 @@
 
 #define VECTOR_FUNC_FREE(type) \
   void vector_##type##_free(vector_##type * v) { \
-    NULLFREE(v->array); \
+    if(v->array) free(v->array); \
+    v->array = NULL; \
   }
 
 #define VECTOR_FUNC_CLEAR(type) \
@@ -71,7 +78,7 @@
   int vector_##type##_increment(vector_##type * v, size_t * out) { \
     if(v->length >= v->capacity) { \
       if(vector_##type##_reserve(v, (size_t)(v->capacity * (grow_factor)))) { \
-        logerror("Couldn't reallocate vector during reserve (out of memory?)"); \
+        /* logerror("Couldn't reallocate vector during reserve (out of memory?)"); */ \
         return 1; \
       } \
     } \
@@ -85,15 +92,15 @@
     size_t dest; \
     int result = vector_##type##_increment(v, &dest); \
     if(result) { return result; } \
-    memcpy(v->array + dest, item, sizeof(type)); \
+    v->array[dest] = *item; \
     return 0; \
   }
 
 #define VECTOR_FUNC_POP(type) \
   int vector_##type##_pop(vector_##type * v, type * out) { \
-    if(v->length == 0) { return 1; } \
-    vector_##type##_decrement(v); \
-    memcpy(out, v->array + v->length, sizeof(type)); \
+    int result = vector_##type##_decrement(v); \
+    if(result) { return result; } \
+    *out = v->array[v->length]; \
     return 0; \
   }
 
@@ -102,7 +109,34 @@
     if(index >= v->length) { return 1; } \
     if(index == v->length - 1) { return vector_##type##_decrement(v); } \
     v->length--; \
-    memcpy(v->array + index, v->array + v->length, sizeof(type)); \
+    v->array[index] = v->array[v->length]; \
+    return 0; \
+  }
+
+#define VECTOR_FUNC_GET(type) \
+  int vector_##type##_get(vector_##type * v, size_t index, type * out) { \
+    if(index >= v->length) { return 1; } \
+    *out = v->array[index]; \
+    return 0; \
+  }
+
+#define VECTOR_FUNC_SET(type) \
+  int vector_##type##_set(vector_##type * v, size_t index, type * assign) { \
+    if(index >= v->length) { return 1; } \
+    v->array[index] = *assign; \
+    return 0; \
+  }
+
+#define VECTOR_FUNC_MERGEINTO(type) \
+  int vector_##type##_mergeinto(vector_##type * dest, vector_##type * src) { \
+    /* Reserve all the space for the new one. No padding */ \
+    size_t newlen = src->length + dest->length; \
+    vector_##type##_reserve(dest, newlen); \
+    /* copy src into dest */ \
+    for(size_t i = 0; i < src->length; i++) { \
+      dest->array[dest->length + i] = src->array[i]; \
+    } \
+    dest->length = newlen; \
     return 0; \
   }
 
@@ -115,7 +149,10 @@
   VECTOR_FUNC_INCREMENT(type, VECTOR_GROW_FACTOR) \
   VECTOR_FUNC_PUSH(type) \
   VECTOR_FUNC_POP(type) \
-  VECTOR_FUNC_BAGREMOVE(type) 
+  VECTOR_FUNC_BAGREMOVE(type) \
+  VECTOR_FUNC_GET(type) \
+  VECTOR_FUNC_SET(type) \
+  VECTOR_FUNC_MERGEINTO(type) 
 
 
 #endif
