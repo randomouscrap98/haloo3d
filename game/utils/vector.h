@@ -31,7 +31,12 @@
   int  vector_##type##_push(vector_##type *, type *); \
   int  vector_##type##_pop(vector_##type *, type * out); \
   /* Remove an item at the given index and swap the last item in the list with it. Treats vector like an unordered bag */ \
-  int  vector_##type##_bag_remove(vector_##type *, size_t index);
+  int  vector_##type##_bag_remove(vector_##type *, size_t index); \
+  int  vector_##type##_mergeinto(vector_##type * dest, vector_##type * src); \
+  int  vector_##type##_set(vector_##type * v, size_t index, type * assign); \
+  int  vector_##type##_get(vector_##type * v, size_t index, type * out); \
+  int  vector_##type##_first(vector_##type * v, type *out); \
+  int  vector_##type##_last(vector_##type * v, type *out); 
 
 // TODO: missing
 // - slow remove (move everything over)
@@ -60,7 +65,7 @@
 
 #define VECTOR_FUNC_RESERVE(type) \
   int vector_##type##_reserve(vector_##type * v, size_t cap) { \
-    if(cap <= v->capacity) { return 1; } \
+    if(cap <= v->capacity) { return 0; } \
     v->capacity = cap; \
     return !(v->array = realloc(v->array, sizeof(type) * v->capacity)); \
   }
@@ -129,12 +134,27 @@
   int vector_##type##_mergeinto(vector_##type * dest, vector_##type * src) { \
     /* Reserve all the space for the new one. No padding */ \
     size_t newlen = src->length + dest->length; \
-    vector_##type##_reserve(dest, newlen); \
+    int result = vector_##type##_reserve(dest, newlen); \
+    if(result) { return result; } \
     /* copy src into dest */ \
     for(size_t i = 0; i < src->length; i++) { \
       dest->array[dest->length + i] = src->array[i]; \
     } \
     dest->length = newlen; \
+    return 0; \
+  }
+
+#define VECTOR_FUNC_FIRST(type) \
+  int vector_##type##_first(vector_##type * v, type *out) { \
+    if(v->length == 0) { return 1; } \
+    *out = v->array[0]; \
+    return 0; \
+  }
+
+#define VECTOR_FUNC_LAST(type) \
+  int vector_##type##_last(vector_##type * v, type *out) { \
+    if(v->length == 0) { return 1; } \
+    *out = v->array[v->length - 1]; \
     return 0; \
   }
 
@@ -150,7 +170,9 @@
   VECTOR_FUNC_BAGREMOVE(type) \
   VECTOR_FUNC_GET(type) \
   VECTOR_FUNC_SET(type) \
-  VECTOR_FUNC_MERGEINTO(type) 
+  VECTOR_FUNC_MERGEINTO(type) \
+  VECTOR_FUNC_FIRST(type) \
+  VECTOR_FUNC_LAST(type) 
 
 
 #endif

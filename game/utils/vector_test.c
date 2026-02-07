@@ -45,9 +45,15 @@ void vector_test() {
   ASSERT(vector_int_get(&v, 1, &out) == 0, "vector_int_get[1] works");
   ASSERT(out == 99, "vector_int_get(1) = 99");
 
-  // Bad reserves
-  ASSERT(vector_int_reserve(&v, 2) != 0, "vector_int_reserve fail on 2");
-  ASSERT(vector_int_reserve(&v, 1) != 0, "vector_int_reserve fail on 1");
+  // First/last
+  ASSERT(vector_int_first(&v, &out) == 0, "vector_first works");
+  ASSERT(out == 88, "vector_first is %d", out);
+  ASSERT(vector_int_last(&v, &out) == 0, "vector_lastworks");
+  ASSERT(out == 99, "vector_last is %d", out);
+
+  // Bad reserves (we don't check for errors here on too small anymore)
+  //ASSERT(vector_int_reserve(&v, 2) != 0, "vector_int_reserve fail on 2");
+  //ASSERT(vector_int_reserve(&v, 1) != 0, "vector_int_reserve fail on 1");
 
   // Insert a huge pile of integers into a new vector
   vector_int v2;
