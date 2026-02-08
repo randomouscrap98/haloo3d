@@ -1,7 +1,7 @@
 #include "atlas.h"
 #include "../../haloo3d.h"
 #include "../../haloo3d_ex.h"
-#include "../utils/utils.h"
+#include "../collision/collision.h"
 #include "../utils/test.h"
 #include "../utils/log.h"
 #include "store.h"
@@ -19,7 +19,7 @@ static void _no_overlap(atlas_position * pos, int length) {
     VEC2(dimi, pos[i].original_texture->width, pos[i].original_texture->height);
     for(int j = i + 1; j < length; j++) {
       VEC2(dimj, pos[j].original_texture->width, pos[j].original_texture->height);
-      if(AABBCOLLIDE(pos[i].offset, dimi, pos[j].offset, dimj)) {
+      if(AABBCOLLIDE_2DDIM(pos[i].offset, dimi, pos[j].offset, dimj)) {
         logfatal("Textures %d(%s) and %d(%s) overlap", i, pos[i].name, j, pos[j].name);
       }
     }

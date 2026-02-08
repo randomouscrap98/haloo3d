@@ -62,6 +62,8 @@ typedef struct {
 #define H3D_IS2POW(x) (!((x) & ((x) - 1)) && (x))
 #define H3D_MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define H3D_MAX(a, b) (((a) > (b)) ? (a) : (b))
+//#define H3D_MIN3(a, b, c) (((a) < (b)) ? (((a) < (c)) ? (a) : (c)) : (b))
+//#define H3D_MAX3(a, b, c) (((a) > (b)) ? (((a) > (c)) ? (a) : (c)) : (b))
 // Rotate left (byte)
 #define H3D_ROL8(v) ((v << 1) | (v >> 7))
 // Rotate right (byte)

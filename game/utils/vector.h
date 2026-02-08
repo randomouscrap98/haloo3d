@@ -32,7 +32,10 @@
   int  vector_##type##_pop(vector_##type *, type * out); \
   /* Remove an item at the given index and swap the last item in the list with it. Treats vector like an unordered bag */ \
   int  vector_##type##_bag_remove(vector_##type *, size_t index); \
-  int  vector_##type##_mergeinto(vector_##type * dest, vector_##type * src); \
+  int  vector_##type##_append(vector_##type * dest, vector_##type * src); \
+  /* Append a slice of src to the end of the destination vector. End is exclusive, start inclusive */ \
+  int  vector_##type##_append_range(vector_##type * dest, vector_##type * src, \
+      size_t start, size_t end); \
   int  vector_##type##_set(vector_##type * v, size_t index, type * assign); \
   int  vector_##type##_get(vector_##type * v, size_t index, type * out); \
   int  vector_##type##_first(vector_##type * v, type *out); \
@@ -130,18 +133,27 @@
     return 0; \
   }
 
-#define VECTOR_FUNC_MERGEINTO(type) \
-  int vector_##type##_mergeinto(vector_##type * dest, vector_##type * src) { \
+#define VECTOR_FUNC_APPEND_RANGE(type) \
+  int vector_##type##_append_range(vector_##type * dest, vector_##type * src, \
+        size_t start, size_t end) { \
+    if(end < start || start >= src->length || end > src->length) { return 1; } \
+    if(end == start) { return 0; } \
     /* Reserve all the space for the new one. No padding */ \
-    size_t newlen = src->length + dest->length; \
+    size_t range = end - start; \
+    size_t newlen = range + dest->length; \
     int result = vector_##type##_reserve(dest, newlen); \
     if(result) { return result; } \
     /* copy src into dest */ \
-    for(size_t i = 0; i < src->length; i++) { \
-      dest->array[dest->length + i] = src->array[i]; \
+    for(size_t i = 0; i < range; i++) { \
+      dest->array[dest->length + i] = src->array[i + start]; \
     } \
     dest->length = newlen; \
     return 0; \
+  }
+
+#define VECTOR_FUNC_APPEND(type) \
+  int vector_##type##_append(vector_##type * dest, vector_##type * src) { \
+    return vector_##type##_append_range(dest, src, 0, src->length); \
   }
 
 #define VECTOR_FUNC_FIRST(type) \
@@ -170,7 +182,8 @@
   VECTOR_FUNC_BAGREMOVE(type) \
   VECTOR_FUNC_GET(type) \
   VECTOR_FUNC_SET(type) \
-  VECTOR_FUNC_MERGEINTO(type) \
+  VECTOR_FUNC_APPEND(type) \
+  VECTOR_FUNC_APPEND_RANGE(type) \
   VECTOR_FUNC_FIRST(type) \
   VECTOR_FUNC_LAST(type) 
 

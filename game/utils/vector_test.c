@@ -72,7 +72,7 @@ void vector_test() {
   }
 
   // Merge the two vectors
-  ASSERT(vector_int_mergeinto(&v, &v2) == 0, "vector_mergeinto works");
+  ASSERT(vector_int_append(&v, &v2) == 0, "vector_mergeinto works");
   ASSERT(v.length == 102, "vector merge has correct length (%zu vs 102)", v.length);
 
   ASSERT(v.array[0] == 88, "vector 0 = %d", v.array[0]);
@@ -82,6 +82,11 @@ void vector_test() {
   for(int i = 2; i < 102; i++) {
     ASSERT(v.array[i] == i - 2, "vector i = %d", i);
   }
+
+  ASSERT(vector_int_append_range(&v, &v2, 5, 7) == 0, "vector_append_range works");
+  ASSERT(v.length == 104, "vector merge has correct length (%zu vs 102)", v.length);
+  ASSERT(v.array[102] == 5, "vector 102 = %d", v.array[0]);
+  ASSERT(v.array[103] == 6, "vector 103 = %d", v.array[1]);
 
   // Clear it out
   vector_int_clear(&v);
