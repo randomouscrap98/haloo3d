@@ -70,9 +70,7 @@ static inline int h3d_obj_addface(h3d_obj *obj, const h3d_objface face) {
 // you). We only support v, vt, vn, f
 static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
                                     int errlen) {
-  char tmp[H3D_OBJ_MAXLINESIZE];
-  tmp[0] = 0;
-  //char *next = line;
+  char tmp[H3D_OBJ_MAXLINESIZE]; tmp[0] = 0; // valgrind complains...
   // Read the first sector, we only support some of them
   int scanned = sscanf(line, "%s", tmp);
   if (scanned == 0) { // empty line or something
