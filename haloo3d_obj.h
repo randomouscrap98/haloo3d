@@ -71,13 +71,14 @@ static inline int h3d_obj_addface(h3d_obj *obj, const h3d_objface face) {
 static inline int h3d_obj_parseline(h3d_obj *obj, char *line, char *errout,
                                     int errlen) {
   char tmp[H3D_OBJ_MAXLINESIZE];
-  char *next = line;
+  tmp[0] = 0;
+  //char *next = line;
   // Read the first sector, we only support some of them
-  int scanned = sscanf(next, "%s", tmp);
+  int scanned = sscanf(line, "%s", tmp);
   if (scanned == 0) { // empty line or something
     return 0;
   }
-  next += strlen(tmp);
+  char * next = line + strlen(tmp);
   if (strcmp(tmp, "v") == 0) {
     if (obj->numvertices >= obj->maxvertices) {
       snprintf(errout, errlen, "Too many object vertices (%d)!\n",

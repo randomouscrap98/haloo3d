@@ -114,4 +114,7 @@ void linkedlist_test() {
   ASSERT(ilist->data == 50, "create_before 3 item 1");
   ASSERT(ilist->next->data == 60, "create_before 3 item 2");
   ASSERT(ilist->next->next->data == 40, "create_before 3 item 3");
+
+  intll_free(&ilist, NULL);
+  ASSERT(1, "intll_free");
 }

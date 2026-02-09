@@ -94,4 +94,6 @@ void vector_test() {
 
   vector_int_free(&v);
   ASSERT(1, "vector_int_free");
+  vector_int_free(&v2);
+  ASSERT(1, "vector_int_free v2");
 }

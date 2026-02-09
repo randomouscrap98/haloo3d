@@ -29,9 +29,9 @@ typedef struct {
 // Note: to limit the need to pull weird vector implementations
 // in, we're going to just typedef the stuff we need and create
 // unique vector types. We'll see how this works 2026-02-07
-typedef octree_face * ocfindex;
+typedef octree_face * ocfpointer;
 
-VECTOR_DECLARE(ocfindex);
+VECTOR_DECLARE(ocfpointer);
 VECTOR_DECLARE(octree_node);
 
 // Real octree is a container of linear octree nodes which point at each
@@ -40,7 +40,7 @@ VECTOR_DECLARE(octree_node);
 typedef struct {
   h3d_obj * model;          // Reference to object this octree is pointing at
   vector_octree_node nodes; // Global storage for all nodes
-  vector_ocfindex faces;    // Global storage for all pointers into face cache
+  vector_ocfpointer faces;    // Global storage for all pointers into face cache
   octree_face * facecache;  // Look into this for cached
 } octree;
 

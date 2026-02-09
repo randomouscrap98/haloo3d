@@ -257,8 +257,8 @@ void h3d_obj_load(h3d_obj *obj, FILE *f, uint32_t maxf, uint32_t maxv) {
 
 void h3d_obj_loadstring(h3d_obj *obj, const char *str, uint32_t maxf, uint32_t maxv) {
   h3d_obj_init(obj, maxf, maxv);
-  char line[H3D_OBJ_MAXLINESIZE];
-  char err[1024];
+  char line[H3D_OBJ_MAXLINESIZE]; line[0] = 0; // valgrind complains...
+  char err[1024]; err[0] = 0; // valgrind complains...
   char *endline;
   int running = 1;
   while (running) {
