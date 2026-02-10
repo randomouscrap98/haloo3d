@@ -77,8 +77,7 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
   }
   // We now have a list of faces which are inside this node. Let's use a heuristic
   // to determine if we need to split
-  //if(nodefaces.length > 2 * (depth + 1)) {
-  if(nodefaces.length > 2 * depth) {
+  if(nodefaces.length > 2 * (depth + 1)) {
     // Split time. Figure out the bounds of the 8 octants and then recurse into
     // them using our triangle nodes as the faces
     vec3 dim;
@@ -122,7 +121,7 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
 ERROR1:
   vector_ocfpointer_free(&nodefaces);
 END:
-  return 0;
+  return result;
 }
 
 // Octree build requires such a huge initialization, just make it easier on myself.
