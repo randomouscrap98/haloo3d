@@ -136,7 +136,7 @@
 #define VECTOR_FUNC_APPEND_RANGE(type) \
   int vector_##type##_append_range(vector_##type * dest, vector_##type * src, \
         size_t start, size_t end) { \
-    if(end < start || start >= src->length || end > src->length) { return 1; } \
+    if(end < start || end > src->length) { return 1; } \
     if(end == start) { return 0; } \
     /* Reserve all the space for the new one. No padding */ \
     size_t range = end - start; \

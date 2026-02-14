@@ -73,7 +73,7 @@ void octree_test() {
   }
 
   ASSERT(octree_init(&tree) == 0, "octree_init eighttri");
-  //ASSERT(octree_build(&tree, &obj) == 0, "octree_build eighttri");
+  ASSERT(octree_build(&tree, &obj) == 0, "octree_build eighttri");
 
   h3d_obj_free(&obj);
   ASSERT(1, "h3d_obj_free eighttri");

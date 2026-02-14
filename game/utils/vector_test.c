@@ -92,6 +92,15 @@ void vector_test() {
   vector_int_clear(&v);
   ASSERT(v.length == 0, "vector_int_clear length 0");
 
+  // Some funny tests after finding edge cases: you SHOULD be able to append an empty vector to another
+  size_t oldlen = v2.length;
+  size_t oldcap = v2.capacity;
+  ASSERT(vector_int_append(&v2, &v) == 0, "append empty vector");
+  ASSERT(oldlen == v2.length, "append empty vector no length change");
+  ASSERT(oldcap == v2.capacity, "append empty vector no capacity change");
+  ASSERT(vector_int_append_range(&v2, &v, 0, 1) == 1, "append empty vector out of range end");
+  ASSERT(vector_int_append_range(&v2, &v, 1, 0) == 1, "append empty vector out of range start");
+
   vector_int_free(&v);
   ASSERT(1, "vector_int_free");
   vector_int_free(&v2);
