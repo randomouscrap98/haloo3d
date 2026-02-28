@@ -1,6 +1,7 @@
 #include "collision.h"
 #include "octree.h"
 #include "../utils/test.h"
+#include "../utils/print.h"
 #include "../../haloo3d_ex.h"
 
 // This also serves as our "basic triangle"
@@ -21,6 +22,8 @@ void octree_test() {
   h3d_obj obj;
   h3d_obj_loadstring(&obj, onetri, 256, 256);
   ASSERT(1, "h3d_obj_loadstring ontri");
+
+  char msg[256];
 
   // Now, let's save this one triangle for later use
   vec4 basetri[3];
@@ -61,19 +64,38 @@ void octree_test() {
 
   // Now, let's add some more faces and regenerate. We're going to be generous
   // and put JUST ONE triangle in every quadrant
+  int vertcount = 0;
+  h3d_objface face;
   for(int z = -1; z < 1; z++) {
     for(int y = -1; y < 1; y++) {
       for(int x = -1; x < 1; x++) {
         for(int i = 0; i < 3; i++) {
-          VEC4(objvertex, x + 0.1, y + 0.2, z + 0.3, 1.0);
+          VEC4(objvertex, x + 0.1 * i, y + 0.2 * i, z + 0.3 * i, 1.0);
           h3d_obj_addvertex(&obj, objvertex);
+          face[i].normi = 0;
+          face[i].texi = 0;
+          face[i].verti = vertcount++;
         }
+        h3d_obj_addface(&obj, face);
       }
     }
   }
 
-  ASSERT(octree_init(&tree) == 0, "octree_init eighttri");
-  ASSERT(octree_build(&tree, &obj) == 0, "octree_build eighttri");
+  ASSERT_EQ(8, obj.numfaces, "%d", "octree obj faces eighttri");
+  ASSERT_EQ(24, obj.numvertices, "%d", "octree obj vertices eighttri");
+
+  ASSERT_EQ(0, octree_init(&tree), "%d", "octree_init eighttri");
+  ASSERT_EQ(0, octree_build(&tree, &obj), "%d", "octree_build eighttri");
+
+  ASSERT_EQ((size_t)9, tree.nodes.length, "%zu", "octree node eighttri");
+  ASSERT_EQ(0, tree.nodes.array[0].faces_count, "%u", "octree no tris in root");
+  for(int i = 1; i < 9; i++) {
+    snprintf(msg, 256, "octree one tri in %d (%.2f,%.2f,%.2f)-(%.2f,%.2f,%.2f)", i, 
+             VEC3SPREAD(tree.nodes.array[i].min), VEC3SPREAD(tree.nodes.array[i].max));
+    ASSERT_EQ(1, tree.nodes.array[i].faces_count, "%u", msg);
+  }
+
+  ASSERT(tree.faces.length == 8, "octree 8 face eighttri (%zu)", tree.faces.length);
 
   h3d_obj_free(&obj);
   ASSERT(1, "h3d_obj_free eighttri");

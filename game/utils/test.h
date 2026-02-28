@@ -15,4 +15,8 @@
   } \
 }
 
+#define ASSERT_EQ(x, y, f, msg) { \
+  ASSERT((x) == (y), "%s: EXPECT " f " GET " f, msg, (x), (y)); \
+}
+
 #endif
