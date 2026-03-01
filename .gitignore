@@ -25,3 +25,6 @@ ignore/
 # Binaries
 *.exe
 a.out
+
+# Something for the future?
+game/tests

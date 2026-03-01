@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 // Assert a truthy value
 #define ASSERT(x, ...) { \
@@ -18,5 +19,8 @@
 #define ASSERT_EQ(x, y, f, msg) { \
   ASSERT((x) == (y), "%s: EXPECT " f " GET " f, msg, (x), (y)); \
 }
+
+  // assert((x) == (y)); 
+  //, "%s: EXPECT " f " GET " f, msg, (x), (y));
 
 #endif

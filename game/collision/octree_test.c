@@ -81,14 +81,19 @@ void octree_test() {
     }
   }
 
-  ASSERT_EQ(8, obj.numfaces, "%d", "octree obj faces eighttri");
-  ASSERT_EQ(24, obj.numvertices, "%d", "octree obj vertices eighttri");
-
-  ASSERT_EQ(0, octree_init(&tree), "%d", "octree_init eighttri");
-  ASSERT_EQ(0, octree_build(&tree, &obj), "%d", "octree_build eighttri");
-
-  ASSERT_EQ((size_t)9, tree.nodes.length, "%zu", "octree node eighttri");
-  ASSERT_EQ(0, tree.nodes.array[0].faces_count, "%u", "octree no tris in root");
+  assert(obj.numfaces == 8 && "eighttri");
+  assert(obj.numvertices == 24 && "eighttri");
+  assert(octree_init(&tree) == 0 && "eighttri");
+  assert(octree_build(&tree, &obj) == 0 && "eighttri");
+  printf("length %zu\n", tree.nodes.length);
+  assert(tree.nodes.length == 9 && "eighttri");
+  assert(tree.nodes.array[0].faces_count == 0 && "eighttri");
+  //ASSERT_EQ(8, obj.numfaces, "%d", "octree obj faces eighttri");
+  //ASSERT_EQ(24, obj.numvertices, "%d", "octree obj vertices eighttri");
+  //ASSERT_EQ(0, octree_init(&tree), "%d", "octree_init eighttri");
+  //ASSERT_EQ(0, octree_build(&tree, &obj), "%d", "octree_build eighttri");
+  //ASSERT_EQ((size_t)9, tree.nodes.length, "%zu", "octree node eighttri");
+  //ASSERT_EQ(0, tree.nodes.array[0].faces_count, "%u", "octree no tris in root");
   for(int i = 1; i < 9; i++) {
     snprintf(msg, 256, "octree one tri in %d (%.2f,%.2f,%.2f)-(%.2f,%.2f,%.2f)", i, 
              VEC3SPREAD(tree.nodes.array[i].min), VEC3SPREAD(tree.nodes.array[i].max));
