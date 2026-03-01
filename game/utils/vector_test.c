@@ -1,5 +1,6 @@
 #include "vector.h"
 #include "test.h"
+#include <assert.h>
 
 // Make sure all these weird ass macros at least produce
 // valid code...
@@ -62,11 +63,16 @@ void vector_test() {
   size_t olength = v2.length;
   size_t ocapacity = v2.capacity;
   for(int i = 0; i < 100; i++) {
-    ASSERT(vector_int_push(&v2, &i) == 0, "vector_int_push [%d]", i);
-    ASSERT(v2.length == olength + 1, "vector length + 1");
-    ASSERT(v2.capacity >= v2.length, "vector capacity(%zu) >= length", v.capacity);
-    ASSERT(v2.capacity >= ocapacity, "vector capacity >= old");
-    ASSERT(v2.array[i] == i, "vector i = %d", i);
+    assert(vector_int_push(&v2, &i) == 0 && "vector_int_push");
+    assert(v2.length == olength + 1 && "vector length + 1");
+    assert(v2.capacity >= v2.length && "vector capacity >= length");
+    assert(v2.capacity >= ocapacity && "vector capacity >= old");
+    assert(v2.array[i] == i && "vector i = index");
+    // ASSERT(vector_int_push(&v2, &i) == 0, "vector_int_push [%d]", i);
+    // ASSERT(v2.length == olength + 1, "vector length + 1");
+    // ASSERT(v2.capacity >= v2.length, "vector capacity(%zu) >= length", v.capacity);
+    // ASSERT(v2.capacity >= ocapacity, "vector capacity >= old");
+    // ASSERT(v2.array[i] == i, "vector i = %d", i);
     olength = v2.length;
     ocapacity = v2.capacity;
   }
@@ -80,7 +86,8 @@ void vector_test() {
 
   // Make sure all the values are correct
   for(int i = 2; i < 102; i++) {
-    ASSERT(v.array[i] == i - 2, "vector i = %d", i);
+    assert(v.array[i] == i - 2 && "vector i = index");
+    //ASSERT(v.array[i] == i - 2, "vector i = %d", i);
   }
 
   ASSERT(vector_int_append_range(&v, &v2, 5, 7) == 0, "vector_append_range works");

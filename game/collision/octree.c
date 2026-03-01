@@ -6,9 +6,13 @@
 #include "../../haloo3d_3d.h"
 #include "../utils/log.h"
 #include "../utils/utils.h"
+#include "../utils/print.h"
 
 VECTOR_DEFINE(ocfpointer);
 VECTOR_DEFINE(octree_node);
+
+// Uncomment for mega logging
+#define OCTREE_VERBOSE_LOG
 
 void octree_node_init(octree_node * node) {
   VEC3(node->min, 0, 0, 0);
@@ -45,12 +49,21 @@ void octree_free(octree * tree) {
   NULLFREE(tree->facecache);
 }
 
-int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfaces, uint32_t depth) {
+#define __OCTRU_P() logdebug( \
+  "OCTREE_RECURSE: depth %d quadrant %d [%d%d%d] " VEC3FMT(3) " -> " VEC3FMT(3), \
+  depth, quadrant, quadrant & 1, (quadrant & 2) >> 1, (quadrant & 4) >> 2, \
+  VEC3SPREAD(tree->nodes.array[parentidx].min), \
+  VEC3SPREAD(tree->nodes.array[parentidx].max) \
+);
+
+int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfaces, 
+                   uint32_t depth, uint32_t quadrant) {
   // First, calculate which tris are in this octree node. 
   vector_ocfpointer nodefaces;
   int result = vector_ocfpointer_init(&nodefaces);
   if(result) {
-    logerror("Can't initialize temp tri storage for node at depth %d", depth);
+    logerror("Can't initialize temp tri storage for node:");
+    __OCTRU_P();
     goto END;
   }
   //printf("parentidx %zu parentfaces length %zu nodes %zu\n", parentidx, parentfaces->length, tree->nodes.length);
@@ -59,7 +72,8 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
     // A pure copy
     result = vector_ocfpointer_append(&nodefaces, parentfaces);
     if(result) {
-      logerror("Can't append tri storage for node at depth %d", depth);
+      logerror("Can't append tri storage for node:");
+      __OCTRU_P();
       goto ERROR1;
     }
   } else {
@@ -69,12 +83,17 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
                            tree->nodes.array[parentidx].min, tree->nodes.array[parentidx].max)) {
         result = vector_ocfpointer_push(&nodefaces, &parentfaces->array[i]);
         if(result) {
-          logerror("Can't append face for node faces at depth %d", depth);
+          logerror("Can't append face for node faces:");
+          __OCTRU_P();
           goto ERROR1;
         }
       }
     }
   }
+#ifdef OCTREE_VERBOSE_LOG
+  __OCTRU_P();
+  logdebug("Nodes here: %zu", nodefaces.length);
+#endif
   // We now have a list of faces which are inside this node. Let's use a heuristic
   // to determine if we need to split
   if(nodefaces.length > 2 * (depth + 1)) {
@@ -90,7 +109,8 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
           size_t idx;
           result = vector_octree_node_increment(&tree->nodes, &idx);
           if(result) {
-            logerror("Can't append node at depth %d", depth);
+            logerror("Can't append node:");
+            __OCTRU_P();
             goto ERROR1;
           }
           octree_node * parentnode = &tree->nodes.array[parentidx]; // ONLY here can we use this...
@@ -99,10 +119,12 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
           VEC3(offset, x * dim[0], y * dim[1], z * dim[2]);
           vec3_add(parentnode->min, offset, newnode->min);
           vec3_add(newnode->min, dim, newnode->max);
-          result = octree_recurse(tree, idx, &nodefaces, depth + 1);
+          result = octree_recurse(tree, idx, &nodefaces, depth + 1,
+                                  x + (y << 1) + (z << 2));
           // NOTE: no node pointer usable after this call!!
           if(result) {
-            logerror("Can't recurse node at depth %d", depth);
+            logerror("Can't recurse node:");
+            __OCTRU_P();
             goto ERROR1;
           }
         }
@@ -114,7 +136,8 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
     tree->nodes.array[parentidx].faces_index = tree->faces.length;
     result = vector_ocfpointer_append(&tree->faces, &nodefaces);
     if(result) {
-      logerror("Can't append tris for node at depth %d", depth);
+      logerror("Can't append tris for node:");
+      __OCTRU_P();
       goto ERROR1;
     }
   }
@@ -198,6 +221,10 @@ int octree_build(octree * tree, h3d_obj * model) {
   for(uint32_t i = 0; i < model->numfaces; i++) {
     octree_face * tri = tree->facecache + i;
     collision_objface_aabb(model, i, tri->min, tri->max);
+#ifdef OCTREE_VERBOSE_LOG
+    logdebug("Face %d: "VEC3FMT(3)" -> "VEC3FMT(3), i, 
+             VEC3SPREAD(tri->min), VEC3SPREAD(tri->max));
+#endif
     // We have aabb now, just do min/max for this vs our global min/max
     for(int pi = 0; pi < 3; pi++) { // for each dimension
       root->min[pi] = H3D_MIN(root->min[pi], tri->min[pi]);
@@ -208,22 +235,11 @@ int octree_build(octree * tree, h3d_obj * model) {
   // We now have list of all tris and the global dimensions of the octree.
   // We can now start recursing. Once the recursion is done, we should have
   // a fully valid tree with everything allocated
-  result = octree_recurse(tree, rootidx, &roottris, 0);
+  result = octree_recurse(tree, rootidx, &roottris, 0, 8);
 
 ERROR1:
   // We don't need the roottris
   vector_ocfpointer_free(&roottris);
 END:
   return result;
-
-  // First, we know all 
-  // Steps:
-  // - see if triangle count in region (how?) is too high
-  // - if so, generate 8 octree nodes and put triangles into them
-  // - repeat recursively
-
-  // Triangles may be in multiple regions, can't just move everything over...
-  // - may need to keep temporary vectors just for this as you pass stuff around
-  // - lots of malloc and free to build the tree....
-
 }

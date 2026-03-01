@@ -1,5 +1,6 @@
 #include "lists.h"
 #include "test.h"
+#include <assert.h>
 
 typedef struct {
   int order;
@@ -21,7 +22,8 @@ void lists_test() {
   ASSERT(cbuffer_get(&cb, 999) == NULL, "cbuffer_get_oob_big");
   // Now make sure EVERYTHING empty
   for(int i = 0; i < 100; i++) {
-    ASSERT(cbuffer_get(&cb, i) == NULL, "cbuffer_get_%d", i);
+    //ASSERT(cbuffer_get(&cb, i) == NULL, "cbuffer_get_%d", i);
+    assert(cbuffer_get(&cb, i) == NULL && "cbuffer_get index");
   }
 
   float ftest = 1.5;
@@ -73,8 +75,10 @@ void lists_test() {
   ASSERT(sbuffer_get(&sb, 999) == NULL, "sbuffer_get_oob_big");
   // Now make sure EVERYTHING empty
   for(int i = 0; i < 100; i++) {
-    ASSERT(!sbuffer_has(&sb, i), "sbuffer_has_%d", i);
-    ASSERT(sbuffer_get(&sb, i) == NULL, "sbuffer_get_%d", i);
+    //ASSERT(!sbuffer_has(&sb, i), "sbuffer_has_%d", i);
+    //ASSERT(sbuffer_get(&sb, i) == NULL, "sbuffer_get_%d", i);
+    assert(!sbuffer_has(&sb, i) && "sbuffer_has index");
+    assert(sbuffer_get(&sb, i) == NULL && "sbuffer_get index");
   }
 
   ftest = 1.5;
@@ -101,9 +105,12 @@ void lists_test() {
 
   for(int i = 0; i < 100; i++) {
     ftest = i;
-    ASSERT(!sbuffer_add(&sb, (void *)&ftest, &sindex), "sbuffer_addall_%d", i);
-    ASSERT(sbuffer_has(&sb, sindex), "sbuffer_addall_%d_has", i);
-    ASSERT(*(float *)sbuffer_get(&sb, sindex) == ftest, "sbuffer_addall_%d_get", i);
+    // ASSERT(!sbuffer_add(&sb, (void *)&ftest, &sindex), "sbuffer_addall_%d", i);
+    // ASSERT(sbuffer_has(&sb, sindex), "sbuffer_addall_%d_has", i);
+    // ASSERT(*(float *)sbuffer_get(&sb, sindex) == ftest, "sbuffer_addall_%d_get", i);
+    assert(!sbuffer_add(&sb, (void *)&ftest, &sindex) && "sbuffer_addall index");
+    assert(sbuffer_has(&sb, sindex) && "sbuffer_addall index has");
+    assert(*(float *)sbuffer_get(&sb, sindex) == ftest && "sbuffer_addall index get");
   }
 
   // Remove two random elements, should be able to insert two now

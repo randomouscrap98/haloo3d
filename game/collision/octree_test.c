@@ -3,19 +3,8 @@
 #include "../utils/test.h"
 #include "../utils/print.h"
 #include "../../haloo3d_ex.h"
+#include "test_common.h"
 
-// This also serves as our "basic triangle"
-static const char onetri[1024] =
-  "v -1.0 -1.0 -1.0\n"
-  "v 1.0 -1.0 2.0\n"
-  "v 0.0 3.0 0.0\n"
-  "f 1 2 3\n";
-
-// static const char eight[1024] =
-//   "v -1.0 -1.0 -1.0\n"
-//   "v 1.0 -1.0 2.0\n"
-//   "v 0.0 3.0 0.0\n"
-//   "f 1 2 3\n";
 
 void octree_test() {
   // First test: just one big triangle
@@ -60,34 +49,15 @@ void octree_test() {
   // Fully new test
   h3d_obj_init(&obj, 100, 100);
 
-  vec4 objvertex;
-
   // Now, let's add some more faces and regenerate. We're going to be generous
   // and put JUST ONE triangle in every quadrant
-  int vertcount = 0;
-  h3d_objface face;
-  for(int z = -1; z < 1; z++) {
-    for(int y = -1; y < 1; y++) {
-      for(int x = -1; x < 1; x++) {
-        for(int i = 0; i < 3; i++) {
-          VEC4(objvertex, x + 0.1 * i, y + 0.2 * i, z + 0.3 * i, 1.0);
-          h3d_obj_addvertex(&obj, objvertex);
-          face[i].normi = 0;
-          face[i].texi = 0;
-          face[i].verti = vertcount++;
-        }
-        h3d_obj_addface(&obj, face);
-      }
-    }
-  }
+  eighttri(&obj);
 
-  assert(obj.numfaces == 8 && "eighttri");
-  assert(obj.numvertices == 24 && "eighttri");
   assert(octree_init(&tree) == 0 && "eighttri");
   assert(octree_build(&tree, &obj) == 0 && "eighttri");
+  assert(tree.nodes.array[0].faces_count == 0 && "eighttri");
   printf("length %zu\n", tree.nodes.length);
   assert(tree.nodes.length == 9 && "eighttri");
-  assert(tree.nodes.array[0].faces_count == 0 && "eighttri");
   //ASSERT_EQ(8, obj.numfaces, "%d", "octree obj faces eighttri");
   //ASSERT_EQ(24, obj.numvertices, "%d", "octree obj vertices eighttri");
   //ASSERT_EQ(0, octree_init(&tree), "%d", "octree_init eighttri");
