@@ -172,7 +172,7 @@ static int octree_build_init(octree * tree, uint32_t numfaces, size_t * rootidx)
   octree_node * root = &tree->nodes.array[*rootidx];
   octree_node_init(root);
   VEC3(root->min, FLT_MAX, FLT_MAX, FLT_MAX);
-  VEC3(root->max, FLT_MIN, FLT_MIN, FLT_MIN);
+  VEC3(root->max, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 
   return 0;
 }
