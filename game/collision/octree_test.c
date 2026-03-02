@@ -70,6 +70,9 @@ void octree_test() {
 
   ASSERT(tree.nodefaces.length == 8, "octree 8 face eighttri (%zu)", tree.nodefaces.length);
 
+  octree_free(&tree);
+  ASSERT(1, "octree_free eighttri");
+
   h3d_obj_free(&obj);
   ASSERT(1, "h3d_obj_free eighttri");
 }
