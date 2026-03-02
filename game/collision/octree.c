@@ -1,22 +1,21 @@
 #include "octree.h"
 
 #include <float.h>
-#include "collision.h"
 #include "../../haloo3d.h"
 #include "../../haloo3d_3d.h"
 #include "../utils/log.h"
 #include "../utils/utils.h"
 #include "../utils/print.h"
+#include "collision.h"
 
-VECTOR_DEFINE(ocfpointer);
+VECTOR_DEFINE(ocfoffset);
 VECTOR_DEFINE(octree_node);
 
 // Uncomment for mega logging
 #define OCTREE_VERBOSE_LOG
 
 void octree_node_init(octree_node * node) {
-  VEC3(node->min, 0, 0, 0);
-  VEC3(node->max, 0, 0, 0);
+  collision_box_3d_init(&node->box);
   node->faces_count = 0;
   node->faces_index = UINT32_MAX;
   node->children_index = UINT32_MAX;
@@ -28,8 +27,8 @@ int octree_node_is_leaf(octree_node * node) {
 
 int octree_init(octree * tree) {
   tree->model = NULL;
-  tree->facecache = NULL;
-  int result = vector_ocfpointer_init(&tree->faces);
+  tree->faceboxes = NULL;
+  int result = vector_ocfoffset_init(&tree->nodefaces);
   if(result) goto END;
   result = vector_octree_node_init(&tree->nodes);
   if(result) goto ERROR1;
@@ -37,30 +36,30 @@ int octree_init(octree * tree) {
 //ERROR2:
   vector_octree_node_free(&tree->nodes);
 ERROR1:
-  vector_ocfpointer_free(&tree->faces);
+  vector_ocfoffset_free(&tree->nodefaces);
 END:
   return result;
 }
 
 void octree_free(octree * tree) {
   vector_octree_node_free(&tree->nodes);
-  vector_ocfpointer_free(&tree->faces);
+  vector_ocfoffset_free(&tree->nodefaces);
   tree->model = NULL; // CAREFUL! We don't free your model for you!!
-  NULLFREE(tree->facecache);
+  NULLFREE(tree->faceboxes);
 }
 
 #define __OCTRU_P() logdebug( \
   "OCTREE_RECURSE: depth %d quadrant %d [%d%d%d] " VEC3FMT(3) " -> " VEC3FMT(3), \
   depth, quadrant, quadrant & 1, (quadrant & 2) >> 1, (quadrant & 4) >> 2, \
-  VEC3SPREAD(tree->nodes.array[parentidx].min), \
-  VEC3SPREAD(tree->nodes.array[parentidx].max) \
+  VEC3SPREAD(tree->nodes.array[parentidx].box.min), \
+  VEC3SPREAD(tree->nodes.array[parentidx].box.max) \
 );
 
-int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfaces, 
+int octree_recurse(octree* tree, size_t parentidx, vector_ocfoffset * parentfaces, 
                    uint32_t depth, uint32_t quadrant) {
   // First, calculate which tris are in this octree node. 
-  vector_ocfpointer nodefaces;
-  int result = vector_ocfpointer_init(&nodefaces);
+  vector_ocfoffset nodefaces;
+  int result = vector_ocfoffset_init(&nodefaces);
   if(result) {
     logerror("Can't initialize temp tri storage for node:");
     __OCTRU_P();
@@ -70,7 +69,7 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
   //printf("parentface0 pointer: %p\n", parentfaces->array[0]);
   if(depth == 0) {
     // A pure copy
-    result = vector_ocfpointer_append(&nodefaces, parentfaces);
+    result = vector_ocfoffset_append(&nodefaces, parentfaces);
     if(result) {
       logerror("Can't append tri storage for node:");
       __OCTRU_P();
@@ -78,10 +77,11 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
     }
   } else {
     // Go through each collision box in faces and see which collide with us
+    octree_node * pnode = tree->nodes.array + parentidx;
     for(size_t i = 0; i < parentfaces->length; i++) {
-      if(AABBCOLLIDE_3DBOX(parentfaces->array[i]->min, parentfaces->array[i]->max, 
-                           tree->nodes.array[parentidx].min, tree->nodes.array[parentidx].max)) {
-        result = vector_ocfpointer_push(&nodefaces, &parentfaces->array[i]);
+      collision_box_3d * pbox = tree->faceboxes + parentfaces->array[i];
+      if(AABBCOLLIDE_3DBOX(pbox, &pnode->box)) {
+        result = vector_ocfoffset_push(&nodefaces, &parentfaces->array[i]);
         if(result) {
           logerror("Can't append face for node faces:");
           __OCTRU_P();
@@ -101,7 +101,7 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
     // them using our triangle nodes as the faces
     vec3 dim;
     vec3 offset;
-    vec3_subtract(tree->nodes.array[parentidx].max, tree->nodes.array[parentidx].min, dim);
+    vec3_subtract(tree->nodes.array[parentidx].box.max, tree->nodes.array[parentidx].box.min, dim);
     vec3_multiply(dim, 0.5, dim);
     for(int z = 0; z < 2; z++) {
       for(int y = 0; y < 2; y++) {
@@ -117,10 +117,9 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
           octree_node * newnode = &tree->nodes.array[idx];
           octree_node_init(newnode);
           VEC3(offset, x * dim[0], y * dim[1], z * dim[2]);
-          vec3_add(parentnode->min, offset, newnode->min);
-          vec3_add(newnode->min, dim, newnode->max);
-          result = octree_recurse(tree, idx, &nodefaces, depth + 1,
-                                  x + (y << 1) + (z << 2));
+          vec3_add(parentnode->box.min, offset, newnode->box.min);
+          vec3_add(newnode->box.min, dim, newnode->box.max);
+          result = octree_recurse(tree, idx, &nodefaces, depth + 1, x + (y << 1) + (z << 2));
           // NOTE: no node pointer usable after this call!!
           if(result) {
             logerror("Can't recurse node:");
@@ -133,8 +132,8 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
   } else {
     // It's a leaf. Let's append the faces to the global face cache
     tree->nodes.array[parentidx].faces_count = nodefaces.length;
-    tree->nodes.array[parentidx].faces_index = tree->faces.length;
-    result = vector_ocfpointer_append(&tree->faces, &nodefaces);
+    tree->nodes.array[parentidx].faces_index = tree->nodefaces.length;
+    result = vector_ocfoffset_append(&tree->nodefaces, &nodefaces);
     if(result) {
       logerror("Can't append tris for node:");
       __OCTRU_P();
@@ -142,7 +141,7 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfpointer * parentfac
     }
   }
 ERROR1:
-  vector_ocfpointer_free(&nodefaces);
+  vector_ocfoffset_free(&nodefaces);
 END:
   return result;
 }
@@ -152,12 +151,12 @@ END:
 static int octree_build_init(octree * tree, uint32_t numfaces, size_t * rootidx) {
   // Clear out all the old crap
   vector_octree_node_clear(&tree->nodes);
-  vector_ocfpointer_clear(&tree->faces);
-  NULLFREE(tree->facecache);
+  vector_ocfoffset_clear(&tree->nodefaces);
+  NULLFREE(tree->faceboxes);
 
   // Allocate the face cache
-  tree->facecache = malloc(sizeof(octree_face) * numfaces);
-  if(!tree->facecache) {
+  tree->faceboxes = malloc(sizeof(collision_box_3d) * numfaces);
+  if(!tree->faceboxes) {
     logerror("Couldn't initialize face cache");
     return 1;
   }
@@ -171,23 +170,23 @@ static int octree_build_init(octree * tree, uint32_t numfaces, size_t * rootidx)
   // Root node won't move here, but may move later. be careful with pointer...
   octree_node * root = &tree->nodes.array[*rootidx];
   octree_node_init(root);
-  VEC3(root->min, FLT_MAX, FLT_MAX, FLT_MAX);
-  VEC3(root->max, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+  VEC3(root->box.min, FLT_MAX, FLT_MAX, FLT_MAX);
+  VEC3(root->box.max, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 
   return 0;
 }
 
-static int octree_build_rootfaces(octree * tree, vector_ocfpointer * roottris, uint32_t numfaces) {
+static int octree_build_rootfaces(vector_ocfoffset * roottris, uint32_t numfaces) {
   // For speed, pre-reserve the right amount (so we have an exact size and
   // aren't reallocating over and over)
-  if(vector_ocfpointer_reserve(roottris, numfaces)) {
+  if(vector_ocfoffset_reserve(roottris, numfaces)) {
     logerror("Couldn't reserve space in root triangle vector");
     return 1;
   }
   // Root triangle list is literally just a copy of the tri cache
   for(uint32_t i = 0; i < numfaces; i++) {
-    ocfpointer fp = tree->facecache + i;
-    if(vector_ocfpointer_push(roottris, &fp)) {
+    //ocfpointer fp = tree->facecache + i;
+    if(vector_ocfoffset_push(roottris, &i)) {
       logerror("Couldn't add root face");
       return 1;
     }
@@ -203,15 +202,15 @@ int octree_build(octree * tree, h3d_obj * model) {
   if(result) { goto END; }
 
   // Allocate the root triangle list
-  vector_ocfpointer roottris;
-  result = vector_ocfpointer_init(&roottris);
+  vector_ocfoffset rootboxes;
+  result = vector_ocfoffset_init(&rootboxes);
   if(result) {
     logerror("Couldn't initialize root triangle vector");
     goto END;
   }
 
   // Rootfaces is simple mapping directly to the cache
-  result = octree_build_rootfaces(tree, &roottris, model->numfaces);
+  result = octree_build_rootfaces(&rootboxes, model->numfaces);
   if(result) { goto ERROR1; }
 
   octree_node * root = &tree->nodes.array[rootidx];
@@ -219,27 +218,27 @@ int octree_build(octree * tree, h3d_obj * model) {
   // build a vector of all faces for the root node. In the meantime, also keep
   // track of the max and min positions of all vertices 
   for(uint32_t i = 0; i < model->numfaces; i++) {
-    octree_face * tri = tree->facecache + i;
-    collision_objface_aabb(model, i, tri->min, tri->max);
+    collision_box_3d * box = tree->faceboxes + i;
+    collision_objface_aabb(model, i, box);
 #ifdef OCTREE_VERBOSE_LOG
     logdebug("Face %d: "VEC3FMT(3)" -> "VEC3FMT(3), i, 
-             VEC3SPREAD(tri->min), VEC3SPREAD(tri->max));
+             VEC3SPREAD(box->min), VEC3SPREAD(box->max));
 #endif
     // We have aabb now, just do min/max for this vs our global min/max
     for(int pi = 0; pi < 3; pi++) { // for each dimension
-      root->min[pi] = H3D_MIN(root->min[pi], tri->min[pi]);
-      root->max[pi] = H3D_MAX(root->max[pi], tri->max[pi]);
+      root->box.min[pi] = H3D_MIN(root->box.min[pi], box->min[pi]);
+      root->box.max[pi] = H3D_MAX(root->box.max[pi], box->max[pi]);
     }
   }
   
   // We now have list of all tris and the global dimensions of the octree.
   // We can now start recursing. Once the recursion is done, we should have
   // a fully valid tree with everything allocated
-  result = octree_recurse(tree, rootidx, &roottris, 0, 8);
+  result = octree_recurse(tree, rootidx, &rootboxes, 0, 8);
 
 ERROR1:
   // We don't need the roottris
-  vector_ocfpointer_free(&roottris);
+  vector_ocfoffset_free(&rootboxes);
 END:
   return result;
 }

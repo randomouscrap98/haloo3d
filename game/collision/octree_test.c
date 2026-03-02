@@ -1,4 +1,4 @@
-#include "collision.h"
+//#include "collision.h"
 #include "octree.h"
 #include "../utils/test.h"
 #include "../utils/print.h"
@@ -19,8 +19,9 @@ void octree_test() {
   memcpy(basetri, obj.vertices, sizeof(vec4) * 3);
 
   // And the aabb
-  vec3 basetri_min, basetri_max;
-  collision_objface_aabb(&obj, 0, basetri_min, basetri_max);
+  //vec3 basetri_min, basetri_max;
+  //collision_box_3d 
+  //collision_objface_aabb(&obj, 0, basetri_min, basetri_max);
 
   octree tree;
   ASSERT(octree_init(&tree) == 0, "octree_init onetri");
@@ -29,16 +30,16 @@ void octree_test() {
   // With just one triangle, we should have one node and one tri pointer, which
   // points to the tri. I don't know, maybe too much inspection?
   ASSERT(tree.nodes.length == 1, "octree 1 node onetri");
-  ASSERT(tree.faces.length == 1, "octree 1 face onetri");
+  ASSERT(tree.nodefaces.length == 1, "octree 1 face onetri");
 
   // We also know the exact dimensions the octree is supposed to be
   octree_node * n = &tree.nodes.array[0];
-  ASSERT(n->min[0] == -1.0, "octree xmin onetri");
-  ASSERT(n->min[1] == -1.0, "octree ymin onetri");
-  ASSERT(n->min[2] == -1.0, "octree zmin onetri");
-  ASSERT(n->max[0] == 1.0, "octree xmax onetri");
-  ASSERT(n->max[1] == 3.0, "octree ymax onetri");
-  ASSERT(n->max[2] == 2.0, "octree zmax onetri");
+  ASSERT(n->box.min[0] == -1.0, "octree xmin onetri");
+  ASSERT(n->box.min[1] == -1.0, "octree ymin onetri");
+  ASSERT(n->box.min[2] == -1.0, "octree zmin onetri");
+  ASSERT(n->box.max[0] == 1.0, "octree xmax onetri");
+  ASSERT(n->box.max[1] == 3.0, "octree ymax onetri");
+  ASSERT(n->box.max[2] == 2.0, "octree zmax onetri");
 
   octree_free(&tree);
   ASSERT(1, "octree_free onetri");
@@ -58,19 +59,16 @@ void octree_test() {
   assert(tree.nodes.array[0].faces_count == 0 && "eighttri");
   printf("length %zu\n", tree.nodes.length);
   assert(tree.nodes.length == 9 && "eighttri");
-  //ASSERT_EQ(8, obj.numfaces, "%d", "octree obj faces eighttri");
-  //ASSERT_EQ(24, obj.numvertices, "%d", "octree obj vertices eighttri");
-  //ASSERT_EQ(0, octree_init(&tree), "%d", "octree_init eighttri");
-  //ASSERT_EQ(0, octree_build(&tree, &obj), "%d", "octree_build eighttri");
-  //ASSERT_EQ((size_t)9, tree.nodes.length, "%zu", "octree node eighttri");
-  //ASSERT_EQ(0, tree.nodes.array[0].faces_count, "%u", "octree no tris in root");
-  for(int i = 1; i < 9; i++) {
-    snprintf(msg, 256, "octree one tri in %d (%.2f,%.2f,%.2f)-(%.2f,%.2f,%.2f)", i, 
-             VEC3SPREAD(tree.nodes.array[i].min), VEC3SPREAD(tree.nodes.array[i].max));
+  for(uint32_t i = 1; i < 9; i++) {
+    snprintf(msg, 256, "octree one tri in %d "VEC3FMT(2)" -> "VEC3FMT(2), i, 
+             VEC3SPREAD(tree.nodes.array[i].box.min), VEC3SPREAD(tree.nodes.array[i].box.max));
     ASSERT_EQ(1, tree.nodes.array[i].faces_count, "%u", msg);
+    // Now, that ONE face should have an index that is the SAME as the index for triangle in the obj
+    // (since everything should kinda just work out?). Not a good thing to assume most times
+    assert(tree.nodes.array[i].faces_index == (i - 1) && "face index good");
   }
 
-  ASSERT(tree.faces.length == 8, "octree 8 face eighttri (%zu)", tree.faces.length);
+  ASSERT(tree.nodefaces.length == 8, "octree 8 face eighttri (%zu)", tree.nodefaces.length);
 
   h3d_obj_free(&obj);
   ASSERT(1, "h3d_obj_free eighttri");
