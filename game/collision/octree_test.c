@@ -132,4 +132,6 @@ void octree_test() {
 
   h3d_obj_free(&obj);
   ASSERT(1, "h3d_obj_free eighttri");
+
+  vector_octrack_data_free(&calltrack);
 }
