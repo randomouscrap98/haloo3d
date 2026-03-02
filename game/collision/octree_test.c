@@ -1,10 +1,29 @@
 //#include "collision.h"
+#include "collision.h"
 #include "octree.h"
 #include "../utils/test.h"
+#include "../utils/log.h"
 #include "../utils/print.h"
 #include "../../haloo3d_ex.h"
 #include "test_common.h"
 
+
+typedef struct {
+  h3d_obj * obj;
+  uint32_t face;
+} octrack_data;
+
+VECTOR_DECLARE(octrack_data);
+VECTOR_DEFINE(octrack_data);
+
+int octrack_callback(void * state, h3d_obj * obj, uint32_t face) {
+  vector_octrack_data * track = (vector_octrack_data *)state;
+  size_t idx = 0;
+  assert(vector_octrack_data_increment(track, &idx) == 0 && "octrack_callback");
+  track->array[idx].obj = obj;
+  track->array[idx].face = face;
+  return 0;
+}
 
 void octree_test() {
   // First test: just one big triangle
@@ -31,6 +50,7 @@ void octree_test() {
   // points to the tri. I don't know, maybe too much inspection?
   ASSERT(tree.nodes.length == 1, "octree 1 node onetri");
   ASSERT(tree.nodefaces.length == 1, "octree 1 face onetri");
+  assert(octree_node_is_leaf(tree.nodes.array) && "single node root is leaf onetri");
 
   // We also know the exact dimensions the octree is supposed to be
   octree_node * n = &tree.nodes.array[0];
@@ -56,9 +76,12 @@ void octree_test() {
 
   assert(octree_init(&tree) == 0 && "eighttri");
   assert(octree_build(&tree, &obj) == 0 && "eighttri");
+
   assert(tree.nodes.array[0].faces_count == 0 && "eighttri");
   printf("length %zu\n", tree.nodes.length);
   assert(tree.nodes.length == 9 && "eighttri");
+  ASSERT(tree.nodefaces.length == 8, "octree 8 face eighttri (%zu)", tree.nodefaces.length);
+  assert(!octree_node_is_leaf(tree.nodes.array) && "root not leaf eighttri");
   for(uint32_t i = 1; i < 9; i++) {
     snprintf(msg, 256, "octree one tri in %d "VEC3FMT(2)" -> "VEC3FMT(2), i, 
              VEC3SPREAD(tree.nodes.array[i].box.min), VEC3SPREAD(tree.nodes.array[i].box.max));
@@ -66,9 +89,43 @@ void octree_test() {
     // Now, that ONE face should have an index that is the SAME as the index for triangle in the obj
     // (since everything should kinda just work out?). Not a good thing to assume most times
     assert(tree.nodes.array[i].faces_index == (i - 1) && "face index good");
+    assert(octree_node_is_leaf(tree.nodes.array + i) && "leaf eighttri");
   }
 
-  ASSERT(tree.nodefaces.length == 8, "octree 8 face eighttri (%zu)", tree.nodefaces.length);
+  vector_octrack_data calltrack;
+  vector_octrack_data_init(&calltrack);
+  collision_box_3d box;
+  // Very far out
+  VEC3(box.min, -5, -5, -5);
+  VEC3(box.max, -4, -4, -4);
+
+  // Let's see how the callback functions (if at all)
+  assert(octree_scan(&tree, &box, octrack_callback, &calltrack) == 0 && "eighttri");
+  assert(calltrack.length == 0 && "eighttri");
+
+  // And now let's get a collision with just ONE tri
+  //VEC3(box.min, -1, -1, -1);
+  //VEC3(box.max, -0.9, -0.9, -0.9); // this should be idx 0
+  
+  for(uint32_t fi = 0; fi < obj.numfaces; fi++) {
+    //collision_objface_aabb(&obj, fi, &box);
+    //logdebug("EIGHTTRI CALC BOUNDS[%d]: "VEC3FMT(1)" -> "VEC3FMT(1), fi, VEC3ARGS(box.min), VEC3ARGS(box.max));
+    memcpy(box.min, obj.vertices[obj.faces[fi][0].verti], sizeof(vec3));
+    memcpy(box.max, obj.vertices[obj.faces[fi][2].verti], sizeof(vec3));
+    //hfloat_t * lowvert = obj.vertices[obj.faces[fi][0].verti];
+    //hfloat_t * highvert = obj.vertices[obj.faces[fi][2].verti];
+    logdebug("LOWVERT[%d]: "VEC3FMT(1), fi, VEC3ARGS(box.min));
+    logdebug("HIGHVERT[%d]: "VEC3FMT(1), fi, VEC3ARGS(box.max));
+    vector_octrack_data_clear(&calltrack);
+    assert(octree_scan(&tree, &box, octrack_callback, &calltrack) == 0 && "eighttri");
+    logdebug("intersect face %d count: %zu", fi, calltrack.length);
+    assert(calltrack.length == 1 && "eighttri");
+    // for(uint32_t vi = 0; vi < 3; vi++) {
+    //   assert(box.min[vi] == lowvert[vi] && "eighttri");
+    //   assert(box.max[vi] == highvert[vi] && "eighttri");
+    // }
+  }
+
 
   octree_free(&tree);
   ASSERT(1, "octree_free eighttri");

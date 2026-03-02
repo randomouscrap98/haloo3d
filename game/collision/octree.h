@@ -21,13 +21,6 @@ VECTOR_DECLARE(octree_node);
 void octree_node_init(octree_node * node);
 int octree_node_is_leaf(octree_node * node);
 
-// // We store some cached data for the triangle to prevent tons of if statements
-// // from running like 10,000 times (probaby not a huge deal though)
-// typedef struct {
-//   vec3 min;     // Position of calculated AABB box
-//   vec3 max;     // Position of calculated AABB box
-// } octree_face;
-
 // Note: to limit the need to pull weird vector implementations
 // in, we're going to just typedef the stuff we need and create
 // unique vector types. We'll see how this works 2026-02-07
@@ -49,11 +42,12 @@ int octree_init(octree * tree);
 void octree_free(octree * tree);
 int octree_build(octree * tree, h3d_obj * model);
 
-typedef struct {
-  int current_node;
-} octree_scan_data;
+// typedef struct {
+//   int current_node;
+// } octree_scan_data;
 
-int octree_scan(octree * tree, collision_box_3d * box, octree_scan_data * out);
+typedef int (*octree_scan_callback)(void * state, h3d_obj * obj, uint32_t face);
+int octree_scan(octree * tree, collision_box_3d * box, octree_scan_callback callback, void * state);
 
 // Fill the given out vector with all the faces which MAY need to be check for
 // collision with the given 3d box at pos with dim. Note that the pos needs to

@@ -103,6 +103,8 @@ int octree_recurse(octree* tree, size_t parentidx, vector_ocfoffset * parentface
     vec3 offset;
     vec3_subtract(tree->nodes.array[parentidx].box.max, tree->nodes.array[parentidx].box.min, dim);
     vec3_multiply(dim, 0.5, dim);
+    // Explicit cast and ugh whatever...
+    tree->nodes.array[parentidx].children_index = (uint32_t)tree->nodes.length;
     for(int z = 0; z < 2; z++) {
       for(int y = 0; y < 2; y++) {
         for(int x = 0; x < 2; x++) {
@@ -242,3 +244,39 @@ ERROR1:
 END:
   return result;
 }
+
+
+static int octree_scan_recurse(octree * tree, collision_box_3d * box, octree_node * node, 
+                               octree_scan_callback callback, void * state) {
+  if(AABBCOLLIDE_3DBOX(box, &node->box)) {
+    //logdebug("COLLIDE NODE: %d", (int)(node - tree->nodes.array));
+    if(octree_node_is_leaf(node)) {
+      // We call the user's callback on all tris in this node that intersect. If there are
+      // any non-zero return values, quit immediately
+      for(uint32_t i = 0; i < node->faces_count; i++) {
+        uint32_t faceidx = tree->nodefaces.array[i + node->faces_index];
+        //logdebug("CHECK TRI %d", i);
+        if(AABBCOLLIDE_3DBOX(box, &tree->faceboxes[faceidx])) {
+          //logdebug("COLLIDE %d", i);
+          int result = callback(state, tree->model, faceidx);
+          if(result) return result;
+        }
+      }
+    } else {
+      //logdebug("DRILL DOWN");
+      // Drill down to all the children
+      for(int i = 0; i < 8; i++) {
+        int result = octree_scan_recurse(
+          tree, box, &tree->nodes.array[node->children_index + i], callback, state);
+        if(result) return result;
+      }
+    }
+  }
+  return 0;
+}
+
+int octree_scan(octree * tree, collision_box_3d * box, octree_scan_callback callback, void * state) {
+  // TODO: is root always 0? Why do we use rootidx above?
+  return octree_scan_recurse(tree, box, &tree->nodes.array[0], callback, state);
+}
+
