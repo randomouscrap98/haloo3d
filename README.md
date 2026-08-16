@@ -1,5 +1,7 @@
 # Haloo3d
 
+Project moved to https://git.shsbs.xyz/haloopdy/haloo3d
+
 <img src="https://haloopdy.com/blog/resources/baseline_fast_default.gif" alt="a 3d software renderer">
 
 A simple, modular 3D software renderer written in C99. It has a simple shader-esque
